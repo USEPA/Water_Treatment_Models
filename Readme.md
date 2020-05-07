@@ -1,4 +1,5 @@
-#README for Water Treatment Models
+README for Water Treatment Models
+=================================
 
 This is the future home of Python-based tools for modeling drinking water treatment processes.
 
