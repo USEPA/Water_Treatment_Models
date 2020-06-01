@@ -4,9 +4,13 @@ README for Water Treatment Models
 This is the future home of Python-based tools for modeling drinking water treatment processes.
 
 Planned tools for this repository
-1. Adsorption Model for Granular Activated Carbon
-2. Ion Exchange Model
+1. Adsorption Model for Granular Activated Carbon (PSDM Folder)
+2. Ion Exchange Model (IonExchangeModel Folder)
 
+# Status 
+All code in this repository is being provided in a "draft" state and has not be reviewed or cleared by US EPA. This status will be updated as models are reviewed.
+
+# Additional Information
 See also tools found at https://github.com/USEPA/Environmental-Technologies-Design-Option-Tool
 
 This repository is released under the [MIT License](LICENSE.md).
