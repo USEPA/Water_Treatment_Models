@@ -52,6 +52,7 @@ XXX: Needs a way to specify max_step in solve_ivp to avoid missing influent feat
 @authors: Jonathan Burkhardt, Boris Datsov, Levi Haupert
 """
 
+import argparse
 import timeit
 
 import numpy as np
@@ -60,7 +61,6 @@ from scipy.interpolate import interp1d
 from scipy.integrate import solve_ivp
 
 from .colloc import build_collocation, advect_operator
-
 
 bicarbMW = 61.02
 
@@ -717,7 +717,45 @@ class HSDMIX:
             print('WARNING: Negative concentrations detected!')      
         
         return (t, u)
- 
+
+
+def parse_args():
+    """
+    Parse arguments from command line.
+
+    Returns
+    -------
+    Argument object to pass to run_HSDMIX
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input_fname')
+    parser.add_argument('output_fname')
+    parser.add_argument('-t', '--t_unit')
+    parser.add_argument('-c', '--c_unit')
+    args = parser.parse_args()
+    return args
+
+
+def run_HSDMIX(args):
+    input_fname = args.input_fname
+    output_fname = args.output_fname
+    
+    if not args.t_unit: # time unit not specified
+        t_unit = 'BV' # default to throughput
+    else:
+        t_unit = args.t_unit
+
+    if not args.c_unit: # concentration unit not specified
+        c_unit = 'meq' # default to meq
+    else:
+        c_unit = args.c_unit        
+
+    IEX = HSDMIX(input_fname)
+    IEX.solve()
+    IEX.save_results(output_fname, t_unit, c_unit)
+    
+    return None
+    
    
     # # NOTE: To find the array index of the compound we are looking for
     # IEX.names.tolist().index('NITRATE')
