@@ -730,8 +730,8 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('input_fname')
     parser.add_argument('output_fname')
-    parser.add_argument('period')
-    parser.add_argument('c_units')
+    parser.add_argument('-t', '--t_unit')
+    parser.add_argument('-c', '--c_unit')
     args = parser.parse_args()
     return args
 
@@ -739,12 +739,23 @@ def parse_args():
 def run_HSDMIX(args):
     input_fname = args.input_fname
     output_fname = args.output_fname
-    period = args.period
-    c_units = args.c_units
     
+    if not args.t_unit: # time unit not specified
+        t_unit = 'BV' # default to throughput
+    else:
+        t_unit = args.t_unit
+
+    if not args.c_unit: # concentration unit not specified
+        c_unit = 'meq' # default to meq
+    else:
+        c_unit = args.c_unit        
+
     IEX = HSDMIX(input_fname)
     IEX.solve()
-    IEX.save_results(output_fname, period, c_units)
+    IEX.save_results(output_fname, t_unit, c_unit)
+    
+    return None
+    
    
     # # NOTE: To find the array index of the compound we are looking for
     # IEX.names.tolist().index('NITRATE')
