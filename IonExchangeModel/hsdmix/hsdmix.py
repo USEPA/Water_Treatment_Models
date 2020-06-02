@@ -52,6 +52,7 @@ XXX: Needs a way to specify max_step in solve_ivp to avoid missing influent feat
 @authors: Jonathan Burkhardt, Boris Datsov, Levi Haupert
 """
 
+import argparse
 import timeit
 
 import numpy as np
@@ -718,8 +719,32 @@ class HSDMIX:
         return (t, u)
 
 
-def run_HSDMIX():
-    print('Pretend run of HSDMIX')
+def parse_args():
+    """
+    Parse arguments from command line.
+
+    Returns
+    -------
+    Argument object to pass to run_HSDMIX
+    """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input_fname')
+    parser.add_argument('output_fname')
+    parser.add_argument('period')
+    parser.add_argument('c_units')
+    args = parser.parse_args()
+    return args
+
+
+def run_HSDMIX(args):
+    input_fname = args.input_fname
+    output_fname = args.output_fname
+    period = args.period
+    c_units = args.c_units
+    
+    IEX = HSDMIX(input_fname)
+    IEX.solve()
+    IEX.save_results(output_fname, period, c_units)
    
     # # NOTE: To find the array index of the compound we are looking for
     # IEX.names.tolist().index('NITRATE')
