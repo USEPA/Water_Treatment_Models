@@ -61,7 +61,6 @@ from scipy.integrate import solve_ivp
 
 from .colloc import build_collocation, advect_operator
 
-
 bicarbMW = 61.02
 
 def approx_Jac_struc(nr, NION, nz):
@@ -717,7 +716,10 @@ class HSDMIX:
             print('WARNING: Negative concentrations detected!')      
         
         return (t, u)
- 
+
+
+def run_HSDMIX():
+    print('Pretend run of HSDMIX')
    
     # # NOTE: To find the array index of the compound we are looking for
     # IEX.names.tolist().index('NITRATE')
