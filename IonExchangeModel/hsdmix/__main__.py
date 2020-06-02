@@ -3,4 +3,6 @@
 from .hsdmix import run_HSDMIX
 
 if __name__=='__main__':
-    run_HSDMIX()
+    args = parse_args()
+    run_HSDMIX(args)
+    
