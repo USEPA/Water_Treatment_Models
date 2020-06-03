@@ -719,7 +719,7 @@ class HSDMIX:
         return (t, u)
 
 
-def parse_args():
+def parse_args(args):
     """
     Parse arguments from command line.
 
@@ -732,8 +732,8 @@ def parse_args():
     parser.add_argument('output_fname')
     parser.add_argument('-t', '--t_unit')
     parser.add_argument('-c', '--c_unit')
-    args = parser.parse_args()
-    return args
+    parsed_args = parser.parse_args(args)
+    return parsed_args
 
 
 def run_HSDMIX(args):
