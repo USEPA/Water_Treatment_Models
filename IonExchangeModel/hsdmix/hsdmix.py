@@ -727,7 +727,7 @@ def parse_args():
     -------
     Argument object to pass to run_HSDMIX
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='hsdmix')
     parser.add_argument('input_fname')
     parser.add_argument('output_fname')
     parser.add_argument('-t', '--t_unit')
