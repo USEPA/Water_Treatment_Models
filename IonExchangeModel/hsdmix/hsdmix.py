@@ -61,6 +61,7 @@ from scipy.interpolate import interp1d
 from scipy.integrate import solve_ivp
 
 from .colloc import build_collocation, advect_operator
+from .paramsheets import conv_time, conv_database, conv_conc, conv_params_data
 
 bicarbMW = 61.02
 
@@ -119,86 +120,12 @@ class HSDMIX:
         self.params = pd.read_excel(xls, \
                                     sheet_name='params',\
                                     header = [0],\
-                                    index_col = [0])
-        # function to check parameters for consistency  
-
- 
-        #assume hours by default
-        self.time_units = 'hr'
-        self.time_mult = 60 * 60. #3600 seconds per hour
-        
-        if 'time' in self.params.index:
-            #corrects
-            self.time_units = self.params['units']['time']
-            if self.time_units == 'day':
-                self.time_mult = 24 * 60 * 60. #seconds in day
-            elif self.time_units == 'min':
-                self.time_mult = 60 #seconds in a minute
-        
-        if self.params['units']['RHOP'] == 'lb/ft3':
-            self.params.at['RHOP','value'] *= 453.59237 / (12**3 * 2.54**3)
-            #converts to gm/mL (factor of 0.016018)
-        
-        if self.params['units']['rb'] == 'm':
-            #converts bead radius (rb) to cm
-            self.params.at['rb','value'] *= 100.
-
-        if self.params['units']['kL'] == 'm/s':
-            #converts film transfer coef. (kL) to cm/s
-            self.params.at['kL','value'] *= 100.
-
-        if self.params['units']['Ds'] == 'm/s':
-            #converts diffusion coef. (Ds) to cm**2/s
-            self.params.at['Ds','value'] *= 1e4 #100^2
-            
-        if 'v' in self.params.index:
-            if self.params['units']['v'] == 'gpm/ft2':
-                self.params.at['v','value'] *= 3785.411784 / (60 * 12**2 * 2.54**2)
-                #converts to cm/s ( factor of 0.06791 )
-        elif 'flrt' in self.params.index and 'diam' in self.params.index:
-            #checks for flowrate (flrt) and column diameter (diam)
-            self.params.loc['v'] = self.params.loc['flrt'] #placeholder for v
-            
-            #convert diam to cm (assumes cm)
-            if self.params['units']['diam'] == 'm':
-                self.params.at['diam','value'] *= 100.
-            elif self.params['units']['diam'] == 'in':
-                self.params.at['diam','value'] *= 2.54
-            elif self.params['units']['diam'] == 'ft':
-                self.params.at['diam','value'] *= 2.54 * 12.
-
-            #convert flowrate (flrt) to ml/s
-            if self.params['units']['flrt'] == 'gpm' or self.params['units']['flrt'] == 'gal/min':
-                self.params.at['flrt','value'] *= 3785.411784 / 60.
-            elif self.params['units']['flrt'] == 'ml/min' or self.params['units']['flrt'] == 'cm3/min':
-                self.params.at['flrt','value'] /= 60.
-            elif self.params['units']['flrt'] == 'm3/min':
-                self.params.at['flrt','value'] *= 1e6/60.
-            elif self.params['units']['flrt'] == 'ft3/min':
-                self.params.at['flrt','value'] *= 12**3 * 2.54**3 / (60.)
-            elif self.params['units']['flrt'] == 'MGD' or self.params['units']['flrt'] == 'mgd':
-                self.params.at['flrt','value'] *= 1e6 * 3785.411784 / (24. * 60 * 60.)
-
-            self.params.at['v','value'] = self.params['value']['flrt'] / (np.pi/4. * \
-                                          self.params['value']['diam']**2)
-            
-
-        else:
-            print('ERROR! Missing velocity, or flowrate and diameter')
-            
-        
-        #converts column length to cm
-        if self.params['units']['L'] == 'in':
-            self.params.at['L','value'] *= 2.54
-        elif self.params['units']['L'] == 'ft':
-            self.params.at['L','value'] *= 2.54 * 12
-        elif self.params['units']['L'] == 'm':
-            self.params.at['L','value'] *= 100.
- 
+                                    index_col = [0]) 
+      
+        self.params = conv_params_data(self.params)
 
 
-        
-        
+#        
         self.params = self.params.drop('units', axis=1)['value'] #drops unused column
         ### XXXX: We need these for output
         
@@ -211,223 +138,116 @@ class HSDMIX:
         
         self.Cin_t = pd.read_excel(xls, \
                                    sheet_name='Cin',\
-                                   header=[0],\
-                                   index_col=[0])
+                                   header=[0], \
+                                   index_col = [0])
         
-        self.Cin_temp = self.Cin_t
         
-        if 'BICARBONATE' not in self.Cin_t.columns:
+        self.Cin_temp = self.Cin_t.copy(deep=False)
+        
+        self.time_mult = self.params['time']        
+        
+        self.Cin_dict = self.ions.to_dict('index')
+        
+        self.u_Cin2 = {}
+        self.val2 = {}
+        self.MW2 = {}
+        self.u_Cout2 = {}
+        
+        for c in self.Cin_dict.keys():
+            self.u_Cin2[c] = self.Cin_dict[c]['units']
+            self.val2[c] = self.Cin_dict[c]['valence']
+            self.MW2[c] = self.Cin_dict[c]['mw']
+            self.u_Cout2[c] = 'meq'
             
-            if 'ALKALINITY' in self.Cin_t.columns:
+#        label = 'concentration'
+
+        self.C_out2, self.u_Cin2, self.u_C_out2 = conv_database(self.Cin_temp, \
+                                                               self.u_Cin2, \
+                                                               self.u_Cout2, \
+                                                               conv_conc, \
+                                                               self.MW2, \
+                                                               self.val2)
+        
+        if 'BICARBONATE' not in self.C_out2.columns:
+            
+            if 'ALKALINITY' in self.C_out2.columns:
 #                initialize a column that is the same size as other columns
-                self.Cin_t['BICARBONATE'] = self.Cin_t['ALKALINITY'] * 1.
+                self.C_out2['BICARBONATE'] = self.C_out2['ALKALINITY'] * 1.
                 self.ions.loc['BICARBONATE'] = self.ions.loc['ALKALINITY']
                 self.ions.at['BICARBONATE','mw'] = bicarbMW
                 self.ions.at['BICARBONATE','units'] = 'mg'
                 
-                pH_exp = self.Cin_t['PH'] - 10. #convenience
-                self.Cin_t['BICARBONATE'] = (self.Cin_t['ALKALINITY'] - 5. * 10 **pH_exp)/\
+                pH_exp = self.C_out2['PH'] - 10. #convenience
+                self.C_out2['BICARBONATE'] = (self.C_out2['ALKALINITY'] - 5. * 10 **pH_exp)/\
                                             (1. + 0.94 * 10**pH_exp)
             else:
-                print('WARNING: No BICARBONATE or ALKALINITY concentration defined!')
+                print('Error! No BICARBONATE or ALKALINITY concentration defined')
         
         #clean up un needed columns        
-        if 'ALKALINITY' in self.Cin_t.columns:
-            self.Cin_t = self.Cin_t.drop('ALKALINITY', axis=1)
+        if 'ALKALINITY' in self.C_out2.columns:
+            self.C_out2 = self.C_out2.drop('ALKALINITY', axis=1)
             self.ions = self.ions.drop('ALKALINITY')
-        if 'PH' in self.Cin_t.columns:
-            self.Cin_t = self.Cin_t.drop('PH', axis=1)
+        if 'PH' in self.C_out2.columns:
+            self.C_out2 = self.C_out2.drop('PH', axis=1)
             
         self.names = self.ions.index.values 
-        for name in self.names:
-            if self.ions['units'][name] == 'mg':
-                self.Cin_t[name] = self.Cin_t[name]/self.ions['mw'][name]
-            elif self.ions['units'][name] == 'mgN':
-                self.Cin_t[name] = self.Cin_t[name]/14.007 # Mol. Weight of Nit
-            elif self.ions['units'][name] == 'ng':
-                self.Cin_t[name] = self.Cin_t[name]/\
-                                   self.ions['mw'][name]/1e6 #ng -> mg = 1e6
-                                   
-        c_base_units = self.gen_c_base_unts(self.ions.index)  # XXX: Side effects?
 
-        c_factor, outLst = self.cfactor(self.ions, self.ions['mw'], \
-                                        None, self.valences)
         
     
-    units_dict = {'Qm':['meq/g'], \
-              'RHOP':['lb/ft3','g/cm3','kg/L','kg/m3'], \
-              'EBED':[''], \
-              'L':['m','cm','mm','in','ft'], \
-              'flrt':['gpm','mL/min','m3/min','ft3/min', 'MGD'], \
-              'diam':['m','cm','mm','in','ft'], \
-              'rb':['m','cm','mm','in','ft'], \
-              'kL':['cm/s'], \
-              'Ds':['cm2/s'], \
-              'nr':[''], \
-              'nz':[''], \
-              'time':['hr','min','s'] }
-
-    cmg_conv_dict = {'Qm':[1], \
-                  'RHOP':[453.59237 / (12**3 * 2.54**3)], \
-                  'EBED':[1], \
-                  'L':[100.,1.,0.1,2.54, 2.54 * 12], \
-                  'flrt':[3785.411784 / 60.,1/60.,1e6/60.,12**3 * 2.54**3 / (60.), 1e6 * 3785.411784 / (24. * 60 * 60.)],  \
-                  'diam':[100., 1., 0.1, 2.54, 2.54 * 12], \
-                  'rb':[100., 1., 0.1, 2.54, 2.54 * 12], \
-                  'kL':[1], \
-                  'Ds':[1], \
-                  'nr':[1], \
-                  'nz':[1], \
-                  'time':[3600., 60., 1.] }
-    
+    def save_results2(self, output_file_name, **kwargs):
         
-    def unitconv(self,base_dict, conv_dict, ld):
+        period = kwargs.get('period', 'hours')
+        units = kwargs.get('units', None)
         
-    #    returns multiplication coefficient table
-        
-        load_database = ld.copy()
-        
-        load_database.fillna('',inplace=True)
-
-        if 'units' not in ld.columns:
-
-            load_database = load_database.T
-            load_database['units'] = 'meq'
-            
-        def unitsDict(load_database, base_dict):
-            pLst = load_database.index
-            pDict = {}
-            for p in pLst:
-                if p in base_dict:
-                    pDict[p] = base_dict[p]
-                else:
-                    pDict[p] = {p:''}
-                    print(p + ' is not in units list!')
-            return pDict
-
-        uDict = unitsDict(load_database, base_dict)
-        
-        base_df = pd.DataFrame.from_dict(uDict, orient='index')
-
-        coef_df = pd.DataFrame.from_dict(conv_dict, orient='index')
-        
-        load_database = load_database[['units']]
-
-        in_units = pd.concat([load_database]*base_df.shape[1], axis=1)
-
-        in_units.columns=range(base_df.shape[1])
-        
-        chk_df = in_units.eq(base_df)
-
-        chk_df = chk_df.astype(int)
-
-        coef_df = chk_df.mul(coef_df, fill_value=0.0)
-
-        ##########################################################
-        # manipulate coef_df to convert from meq to whatever units
-        ##########################################################
-        
-        chk_elements = chk_df.any(axis=1)
-        misPar = chk_elements[chk_elements==False].index.tolist()
-
-        for m in misPar:
-            print(m + ' is not in proper units!')   
- 
-        return coef_df
-
-        
-    def cfactor(self,data, MW, out, valence):
-        
-        compound = data.index.tolist()
-
-        c_conv_units = {}
-        
-        if out is not None:
-            outLst = [out]*len(compound)
+        u_Cout2 = {}
+        if units == None:
+            u_Cout2 = self.u_Cin2
         else:
-            outLst = data[['units']]
-            outLst = outLst['units'].tolist()
+            for c in self.Cin_dict.keys():
+                u_Cout2[c] = units
         
-        for c in compound:
-            tmp_units = outLst[compound.index(c)]
-
-            factors = np.array([1, 1./MW[c], 1./14.007, 1./MW[c]/1.0e6])
-            conv_dct = {'meq' : factors, 'mg': factors*MW[c], \
-                'mgN': factors*14.007, 'ng': factors*MW[c]*1.0e6}
-            # create units converter for out from meq to 'out'
-            if tmp_units in conv_dct.keys():
-                c_conv_units[c] = conv_dct[tmp_units]
-            else:
-                c_conv_units[c] = conv_dct['meq']
-                print(c + ' is not in proper units! ')
-                print('Acceptable units are meq, mg, mgN, or ng.')
-                print('Defaulting to meq.')
-
-        return c_conv_units, outLst
-    
-    
-    def gen_c_base_unts(self,ionLst):
-        dct = {}
-        c_unitsLst = ['meq', 'mg', 'mgN', 'ng']
-        for i in ionLst:
-            dct[i]=c_unitsLst
-
-        return dct
-    
-    
-    def testCinConv(self, output_file_name, units, inp_file):
-        
-
-        c_base_units = self.gen_c_base_unts(self.ions.index)
-
-        
-        c_factor, outLst = self.cfactor(self.ions, self.ions['mw'], \
-                                        units, self.valences)
-        
-        c_units = self.unitconv(c_base_units, c_factor, self.ions)
-        
-        Cin_test = pd.read_excel(inp_file, sheet_name='Cin', header=[0], \
-                                 index_col = 'Time')
-
-        conc_conv = Cin_test.mul(c_units.sum(axis=1))        
-
-        conc_conv.to_excel(output_file_name, 'Cin')
-    
-    
-    def save_results(self, output_file_name, period, units):
-        
-        c_base_units = self.gen_c_base_unts(self.ions.index)
-
-        c_factor, outLst = self.cfactor(self.ions, self.ions['mw'], \
-                                        units, self.valences)
-
-        s2d = 1./60./60/24. # seconds to hours
+        u_Cin2 = {}
+        for c in self.Cin_dict.keys():
+            u_Cin2[c] = 'meq'
+            
+            
         temp_t = pd.Series(self.result.t * self.timeback)
         tmp_u = self.u_result[0,:,-1,:]
+        
+        
         if period == 'BV':
             bv = temp_t / (self.params['L'] / self.params['v']) 
             idx = pd.Index(bv, name=period)
-        elif period == 'days':
-            idx = pd.Index(temp_t * s2d, name=period)
+
         else:
-            idx = pd.Index(temp_t * s2d, name='days')
-            
-        df_c = pd.DataFrame(tmp_u.T, index = idx, columns = self.names)
+            period_factor, u_in, u_out = conv_time('sec',period,'time', period)            
+            idx = pd.Index(temp_t * period_factor, name = period)
 
-        c_units = self.unitconv(c_base_units, c_factor, df_c)
-
-        conc_conv = df_c.mul(c_units.sum(axis=1))
         
-        col_name = conc_conv.columns.tolist()
+
+
+        
+        df_c = pd.DataFrame(tmp_u.T, index = idx, columns = self.names)
+        
+        tmp_df = df_c.copy(deep=True)
+
+        C_out3, u_Cin2, u_Cout2 = conv_database(tmp_df, u_Cin2, u_Cout2, \
+                                    conv_conc, self.MW2, self.val2)       
+        
+        col_name = C_out3.columns.tolist()
         
         new_col_name = []
         for n in col_name:
-            new_col_name.append( n + ' \n(' + outLst[col_name.index(n)] \
-                                                   + '/L)')
-        conc_conv.columns = new_col_name
-        conc_conv.to_excel('conc_' + period + '_' + output_file_name)
+            new_col_name.append( n + ' ('+ u_Cout2[n] + '/L)')           
 
-        
+        C_out3.columns = new_col_name
+        saved_name = output_file_name
+        C_out3.to_excel(output_file_name, sheet_name = 'Cout', float_format='%.8f')        
+
+        return saved_name
+    
+    
+
     def solve(self, t_eval=None, const_Cin=False, OCFE=False, quiet=True):
         """ Returns (t, u)
         t = time values
@@ -719,6 +539,7 @@ class HSDMIX:
         return (t, u)
 
 
+
 def parse_args(args):
     """
     Parse arguments from command line.
@@ -739,20 +560,16 @@ def parse_args(args):
 def run_HSDMIX(args):
     input_fname = args.input_fname
     output_fname = args.output_fname
-    
-    if not args.t_unit: # time unit not specified
-        t_unit = 'BV' # default to throughput
-    else:
-        t_unit = args.t_unit
-
-    if not args.c_unit: # concentration unit not specified
-        c_unit = 'meq' # default to meq
-    else:
-        c_unit = args.c_unit        
+    option_dict = {}
+    if args.t_unit:
+        option_dict.update({'period':args.t_unit})
+    if args.c_unit:
+        option_dict.update({'units':args.c_unit})
 
     IEX = HSDMIX(input_fname)
     IEX.solve()
-    IEX.save_results(output_fname, t_unit, c_unit)
+    IEX.save_results2(output_fname, **option_dict)
+
     
     return None
     
