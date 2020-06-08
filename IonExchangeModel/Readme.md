@@ -12,7 +12,7 @@ For details on the numerical method of solution (Orthogonal Collocation), consul
 Homogeneous Surface Diffusion Model (HSDM) for ion exchange (IX) in fixed-bed columns. An example input file and use case can be found in the test folder.
 
 # Status 
-All code in this repository is being provided in a "draft" state and has not be reviewed or cleared by US EPA. This status will be updated as models are reviewed.
+All code in this repository is being provided in a "draft" state and has not been reviewed or cleared by US EPA. This status will be updated as models are reviewed.
 
 EPA Disclaimer
 ==============

@@ -8,7 +8,7 @@ Planned tools for this repository
 2. Ion Exchange Model (IonExchangeModel Folder)
 
 # Status 
-All code in this repository is being provided in a "draft" state and has not be reviewed or cleared by US EPA. This status will be updated as models are reviewed.
+All code in this repository is being provided in a "draft" state and has not been reviewed or cleared by US EPA. This status will be updated as models are reviewed.
 
 # Additional Information
 See also tools found at https://github.com/USEPA/Environmental-Technologies-Design-Option-Tool
