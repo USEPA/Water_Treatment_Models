@@ -34,7 +34,6 @@ TODO: More consistency in time units
 TODO: Consider going to EBCT for the characteristic time parameter
 TODO: Filter capacity input specification
 
-TODO: Method to save run result to spreadsheet
 TODO: Tests for spreadsheet output routine.
 TODO: Example of how to do batch runs
 
@@ -194,7 +193,7 @@ class HSDMIX:
 
         
     
-    def save_results2(self, output_file_name, **kwargs):
+    def save_results(self, output_file_name, **kwargs):
         
         period = kwargs.get('period', 'hours')
         units = kwargs.get('units', None)
@@ -568,9 +567,8 @@ def run_HSDMIX(args):
 
     IEX = HSDMIX(input_fname)
     IEX.solve()
-    IEX.save_results2(output_fname, **option_dict)
+    IEX.save_results(output_fname, **option_dict)
 
-    
     return None
     
    

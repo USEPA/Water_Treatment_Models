@@ -4,6 +4,7 @@ from context import hsdmix
 
 import os
 import unittest
+import warnings
 
 import numpy as np
 
@@ -29,6 +30,9 @@ u_check = np.array([7.        , 5.98772214, 4.81410572, 3.91171217, 3.25520516,
 
 class HSDMIXTestSuite(unittest.TestCase):
     """Test HSDMIX model."""
+    
+    def setUp(self):
+        warnings.simplefilter('ignore', PendingDeprecationWarning)
 
     def test_regress(self):
         """ Simple Regression Test """
