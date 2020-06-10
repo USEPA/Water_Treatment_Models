@@ -11,6 +11,35 @@ For details on the numerical method of solution (Orthogonal Collocation), consul
 ## HSDMIX
 Homogeneous Surface Diffusion Model (HSDM) for ion exchange (IX) in fixed-bed columns. An example input file and use case can be found in the test folder.
 
+Provided the dependencies in [requirements.txt](requirements.txt) are satisfied, this model can be run from the command line without being installed:
+```
+python -m /path/to/hsdmix input_file output_file
+```
+
+After installation, the HSDM model can be run without specifying the path to the hsdmix module:
+```
+python -m hsdmix input_file output_file
+```
+
+# Testing
+
+The unit tests for this package can be run from the command line:
+```
+python -m unittest discover -s /path/to/test -v
+```
+
+# Installation
+
+Provided the dependencies in [requirements.txt](requirements.txt) are satisfied, this package can be installed from the command line:
+```
+python -m pip install /path/to/IonExchangeModel
+```
+
+The package can also be uninstalled from the command line:
+```
+python -m pip uninstall ion-exchange-models
+```
+
 # Status 
 All code in this repository is being provided in a "draft" state and has not been reviewed or cleared by US EPA. This status will be updated as models are reviewed.
 
