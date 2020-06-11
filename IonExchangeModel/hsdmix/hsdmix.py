@@ -119,12 +119,10 @@ class HSDMIX:
         self.params = pd.read_excel(xls, \
                                     sheet_name='params',\
                                     header = [0],\
-                                    index_col = [0]) 
+                                    index_col = [0])
       
         self.params = conv_params_data(self.params)
 
-
-#        
         self.params = self.params.drop('units', axis=1)['value'] #drops unused column
         ### XXXX: We need these for output
         
@@ -143,6 +141,8 @@ class HSDMIX:
         
         self.Cin_temp = self.Cin_t.copy(deep=False)
         
+#        self.Cin_temp = lowerEntries(self.Cin_temp)
+        
         self.time_mult = self.params['time']        
         
         self.Cin_dict = self.ions.to_dict('index')
@@ -157,8 +157,6 @@ class HSDMIX:
             self.val2[c] = self.Cin_dict[c]['valence']
             self.MW2[c] = self.Cin_dict[c]['mw']
             self.u_Cout2[c] = 'meq'
-            
-#        label = 'concentration'
 
         self.C_out2, self.u_Cin2, self.u_C_out2 = conv_database(self.Cin_temp, \
                                                                self.u_Cin2, \
@@ -190,10 +188,24 @@ class HSDMIX:
             self.C_out2 = self.C_out2.drop('PH', axis=1)
             
         self.names = self.ions.index.values 
-
-        
+            
     
     def save_results(self, output_file_name, **kwargs):
+        '''
+        Returns:
+            generate and write a *.xlsx file in the parent directory;
+            sheet_name = Cout;
+            
+            *** convert results from solver() to the requested uints; ***
+            *** convert results from solver() to the input units if units are not specified; ***
+            
+        Parameters:
+            output_file_name : file name as string;
+            period : string;
+            units : string; 
+            
+            *** takes units from the input file if units are not specified; ***
+        '''
         
         period = kwargs.get('period', 'hours')
         units = kwargs.get('units', None)

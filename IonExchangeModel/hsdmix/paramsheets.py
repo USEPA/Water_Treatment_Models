@@ -12,14 +12,69 @@ Created on Wed May 20 08:10:32 2020
 import pandas as pd
 import numpy as np
 import sys
+
+
+
+def lowerEntries(item):    
+    '''
+        Retruns: a lowercase string iff the item is a string;
+        
+        Parameters: strings or numbers;
+    '''        
+            
+    if isinstance(item, str):
+        lower_item = map(lambda x: x.lower(), item)
+        s = ''
+        lower_item = s.join(list(lower_item))
+    else:
+        lower_item = item
+    return lower_item
+
+def lowercaseData(data):
+    '''
+        Returns: lowercase pandas dataframe;
+        
+        Parameters: pandas dataframe;
+    '''
+    
+    lower_df = data.applymap(lowerEntries)
+    return lower_df
+
+def lowercaseIndex(data):
+    '''
+        Retruns: pandas dataframe with index in lowercase;
+            
+        Parameters: pandas dataframe;
+    '''        
+            
+    lower_index = data.rename(str.lower, axis='index')
+    return lower_index
+
    
 def conv_units(u_in, u_out, u_list, u_coef, label, caller):
+    '''
+        Returns:
+            a conversion factor based on "units in" and "units out";
+            "units in" as string;
+            "units out" as string;
+          
+        Parameters:
+            u_in : string;
+            u_out : string;
+            u_list : list;
+            u_coeff : list;
+            label : string;
+            caller : string;
+         
+        *** label and caller are optional parameters used for system messaging ***
+        *** enter empty strings if label or caller are None ***
+    '''    
     
     if u_in in u_list:
         u_in_pos = u_list.index(u_in)
     else:
 
-        print('WARRNING: ' + caller + ' is not in porper units!')
+        print('WARNING: ' + caller + ' is not in porper units!')
         print('Acceptable units for ' + label + ' are: ', *u_list, sep='\n')
         
         pos_assigned = True
@@ -205,26 +260,6 @@ def conv_conc(u_in, u_out, MW, val, label, caller):
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     return cv, u_in, u_out
 
-
-def conv_database(data_in, u_in, u_out, conv_fn, MW, val):
-    
-    for u in u_in.keys():
-#        tmp_conv_fn = conv_fn[u]
-        cf, u_in[u], u_out[u] = conv_fn(u_in[u], u_out[u], MW[u], val[u], u, u)
-        data_in[u] *= cf
-        
-    return data_in, u_in, u_out
-
-
-def conv_params(data_in, u_in, u_out, conv_fn):    
-    for u in u_in.keys():
-        tmp_conv_fn = conv_fn[u]
-        cf, u_in[u], u_out[u] = tmp_conv_fn(u_in[u], u_out[u], u, u)
-        data_in.loc[u, 'value'] *= cf
-        data_in.loc[u, 'units'] = u_out[u]        
-        
-    return data_in
-
 def conv_weight(u_in, u_out, label, caller):
     units = ['kg', 'g', 'mg', 'ug', 'ng', 'lbs', 'lb', 'lbm', 'oz']
     coefs = [1., 1000., 1.0e6, 1.0e9, 1.0e12, 2.2046226218, 2.2046226218, 2.2046226218, 35.27396195]
@@ -253,21 +288,87 @@ def conv_capacity(u_in, u_out, label, caller):
     
     return cv, u_in, u_out
 
+    
+def conv_database(data_in, u_in, u_out, conv_fn, MW, val):
+    '''
+        Retruns: 
+            pandas dataframe in requested units
+        
+        Parameters:
+            data_in : pandas dataframe
+            u_in : dictionary (units in);
+            u_out : dictionary (unist out);
+            conv_fn : dictionary (conversion functions);
+            MW : dictionary (molecular weights);
+            val : dictionary (valences);
+            
+            ***the keys must be the same for all dictionaries***
+    '''
+    for u in u_in.keys():
+#        tmp_conv_fn = conv_fn[u]
+        cf, u_in[u], u_out[u] = conv_fn(u_in[u], u_out[u], MW[u], val[u], u, u)
+        data_in[u] *= cf
+        
+    return data_in, u_in, u_out
+
+     
+
+def conv_params(data_in, u_in, u_out, conv_fn):
+    '''
+        Retruns: 
+            pandas dataframe in requested units
+            
+        Parameters:
+            data_in : pandas dataframe ()
+            u_in : dictionary (units in);
+            u_out : dictionary (unist out);
+            conv_fn : dictionary (conversion functions);
+    
+            ***the keys must be the same for all dictionaries***
+    '''        
+    for u in u_in.keys():
+        tmp_conv_fn = conv_fn[u]
+        cf, u_in[u], u_out[u] = tmp_conv_fn(u_in[u], u_out[u], u, u)
+        data_in.loc[u, 'value'] *= cf
+        data_in.loc[u, 'units'] = u_out[u]        
+        
+    return data_in
+
+        
 
 def conv_params_data(data):
-    params_Dct = data.to_dict('index')
+    '''    
+        Returns:
+            pandas dataframe in units acceptable by HSDMIX.solver();    
+        
+        Parameters:
+            data : pandas dataframe
+    
+            *** takes parameter units from "units" column in the input file ***
+            *** pass the input units to conv_data() ***
+            *** takes the velocity if both velocity and flow rate are present;
+                otherwise converts the flow rate to linear velocity ***         
+    '''
+    low_idx = lowercaseIndex(data)
+    low_data = lowercaseData(low_idx)
+    
+    
+    params_Dct = low_data.to_dict('index')
     
     u_in = {}
     
-    u_out = {'time':'s', 'RHOP':'g/ml', 'rb':'cm', 'kL':'cm/s', \
-             'Ds':'cm2/s', 'v':'cm/s', 'Qm':'meq/g', 'L':'cm', \
+    u_out = {'time':'s', 'rhop':'g/ml', 'rb':'cm', 'kl':'cm/s', \
+             'ds':'cm2/s', 'v':'cm/s', 'qm':'meq/g', 'l':'cm', \
              'flrt':'cm3/s', 'diam':'cm'}
     
-    u_fn = {'time':conv_time, 'RHOP':conv_dens, 'rb':conv_length, 'kL':conv_vel, \
-             'Ds':conv_area_per_time, 'v':conv_vel, 'Qm':conv_capacity , \
-             'flrt':conv_vol_per_time, 'L':conv_length, 'diam':conv_length}
+    correct_idx = {'rhop':'RHOP', 'qm':'Qm', 'ebed':'EBED', 'l':'L', 'kl':'kL',\
+                   'ds':'Ds'}
     
-    params_pop = ['Qm', 'EBED', 'nz', 'nr']
+    u_fn = {'time':conv_time, 'rhop':conv_dens, 'rb':conv_length, 'kl':conv_vel, \
+             'ds':conv_area_per_time, 'v':conv_vel, 'am':conv_capacity , \
+             'flrt':conv_vol_per_time, 'l':conv_length, 'diam':conv_length}
+    
+    params_pop = ['qm', 'ebed', 'nz', 'nr']
     
     
     for p in params_Dct.keys():
@@ -277,12 +378,13 @@ def conv_params_data(data):
             u_fn[p] = u_fn[p]
 
     
-    params_out = conv_params(data, u_in, u_out, u_fn)
+    params_out = conv_params(low_data, u_in, u_out, u_fn)
+    
     
     if 'v' not in params_out.index:
-        flrt_f, u_in_fr, u_out_fr = conv_fr_to_vel(data.loc['flrt','units'], 'cm/s', \
-                                data.loc['diam','value'], \
-                                data.loc['diam','units'], '', '')    
+        flrt_f, u_in_fr, u_out_fr = conv_fr_to_vel(low_data.loc['flrt','units'], 'cm/s', \
+                                low_data.loc['diam','value'], \
+                                low_data.loc['diam','units'], '', '')    
     
         flrt_cv = params_out.loc['flrt','value']*flrt_f
         
@@ -294,6 +396,9 @@ def conv_params_data(data):
         params_out = params_out
         if 'flrt' in params_out.index:
             print('The linear velocity has been used instead of the flow rate.')
-    
+            
+    for cp in correct_idx.keys():
+        params_out.rename(index={cp:correct_idx[cp]}, inplace=True)
+ 
     return params_out
 
