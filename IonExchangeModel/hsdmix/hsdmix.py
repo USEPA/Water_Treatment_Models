@@ -19,23 +19,10 @@ Assumptions:
   Common mass transport parameters for all species.
 
 TODO: Option to calculate film transfer coefficient from correlation.
-TODO: Implicit handling of presaturant to reduce number of equations and
-      enable more rigorous handling of interdiffusion coefficients.
-      (If it is possible to do that with time varying influent.)
 
-TODO: Clean, test, double check units on desired outputs
 TODO: Clean, test, double check bicarb/alka output
-TODO: mgC units for bicarbonate?
 
-TODO: Maybe: combine OCM and OCFE mode by always using OCFE builder (default NE=1)
-
-TODO: More consistency in time units
-
-TODO: Consider going to EBCT for the characteristic time parameter
 TODO: Filter capacity input specification
-
-TODO: Tests for spreadsheet output routine.
-TODO: Example of how to do batch runs
 
 TODO: Consider alternate strategies for OCFE (have default NE=1?)
       We probably want to restructure colloc.py to just always do OCFE
@@ -43,7 +30,6 @@ TODO: Consider alternate strategies for OCFE (have default NE=1?)
 
 TODO: Maybe: Add option to use method="Radau" in solve_ivp to combat oscillations.
 
-XXX: Double check: Needs to check if input units are valid
 XXX: Needs a way to specify max_step in solve_ivp to avoid missing influent features
      (NOTE: t_eval doesn't solve this problem. It just interpolates . . .)
 

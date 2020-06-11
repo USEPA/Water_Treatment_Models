@@ -74,7 +74,7 @@ def conv_units(u_in, u_out, u_list, u_coef, label, caller):
         u_in_pos = u_list.index(u_in)
     else:
 
-        print('WARNING: ' + caller + ' is not in porper units!')
+        print('WARNING: ' + caller + ' is not in proper units!')
         print('Acceptable units for ' + label + ' are: ', *u_list, sep='\n')
         
         pos_assigned = True
