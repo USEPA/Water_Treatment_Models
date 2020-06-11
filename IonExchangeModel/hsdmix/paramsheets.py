@@ -7,12 +7,9 @@ Created on Wed May 20 08:10:32 2020
 
 ###### 
 
-
-
 import pandas as pd
 import numpy as np
 import sys
-
 
 
 def lowerEntries(item):    
@@ -30,6 +27,7 @@ def lowerEntries(item):
         lower_item = item
     return lower_item
 
+
 def lowercaseData(data):
     '''
         Returns: lowercase pandas dataframe;
@@ -39,6 +37,7 @@ def lowercaseData(data):
     
     lower_df = data.applymap(lowerEntries)
     return lower_df
+
 
 def lowercaseIndex(data):
     '''
@@ -102,7 +101,6 @@ def conv_units(u_in, u_out, u_list, u_coef, label, caller):
     factor = l_factor[u_in_pos,u_out_pos]    
     
     return factor, u_in, u_out
-
 
 
 def conv_length(u_in, u_out, label, caller):
@@ -178,6 +176,7 @@ def conv_vel(u_in, u_out, label, caller):
     
     return cv, u_in, u_out
 
+
 def conv_dens(u_in, u_out, label, caller):
     vars_lst = [u_in, u_out]
     wght = []
@@ -203,6 +202,7 @@ def conv_dens(u_in, u_out, label, caller):
     cv = w_f/v_f
     
     return cv, u_in, u_out
+
 
 def conv_area(u_in, u_out, label, caller):
     units = ['m2', 'cm2', 'mm2', 'ft2', 'in2']
@@ -236,7 +236,6 @@ def conv_area_per_time(u_in, u_out, label, caller):
     return cv, u_in, u_out
     
     
-    
 def conv_fr_to_vel(u_in, u_out, diam, diam_u, label, caller):
 
     if '/' in u_out:
@@ -260,11 +259,13 @@ def conv_conc(u_in, u_out, MW, val, label, caller):
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     return cv, u_in, u_out
 
+
 def conv_weight(u_in, u_out, label, caller):
     units = ['kg', 'g', 'mg', 'ug', 'ng', 'lbs', 'lb', 'lbm', 'oz']
     coefs = [1., 1000., 1.0e6, 1.0e9, 1.0e12, 2.2046226218, 2.2046226218, 2.2046226218, 35.27396195]
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     return cv, u_in, u_out
+
 
 def conv_capacity(u_in, u_out, label, caller):
     vars_lst = [u_in, u_out]
@@ -311,7 +312,6 @@ def conv_database(data_in, u_in, u_out, conv_fn, MW, val):
         
     return data_in, u_in, u_out
 
-     
 
 def conv_params(data_in, u_in, u_out, conv_fn):
     '''
@@ -335,7 +335,6 @@ def conv_params(data_in, u_in, u_out, conv_fn):
     return data_in
 
         
-
 def conv_params_data(data):
     '''    
         Returns:

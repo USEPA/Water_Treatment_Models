@@ -219,10 +219,6 @@ class HSDMIX:
         else:
             period_factor, u_in, u_out = conv_time('sec',period,'time', period)            
             idx = pd.Index(temp_t * period_factor, name = period)
-
-        
-
-
         
         df_c = pd.DataFrame(tmp_u.T, index = idx, columns = self.names)
         
@@ -244,7 +240,6 @@ class HSDMIX:
         return saved_name
     
     
-
     def solve(self, t_eval=None, const_Cin=False, OCFE=False, quiet=True):
         """ Returns (t, u)
         t = time values
@@ -536,7 +531,6 @@ class HSDMIX:
         return (t, u)
 
 
-
 def parse_args(args):
     """
     Parse arguments from command line.
@@ -569,12 +563,3 @@ def run_HSDMIX(args):
 
     return None
     
-   
-    # # NOTE: To find the array index of the compound we are looking for
-    # IEX.names.tolist().index('NITRATE')
-    
-    # NOTE: to change separation factor for fitting
-    # IEX.ions.at['NITRATE', 'alpha'] = 10.0
-    
-    # NOTE: To change film transfer for fitting
-    # IEX.params['kL'] = 3e-3
