@@ -7,9 +7,12 @@ Created on Wed May 20 08:10:32 2020
 
 ###### 
 
+
+
 import pandas as pd
 import numpy as np
 import sys
+
 
 
 def lowerEntries(item):    
@@ -27,7 +30,6 @@ def lowerEntries(item):
         lower_item = item
     return lower_item
 
-
 def lowercaseData(data):
     '''
         Returns: lowercase pandas dataframe;
@@ -37,7 +39,6 @@ def lowercaseData(data):
     
     lower_df = data.applymap(lowerEntries)
     return lower_df
-
 
 def lowercaseIndex(data):
     '''
@@ -101,6 +102,7 @@ def conv_units(u_in, u_out, u_list, u_coef, label, caller):
     factor = l_factor[u_in_pos,u_out_pos]    
     
     return factor, u_in, u_out
+
 
 
 def conv_length(u_in, u_out, label, caller):
@@ -176,7 +178,6 @@ def conv_vel(u_in, u_out, label, caller):
     
     return cv, u_in, u_out
 
-
 def conv_dens(u_in, u_out, label, caller):
     vars_lst = [u_in, u_out]
     wght = []
@@ -202,7 +203,6 @@ def conv_dens(u_in, u_out, label, caller):
     cv = w_f/v_f
     
     return cv, u_in, u_out
-
 
 def conv_area(u_in, u_out, label, caller):
     units = ['m2', 'cm2', 'mm2', 'ft2', 'in2']
@@ -236,6 +236,7 @@ def conv_area_per_time(u_in, u_out, label, caller):
     return cv, u_in, u_out
     
     
+    
 def conv_fr_to_vel(u_in, u_out, diam, diam_u, label, caller):
 
     if '/' in u_out:
@@ -253,12 +254,13 @@ def conv_fr_to_vel(u_in, u_out, diam, diam_u, label, caller):
     return cv, u_in, u_out
 
 
-def conv_conc(u_in, u_out, MW, val, label, caller):
+def conv_conc(u_in, u_out, label, caller, **kwargs):
+    MW = kwargs.get('MW', 1.)
+    val = kwargs.get('val', 1.)
     units = ['meq', 'mg', 'ug', 'ng', 'mgN', 'mgC']
     coefs = [1, MW*val, 1000.*MW*val, 1.0e6*MW*val, 14.001*val, 12.011*val]
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     return cv, u_in, u_out
-
 
 def conv_weight(u_in, u_out, label, caller):
     units = ['kg', 'g', 'mg', 'ug', 'ng', 'lbs', 'lb', 'lbm', 'oz']
@@ -266,8 +268,7 @@ def conv_weight(u_in, u_out, label, caller):
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     return cv, u_in, u_out
 
-
-def conv_capacity(u_in, u_out, label, caller):
+def conv_capacity_mass(u_in, u_out, label, caller, **kwargs):
     vars_lst = [u_in, u_out]
     conc = []
     wght = []
@@ -281,13 +282,39 @@ def conv_capacity(u_in, u_out, label, caller):
             wght.append('min')
         else:
             print('else')
-    c_f, u_in_c, u_out_c = conv_conc(conc[0],conc[1], label, caller)
+    c_f, u_in_c, u_out_c = conv_conc(conc[0],conc[1], label, caller, **kwargs)
     w_f, u_in_w, u_out_w = conv_weight(wght[0], wght[1], label, caller)
     
     cv = c_f/w_f
     u_in = u_in_c + '/' + u_in_w
     
     return cv, u_in, u_out
+
+def conv_capacity_vol(u_in, u_out, label, caller, **kwargs):
+    vars_lst = [u_in, u_out]
+    conc = []
+    vol = []
+    for var in vars_lst:
+        if '/' in var:
+#            print(var.split('/'))
+            conc.append(var.split('/')[0])
+            vol.append(var.split('/')[1])
+        elif 'gpm' in var:
+            conc.append('gal')
+            vol.append('min')
+        else:
+            print('else')
+    c_f, u_in_c, u_out_c = conv_conc(conc[0],conc[1], label, caller, **kwargs)
+    v_f, u_in_v, u_out_v = conv_volume(vol[0], vol[1], label, caller)
+    
+    cv = c_f/v_f
+    u_in = u_in_c + '/' + u_in_v
+    
+    return cv, u_in, u_out
+
+cap_factor = conv_capacity_mass('meq/g','meq/kg', '','')
+
+#cap_factor = conv_capacity_vol('meq/ml','meq/L', 10., 1.,'','')
 
     
 def conv_database(data_in, u_in, u_out, conv_fn, MW, val):
@@ -307,11 +334,13 @@ def conv_database(data_in, u_in, u_out, conv_fn, MW, val):
     '''
     for u in u_in.keys():
 #        tmp_conv_fn = conv_fn[u]
-        cf, u_in[u], u_out[u] = conv_fn(u_in[u], u_out[u], MW[u], val[u], u, u)
+        args = {'MW':MW[u], 'val':val[u]}
+        cf, u_in[u], u_out[u] = conv_fn(u_in[u], u_out[u], u, u, **args)
         data_in[u] *= cf
         
     return data_in, u_in, u_out
 
+     
 
 def conv_params(data_in, u_in, u_out, conv_fn):
     '''
@@ -327,6 +356,7 @@ def conv_params(data_in, u_in, u_out, conv_fn):
             ***the keys must be the same for all dictionaries***
     '''        
     for u in u_in.keys():
+
         tmp_conv_fn = conv_fn[u]
         cf, u_in[u], u_out[u] = tmp_conv_fn(u_in[u], u_out[u], u, u)
         data_in.loc[u, 'value'] *= cf
@@ -334,7 +364,25 @@ def conv_params(data_in, u_in, u_out, conv_fn):
         
     return data_in
 
-        
+def conv_the_same(u_in, u_out, label, caller):
+    cv = 1.
+    return cv, u_in, u_out
+
+def get_Qm_from_Qf(RHOP, EBED, Qf):
+    '''
+    Retruns:
+        Qm : numerical value of resin capacity
+    Paremeters:
+        Qf : numerical value of filter capacity
+        EBED : numerical value of volume void fraction
+        RHOP : numerical value of particle density
+    '''
+    
+    Qm = Qf/(1-EBED)/RHOP
+    
+    return Qm
+
+
 def conv_params_data(data):
     '''    
         Returns:
@@ -358,27 +406,30 @@ def conv_params_data(data):
     
     u_out = {'time':'s', 'rhop':'g/ml', 'rb':'cm', 'kl':'cm/s', \
              'ds':'cm2/s', 'v':'cm/s', 'qm':'meq/g', 'l':'cm', \
-             'flrt':'cm3/s', 'diam':'cm'}
+             'flrt':'cm3/s', 'diam':'cm', 'qf':'meq/ml', 'ebed':None, \
+             'nz':None, 'nr':None}
     
     correct_idx = {'rhop':'RHOP', 'qm':'Qm', 'ebed':'EBED', 'l':'L', 'kl':'kL',\
-                   'ds':'Ds'}
+                   'ds':'Ds', 'qf':'Qf'}
     
     u_fn = {'time':conv_time, 'rhop':conv_dens, 'rb':conv_length, 'kl':conv_vel, \
-             'ds':conv_area_per_time, 'v':conv_vel, 'am':conv_capacity , \
-             'flrt':conv_vol_per_time, 'l':conv_length, 'diam':conv_length}
-    
-    params_pop = ['qm', 'ebed', 'nz', 'nr']
+             'ds':conv_area_per_time, 'v':conv_vel, 'qm':conv_capacity_mass, \
+             'flrt':conv_vol_per_time, 'l':conv_length, 'diam':conv_length, \
+             'qf':conv_capacity_vol, 'ebed':conv_the_same, 'nz':conv_the_same, \
+             'nr':conv_the_same}
     
     
     for p in params_Dct.keys():
-        if p not in params_pop:
-            u_in[p] = params_Dct[p]['units']
-            u_out[p] = u_out[p]
-            u_fn[p] = u_fn[p]
+        u_in[p] = params_Dct[p]['units']
+        u_out[p] = u_out[p]
+        u_fn[p] = u_fn[p]
 
     
     params_out = conv_params(low_data, u_in, u_out, u_fn)
     
+    ####################################
+    # check for velocity in parameters #
+    ####################################
     
     if 'v' not in params_out.index:
         flrt_f, u_in_fr, u_out_fr = conv_fr_to_vel(low_data.loc['flrt','units'], 'cm/s', \
@@ -395,9 +446,30 @@ def conv_params_data(data):
         params_out = params_out
         if 'flrt' in params_out.index:
             print('The linear velocity has been used instead of the flow rate.')
-            
+    
+    #############################
+    # check for Qm in parmeters #
+    #############################
+    
+    if 'qm' not in params_out.index:
+        Qm = get_Qm_from_Qf(low_data.loc['rhop','value'], low_data.loc['ebed','value'], \
+                            low_data.loc['qf','value'])
+        
+        qm_row = pd.DataFrame([[Qm, 'meq/g']], columns = ['value', 'units'], \
+                             index = ['qm'])
+        
+        params_out = params_out.append(qm_row)      
+    else:
+        params_out = params_out
+        if 'qf' in params_out.index:
+            print('The resin capacity by mass has been used for caluclating the overall capacity.')
+       
     for cp in correct_idx.keys():
         params_out.rename(index={cp:correct_idx[cp]}, inplace=True)
  
     return params_out
+
+
+
+
 
