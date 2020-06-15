@@ -258,7 +258,7 @@ def conv_conc(u_in, u_out, label, caller, **kwargs):
     MW = kwargs.get('MW', 1.)
     val = kwargs.get('val', 1.)
     units = ['meq', 'mg', 'ug', 'ng', 'mgN', 'mgC']
-    coefs = [1, MW*val, 1000.*MW*val, 1.0e6*MW*val, 14.001*val, 12.011*val]
+    coefs = [1, MW/val, 1000.*MW/val, 1.0e6*MW/val, 14.001/val, 12.011/val]
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     return cv, u_in, u_out
 

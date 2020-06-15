@@ -40,6 +40,14 @@ class HSDMIXTestSuite(unittest.TestCase):
         t, u = IEX.solve(t_eval=hours, const_Cin=True)
  
         assert np.allclose(u[0,0,-1,:], u_check, rtol=0.01)
+
+    def test_regress_alt(self):
+        """ Alternate Regression Test """
+        IEX = hsdmix.HSDMIX(DATA_DIR+'/reg_test_input_alt.xlsx')
+        t, u = IEX.solve(t_eval=hours, const_Cin=True)
+ 
+        assert np.allclose(u[0,0,-1,:], u_check, rtol=0.01)
+
    
 
 if __name__ == '__main__':
