@@ -114,8 +114,8 @@ def conv_length(u_in, u_out, label, caller):
 
 
 def conv_volume(u_in, u_out, label, caller):
-    units = ['m3','cm3','ml','L','mm3','gal','ft3','in3','cuf']
-    coefs = [1., 1.0e6, 1.0e6, 1.0e3, 1.0e9, 264.172, 35.3147, 61023.801579099, 35.3147]
+    units = ['m3','cm3','ml','L','mm3','gal','ft3','in3','cuf', 'l']
+    coefs = [1., 1.0e6, 1.0e6, 1.0e3, 1.0e9, 264.172, 35.3147, 61023.801579099, 35.3147, 1.0e3]
     cv, u_in, u_out = conv_units(u_in,u_out, units, coefs, label, caller)
     
     return cv, u_in, u_out
@@ -368,19 +368,44 @@ def conv_the_same(u_in, u_out, label, caller):
     cv = 1.
     return cv, u_in, u_out
 
-def get_Qm_from_Qf(RHOP, EBED, Qf):
+def Q_calc(**kwargs):
     '''
-    Retruns:
-        Qm : numerical value of resin capacity
+    Returns:
+        Q (capacity by volume)
+    Parameters:
+        **kwargs : keyword argiments as a dictionary
+    
+    *** takes Qm and RHOP, or Qf and EBED to calculate Q ***
+    '''
+    
+    if 'qm' in kwargs and 'rhop' in kwargs:
+        Qm = kwargs.get('qm', None)
+        RHOP = kwargs.get('rhop', None)
+        Q = Qm * RHOP
+    elif 'qf' in kwargs and 'ebed' in kwargs:
+        Qf = kwargs.get('qf', None)
+        EBED = kwargs.get('ebed', None)
+        Q = Qf/(1-EBED)
+    else:
+        print('WARNING: Missing parameters! \n' \
+              'Resin capacity by volume cannot been calculated.')
+    
+    return Q
+
+
+def dict_from_data(data, val):
+    '''
+    Returns:
+        dictionary
     Paremeters:
-        Qf : numerical value of filter capacity
-        EBED : numerical value of volume void fraction
-        RHOP : numerical value of particle density
+        data : pandas dataframe
+        val : dataframe column name as a string
     '''
-    
-    Qm = Qf/(1-EBED)/RHOP
-    
-    return Qm
+    data_dict = {}
+    for index, row in data.iterrows():
+        data_dict[index] = data.loc[index, val]
+        
+    return data_dict
 
 
 def conv_params_data(data):
@@ -401,12 +426,12 @@ def conv_params_data(data):
     
     
     params_Dct = low_data.to_dict('index')
-    
+
     u_in = {}
     
     u_out = {'time':'s', 'rhop':'g/ml', 'rb':'cm', 'kl':'cm/s', \
-             'ds':'cm2/s', 'v':'cm/s', 'qm':'meq/g', 'l':'cm', \
-             'flrt':'cm3/s', 'diam':'cm', 'qf':'meq/ml', 'ebed':None, \
+             'ds':'cm2/s', 'v':'cm/s', 'qm':'meq/kg', 'l':'cm', \
+             'flrt':'cm3/s', 'diam':'cm', 'qf':'meq/L', 'ebed':None, \
              'nz':None, 'nr':None}
     
     correct_idx = {'rhop':'RHOP', 'qm':'Qm', 'ebed':'EBED', 'l':'L', 'kl':'kL',\
@@ -447,29 +472,19 @@ def conv_params_data(data):
         if 'flrt' in params_out.index:
             print('The linear velocity has been used instead of the flow rate.')
     
-    #############################
-    # check for Qm in parmeters #
-    #############################
+    Q_dict = dict_from_data(params_out, 'value')
+
+    Q = Q_calc(**Q_dict)
     
-    if 'qm' not in params_out.index:
-        Qm = get_Qm_from_Qf(low_data.loc['rhop','value'], low_data.loc['ebed','value'], \
-                            low_data.loc['qf','value'])
-        
-        qm_row = pd.DataFrame([[Qm, 'meq/g']], columns = ['value', 'units'], \
-                             index = ['qm'])
-        
-        params_out = params_out.append(qm_row)      
-    else:
-        params_out = params_out
-        if 'qf' in params_out.index:
-            print('The resin capacity by mass has been used for caluclating the overall capacity.')
+    q_row = pd.DataFrame([[Q, 'meq/L']], columns = ['value', 'units'], \
+                             index = ['Q'])
+    
+    params_out = params_out.append(q_row)    
+    
        
     for cp in correct_idx.keys():
         params_out.rename(index={cp:correct_idx[cp]}, inplace=True)
  
     return params_out
-
-
-
 
 

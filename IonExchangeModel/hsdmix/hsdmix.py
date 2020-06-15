@@ -262,8 +262,8 @@ class HSDMIX:
         
         ### Alias some parameters for convenience ###
 
-        Qm = np.float64(self.params['Qm']) # Resin Capacity by mass (meq/g)
-        RHOP = np.float64(self.params['RHOP']) # apparent resin density (g/mL)
+#        Qm = np.float64(self.params['Qm']) # Resin Capacity by mass (meq/kg)
+#        RHOP = np.float64(self.params['RHOP']) # apparent resin density (g/mL)
         EBED = np.float64(self.params['EBED']) # bed porosity
         L = np.float64(self.params['L']) # Column Length (cm)
         v = np.float64(self.params['v']) # linear flow velocity (cm/s)
@@ -272,16 +272,17 @@ class HSDMIX:
         Ds = np.float64(self.params['Ds']) # overall resin phase diffusion coefficient (cm**2/s)
         kL =  np.float64(self.params['kL'])   # overall film transfer coefficient (cm/s)
         rb = np.float64(self.params['rb']) # resin radius (cm)
-        
+        Q = np.float64(self.params['Q']) # Resin capacity by volume (meq/L)
+
         
         ##########################
         ### DERIVED PARAMETERS ###
         ##########################
         
-        mL2L = 1./1000. # mL to L
+#        mL2L = 1./1000. # mL to L
         
         # XXX: Might want some of these to be available after solving
-        Q = RHOP * Qm / mL2L # Resin capacity by volume 
+#        Q = RHOP * Qm / mL2L # Resin capacity by volume 
         CT = Cin.sum() # XXX: Need to modify for time varying feed concentrations
         DGT = (1 - EBED) / EBED * Q / CT  # overall distribution coefficient :XXXX:
         tau = L * EBED / v # tracer residence time
