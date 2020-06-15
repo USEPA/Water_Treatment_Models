@@ -22,8 +22,6 @@ TODO: Option to calculate film transfer coefficient from correlation.
 
 TODO: Clean, test, double check bicarb/alka output
 
-TODO: Filter capacity input specification
-
 TODO: Consider alternate strategies for OCFE (have default NE=1?)
       We probably want to restructure colloc.py to just always do OCFE
       in a way that collapses down to OCM when NE=1
@@ -110,7 +108,6 @@ class HSDMIX:
         self.params = conv_params_data(self.params)
 
         self.params = self.params.drop('units', axis=1)['value'] #drops unused column
-        ### XXXX: We need these for output
         
         self.ions = pd.read_excel(xls, \
                                   sheet_name='ions',\
@@ -126,9 +123,7 @@ class HSDMIX:
         
         
         self.Cin_temp = self.Cin_t.copy(deep=False)
-        
-#        self.Cin_temp = lowerEntries(self.Cin_temp)
-        
+       
         self.time_mult = self.params['time']        
         
         self.Cin_dict = self.ions.to_dict('index')
@@ -252,7 +247,6 @@ class HSDMIX:
               note that nz must be an odd number.
         """
         
-        # XXX: We are going to need unit conversions in time and concentration
         Cin = [] # initial inlet concentrations
         for name in self.names:
             Cin.append(self.Cin_t[name].values[0])
@@ -262,8 +256,6 @@ class HSDMIX:
         
         ### Alias some parameters for convenience ###
 
-#        Qm = np.float64(self.params['Qm']) # Resin Capacity by mass (meq/kg)
-#        RHOP = np.float64(self.params['RHOP']) # apparent resin density (g/mL)
         EBED = np.float64(self.params['EBED']) # bed porosity
         L = np.float64(self.params['L']) # Column Length (cm)
         v = np.float64(self.params['v']) # linear flow velocity (cm/s)
@@ -279,10 +271,6 @@ class HSDMIX:
         ### DERIVED PARAMETERS ###
         ##########################
         
-#        mL2L = 1./1000. # mL to L
-        
-        # XXX: Might want some of these to be available after solving
-#        Q = RHOP * Qm / mL2L # Resin capacity by volume 
         CT = Cin.sum() # XXX: Need to modify for time varying feed concentrations
         DGT = (1 - EBED) / EBED * Q / CT  # overall distribution coefficient :XXXX:
         tau = L * EBED / v # tracer residence time
@@ -296,7 +284,7 @@ class HSDMIX:
         
         Jac_sp = approx_Jac_struc(nr, NION, nz) # approximate structure of jacobian
         
-        # XXX: basically an enumeration. Probably should do this the Pythonic way
+        # Enumeration to keep track of indexes. 
         LIQUID = 0
         RESIN = 1
         PRESAT = 0
@@ -498,7 +486,6 @@ class HSDMIX:
         T_eval = None
         if np.any(t_eval):  # specific times requested
             T_eval = t_eval * to_T
-            # XXX: Make sure this works with units
         
         start_time = timeit.default_timer()
         self.result = solve_ivp(diffun, Tvals, u0, method='BDF',
