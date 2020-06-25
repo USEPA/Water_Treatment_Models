@@ -21,7 +21,7 @@ def build_collocation(nr, nz):
     
     Returns
     Az = axial first derivative operator
-    Br = radial second derivatve operator
+    Br = 1D radial Laplacian operator for a sphere
     Wr = vector of radial quadrature weights
     """
 
@@ -50,7 +50,7 @@ def build_collocation(nr, nz):
     Az = np.dot(Cmat, Qinv)
     
     ###############################################################
-    # Make Radial second derivative Br, and quatrature weights Wr #
+    # Make sphere Laplacian Br, and quatrature weights Wr         #
     ###############################################################
     
     n_pts = nr # total number of collocation points
