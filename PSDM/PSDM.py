@@ -1299,7 +1299,7 @@ class PSDM():
 # end run_all()
 
     def run_all_smart(self, plot=False, save_file=True, 
-                      file_name='PSDM_', pm=0, num=11, des_xn = 0.025):
+                      file_name='PSDM_', pm=0, num=11, des_xn=0.025):
         '''
         Smart Optimizer for K & 1/n fitting.
         Precalculates the effective fouling based on breakthrough time.
@@ -1375,7 +1375,7 @@ class PSDM():
             print(compound, ' running')
             k_val = self.k_data[compound]['K']
             q_val = self.k_data[compound]['q']
-            brk_day = self.k_data[compound]['brk'] * min_per_day
+            brk_day = self.k_data[compound]['brk'] * self.t_mult
             
             comp_fouling = self.fouling_dict[compound]
             integral, _ = quad(comp_fouling, 0, brk_day) #ignore error from quad
