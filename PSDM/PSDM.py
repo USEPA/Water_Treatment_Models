@@ -1591,6 +1591,9 @@ class PSDM():
             need to add save file handler. 
             currently not implimented
             '''
+            writer = pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx')
+            self.k_data.to_excel(writer, 'Sheet1')
+            writer.save()
             pass
         
         #reset original values
