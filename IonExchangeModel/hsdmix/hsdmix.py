@@ -22,12 +22,6 @@ TODO: Option to calculate film transfer coefficient from correlation.
 
 TODO: Clean, test, double check bicarb/alka output
 
-TODO: Consider alternate strategies for OCFE (have default NE=1?)
-      We probably want to restructure colloc.py to just always do OCFE
-      in a way that collapses down to OCM when NE=1
-
-TODO: Maybe: Add option to use method="Radau" in solve_ivp to combat oscillations.
-
 XXX: Needs a way to specify max_step in solve_ivp to avoid missing influent features
      (NOTE: t_eval doesn't solve this problem. It just interpolates . . .)
 
@@ -318,9 +312,7 @@ class HSDMIX:
         ##############################
         ### ORTHOGONAL COLLOCATION ###
         ##############################
-        if nz > 19: # polynomial becomes impossible to handle in OCM
-            print('NOTE: nz > 19, switching to OCFE mode.')
-            OCFE = True
+
         rootsz, Az, rootsr, Br, Wr = build_collocation(nr, nz)
         if OCFE:
             if not nz % 2: # nz is even
@@ -340,7 +332,6 @@ class HSDMIX:
         u[LIQUID, PRESAT, 1:] = Cin.sum() # column initially full of presat solution?
         u[RESIN:, PRESAT, :] = Q  # resin initially loaded with PRESAT
 
-        
         u0 = u.reshape(NEQ)  # initial concentration vector for solve_ivp call
 
         
