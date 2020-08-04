@@ -113,7 +113,8 @@ class HSDMIX:
         self.Cin_t = pd.read_excel(xls, \
                                    sheet_name='Cin',\
                                    header=[0], \
-                                   index_col = [0])
+                                   index_col = [0],
+                                   dtype=np.float64)
         
         
         self.Cin_temp = self.Cin_t.copy(deep=False)
