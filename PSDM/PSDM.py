@@ -619,7 +619,7 @@ class PSDM():
            
             ds_v = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn)
             if water_type != 'Organic Free':
-                ds_v /= 1e6
+                ds_v /= 1e10 #1e6
 
             d = ds_v/dp_v
             
@@ -714,7 +714,8 @@ class PSDM():
                 
                 ww = wr[:nd]@bb
 
-                ydot[:nd,:] = bb
+                # ydot[:nd,:] = bb
+                ydot[:nd,1:] = bb[:, 1:]
             
                 ydot[nc-1][0] = (stdv*dgI*(cinfl - cpore[nc-1][0]) - ww[0])/\
                                 wr[nc-1] #iii
@@ -725,7 +726,7 @@ class PSDM():
                 ydot[-1,1:] = (-dgt*(az[:,0]*cinfl + aau) - 3.* cbs)[1:]  #dgt was changed from dg1  
                 ydot = ydot.reshape((nc+1)*(mc))
                 return ydot
-            
+
             try:
                 y = solve_ivp(diffun,\
                                 (0, ttol),\
@@ -1693,11 +1694,12 @@ class PSDM():
             # #converts K to (umole/g)(L/umole)**(1/n), assumes units of (ug/g)(L/ug)**(1/n)
             #==============================================================================
             molar_k = (k_v / mw / ((1. / mw)**xn_v))[self.compounds]
+
             xni = 1./xn_v
             
             ds_v = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn_v)
             if water_type != 'Organic Free':
-                ds_v /= 1e6  #original code =1e-30, but this caused instability
+                ds_v /= 1e10 #1e6  #original code =1e-30, but this caused instability
 
             d = (ds_v/dp_v)[self.compounds]
             
@@ -1848,7 +1850,8 @@ class PSDM():
                 ww2 = np.matmul(wr_A[:,:nd].reshape((self.num_comps,1,nd)),
                                 bb2)
                 
-                ydot2[:,:nd,:] = bb2
+                # ydot2[:,:nd,:] = bb2
+                ydot2[:,:nd,1:] = bb2[:,:,1:]
                 
                 num = (cinfl - cpore2[:,nc-1,0]).reshape(TwoDSize)
                 num = np.multiply(num, stdv_dgI)
@@ -1888,7 +1891,7 @@ class PSDM():
                             y0, \
                             method=self.solver,\
                             jac_sparsity=self.jac_sparse,\
-                            max_step=tstep/3.,\
+                            # max_step=tstep/3.,\
                             )
             
             # defines interpolating function of predicted effluent
