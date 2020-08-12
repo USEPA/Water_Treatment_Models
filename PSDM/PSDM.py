@@ -1820,6 +1820,7 @@ class PSDM():
 
                 # trying to eliminate for loops
                 z2 = np.multiply(ym_vA, y0tmp[:,:nc,:mc])
+                z2[z2<0] = 0.
                 qte2 = np.tile(z2.sum(axis=0), ThreeDSize)  #total mass on carbon
                 yt0_2 = np.multiply(xni_vA, z2)
                 yt0_2 = np.tile(yt0_2.sum(axis=0), ThreeDSize) #liquid phase in equilibrium#yt0_c
