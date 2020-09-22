@@ -5,7 +5,7 @@ Tools in this repository:
 1. Adsorption Model for Granular Activated Carbon (PSDM Folder)
 2. Ion Exchange Model (IonExchangeModel Folder)
 
-Both tools are programmed in Python. Additional resources and information associated with either can be found in their respective folders. These tools focus on predicting water treatment unit operation effectiveness, specifically how well treatment technologies (Granular Activated Carbon and Ion Exchange Resis) will work for removing contaminants.
+Both tools are programmed in Python. Additional resources and information associated with either can be found in their respective folders. These tools focus on predicting water treatment unit operation effectiveness, specifically how well treatment technologies (Granular Activated Carbon and Ion Exchange Resins) will work for removing contaminants.
 
 # Status 
 All code in this repository is being provided in a "draft" state and has not been reviewed or cleared by US EPA. This status will be updated as models are reviewed.
