@@ -179,10 +179,13 @@ def process_input_file(filename, data_sheet='data',\
     
     #moves some of the content from __init__ of PSDM
     if 'time' in c_data.index:
-        if c_data['value']['time'] == 'days':
+        if c_data['value']['time'] == 'days' or \
+           c_data['value']['time'] == 'day':
             column_data.loc['time'] = 'days'
             column_data.loc['t_mult'] = min_per_day
-        elif c_data['value']['time'] == 'hour':
+        elif c_data['value']['time'] == 'hour' or \
+             c_data['value']['time'] == 'hr' or \
+             c_data['value']['time'] == 'hrs':
             column_data.loc['time'] = 'hour'
             column_data.loc['t_mult'] = 60. #min_per_hour
         elif c_data['value']['time'] == 'min':
@@ -493,7 +496,7 @@ foul_params = {'water':{'Organic Free':[1., 0., 0., 0.],
                                     'NafionBP2': [1.2, -0.2],
                                     'Ave': [1.2, -0.2]} 
                            }}
-
+#Update PFHpS
 
 # =============================================================================
 # Helper Functions
