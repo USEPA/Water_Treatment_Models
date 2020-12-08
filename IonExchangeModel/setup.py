@@ -16,9 +16,9 @@ with open("README.md", "rb") as f:
 
 setup(
     name = "ion-exchange-models",
-    packages = ["hsdmix"],
+    packages = ["ixpy",],
     entry_points = {
-        "console_scripts": ['hsdmix = hsdmix.__main__:main']
+        "console_scripts": ['ixpy = ixpy.__main__:main']
         },
     version = "0.1.0",
     description = "Ion Exchange Kinetic Models",

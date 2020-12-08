@@ -9,6 +9,7 @@ Run script for ixpy models
 
 import argparse
 from .hsdmix import HSDMIX
+from .psdmix import PSDMIX
 
 
 def parse_args(args):
@@ -19,7 +20,8 @@ def parse_args(args):
     -------
     Argument object to pass to run_HSDMIX
     """
-    parser = argparse.ArgumentParser(prog='hsdmix')
+    parser = argparse.ArgumentParser(prog='ixpy')
+    parser.add_argument('mode', choices=['hsdm', 'psdm'])
     parser.add_argument('input_fname')
     parser.add_argument('output_fname')
     parser.add_argument('-t', '--t_unit')
@@ -28,7 +30,7 @@ def parse_args(args):
     return parsed_args
 
 
-def run_HSDMIX(args):
+def run_ixpy(args):
     input_fname = args.input_fname
     output_fname = args.output_fname
     option_dict = {}
@@ -37,7 +39,11 @@ def run_HSDMIX(args):
     if args.c_unit:
         option_dict.update({'units':args.c_unit})
         
-    IEX = HSDMIX(input_fname)
+    if args.mode == 'hsdm':
+        IEX = HSDMIX(input_fname)
+    elif args.mode == 'psdm':
+        IEX = PSDMIX(input_fname)
+
     IEX.solve()
     IEX.save_results(output_fname, **option_dict)
 

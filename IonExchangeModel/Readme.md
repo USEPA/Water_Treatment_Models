@@ -8,17 +8,17 @@ For an overview of ion exchange column modeling, consult:
 
 For details on the numerical method of solution (Orthogonal Collocation), consult Crittenden, J. C., Hutzler, N. J., Geyer, D. G., Oravitz, J. L., & Friedman, G. (1986). Transport of organic compounds with saturated groundwater flow: Model development and parameter sensitivity. Water Resources Research, 22(3), 271-284.
 
-## HSDMIX
-Homogeneous Surface Diffusion Model (HSDM) for ion exchange (IX) in fixed-bed columns. An example input file and use case can be found in the test folder.
+## IXPY
+Contains a Homogeneous Surface Diffusion Model (HSDM) and a Pore Surface Diffusion Model (PSDM) for ion exchange (IX) in fixed-bed columns. An example input file and use case can be found in the test folder.
 
-Provided the dependencies in [requirements.txt](requirements.txt) are satisfied, this model can be run from the command line without being installed:
+Provided the dependencies in [requirements.txt](requirements.txt) are satisfied, the models can be run from the command line without being installed:
 ```
-python -m /path/to/hsdmix input_file output_file
+python -m /path/to/ixpy {hsdm or psdm} input_file output_file
 ```
 
-After installation, the HSDM model can be run without specifying the path to the hsdmix module:
+After installation, the models can be run without specifying the path to the hsdmix module:
 ```
-python -m hsdmix input_file output_file
+python -m ixpy {hsdm or psdm} input_file output_file
 ```
 
 # Testing
