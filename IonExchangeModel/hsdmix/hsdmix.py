@@ -29,7 +29,6 @@ XXX: Needs a way to specify max_step in solve_ivp to avoid missing influent feat
 @authors: Jonathan Burkhardt, Boris Datsov, Levi Haupert
 """
 
-import argparse
 import timeit
 
 import numpy as np
@@ -511,35 +510,3 @@ class HSDMIX:
         return (t, u)
 
 
-def parse_args(args):
-    """
-    Parse arguments from command line.
-
-    Returns
-    -------
-    Argument object to pass to run_HSDMIX
-    """
-    parser = argparse.ArgumentParser(prog='hsdmix')
-    parser.add_argument('input_fname')
-    parser.add_argument('output_fname')
-    parser.add_argument('-t', '--t_unit')
-    parser.add_argument('-c', '--c_unit')
-    parsed_args = parser.parse_args(args)
-    return parsed_args
-
-
-def run_HSDMIX(args):
-    input_fname = args.input_fname
-    output_fname = args.output_fname
-    option_dict = {}
-    if args.t_unit:
-        option_dict.update({'period':args.t_unit})
-    if args.c_unit:
-        option_dict.update({'units':args.c_unit})
-
-    IEX = HSDMIX(input_fname)
-    IEX.solve()
-    IEX.save_results(output_fname, **option_dict)
-
-    return None
-    

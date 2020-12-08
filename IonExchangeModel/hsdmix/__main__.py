@@ -2,7 +2,7 @@
 
 import sys
 
-from .hsdmix import run_HSDMIX, parse_args
+from .runner import run_HSDMIX, parse_args
 
 def main():
     args = parse_args(sys.argv[1:])
