@@ -154,7 +154,7 @@ class HSDMIX:
                 self.C_out2['BICARBONATE'] = (self.C_out2['ALKALINITY'] - 5. * 10 **pH_exp)/\
                                             (1. + 0.94 * 10**pH_exp)
             else:
-                print('Error! No BICARBONATE or ALKALINITY concentration defined')
+                print('Warning: No BICARBONATE or ALKALINITY concentration defined.')
         
         #clean up un needed columns        
         if 'ALKALINITY' in self.C_out2.columns:
@@ -407,8 +407,9 @@ class HSDMIX:
             u[RESIN:, PRESAT, :] = Q - (ndv * Q / 1e3)  
             
         else:
-            print('No divalent ions in input. Interpreting Kxc as separation factor.')
             calc_Ceq = calc_Ceq_mv
+            if not quiet:
+                print('No divalent ions in input. Interpreting Kxc as separation factor.')
         
         
         ###########################
