@@ -340,7 +340,7 @@ for comp in compounds:
     # K would not be expected to be lower than 1, but upper bound of 3 to 4 may 
     # be sufficient to capture any real values'''
     # column.run_all()
-    # column.run_all(optimizer='brute') #run only this line or the line above, not both
+    # column.run_all(optimize='brute') #run only this line or the line above, not both
     # print(column.k_data) # best fits are stored back to column.k_data
     # '''
     # run_all() by default uses a multi-staged brute force approach
