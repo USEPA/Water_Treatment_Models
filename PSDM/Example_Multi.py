@@ -125,23 +125,15 @@ for i in all_results.keys():
     except:
         pass
         
-        
-        
-    # try:'
-        
-    #     plt.plot(idx, all_results3[i].values, color=color[count], linestyle='dashed',
-    #          label=('single-'+i),
-    #          )
-    # except:
-    #     pass
+
     count += 1
     
 plt.legend(loc='upper right')
 plt.title('Multi Component Example')
-plt.ylabel('Concentration (ug/L)')
+plt.ylabel('Concentration ($\mu$g/L)')
 plt.xlabel('Time (days)')
 file_name = '-'.join(compounds)+'_multi.png'
 plt.savefig(file_name, dpi=300)
-# plt.close()
+
     
     

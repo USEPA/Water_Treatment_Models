@@ -50,6 +50,7 @@ import time as ti #time as a variable is used in code, so ti is used
 
 #Read in all associated PSDM functions
 from PSDM_functions import *
+from PSDM_tools import *
 
 class PSDM():
     def __init__(self, column_data, comp_data, rawdata_df, **kw):
@@ -740,6 +741,8 @@ class PSDM():
                 cp_tmp[cp_tmp < 0.] = 0.#sets negative values to 0.
                 # cp_tmp[cp_tmp > np.max(cin)*3.] = np.max(cin)*3. #sets the max to 5x cb0
                 cp = interp1d(y.t, cp_tmp, fill_value='extrapolate') 
+                self.ydot = y.y * cb0 * mw / self.mass_mul
+                self.yt = y.t / tconv / t_mult
             except Exception as e:
                 print('Error produced: ', e,'\n', compound)
                 t_temp = np.linspace(0, ttol, 20)
