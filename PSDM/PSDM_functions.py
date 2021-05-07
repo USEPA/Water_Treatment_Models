@@ -126,6 +126,8 @@ def process_input_file(filename, data_sheet='data',\
     flrt = c_data['value']['flowrate']
     if unit == 'ml/min' or unit == 'cm3/min':
         column_data.loc['flrt'] = flrt * 1.
+    elif unit == 'lpm' or unit == 'l/min':
+        column_data.loc['flrt'] = flrt * 1e3
     elif unit == 'gpm' or unit == 'gal/min':
         column_data.loc['flrt'] = flrt * lpg * 1e3
     elif unit == 'mgd':
