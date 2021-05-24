@@ -689,7 +689,7 @@ class PSDM():
                 extra = t/tconv - idx
                 
                 # #defines the influent concentration at time t
-                cinfl = interp(cinfA[idx: idx+2], extra) # 
+                cinfl = interp1d(cinfA[idx: idx+2], extra) # 
                 
                 z = ym * y0tmp[:nc, :mc] #* ym #updated ym should always be 1 for single comp.
                 qte = z
@@ -700,7 +700,7 @@ class PSDM():
                 # z[qte>0.] = z_c[qte>0.] # should be 1 for single component.
                 q0 = yt0 * xn/ym
 
-                cpore = z_c * q0**xni * interp(foulFA[idx:idx+2], extra) 
+                cpore = z_c * q0**xni * interp1d(foulFA[idx:idx+2], extra) 
                 cpore[np.logical_or.reduce((qte<=0.,\
                                             yt0<=0,\
                                             xni*np.log10(q0)<-20,\
@@ -710,7 +710,7 @@ class PSDM():
                 cbs = stdv*(y0tmp[nc]-cpore_tmp)
                 cbs[0] = 0. 
                 
-                bb = interp(facA[idx:idx+2],extra)*np.dot(bedp, cpore) +\
+                bb = interp1d(facA[idx:idx+2],extra)*np.dot(bedp, cpore) +\
                       np.dot(beds, y0tmp[:nc, :])
                 
                 ww = wr[:nd]@bb
@@ -1817,9 +1817,9 @@ class PSDM():
                 ydot2 = ydot_tmp.copy() 
                 
                 # calculate time varying values
-                cinfl = interp(cinfA[idx:idx+2], extra)
-                foul_fac = interp(foulFA[idx:idx+2], extra).reshape(ThreeDSize)
-                facAv = interp(facA[idx:idx+2], extra).reshape(ThreeDSize)
+                cinfl = interp1d(cinfA[idx:idx+2], extra)
+                foul_fac = interp1d(foulFA[idx:idx+2], extra).reshape(ThreeDSize)
+                facAv = interp1d(facA[idx:idx+2], extra).reshape(ThreeDSize)
 
                 # trying to eliminate for loops
                 z2 = np.multiply(ym_vA, y0tmp[:,:nc,:mc])
