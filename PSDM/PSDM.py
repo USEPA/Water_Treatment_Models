@@ -39,17 +39,22 @@ import pylab as plt
 import numpy as np
 import pandas as pd
 import scipy as sp
-from scipy import special
+# from scipy import special
 from scipy.integrate import quad, solve_ivp
 from scipy.interpolate import interp1d
-from scipy.optimize import minimize
+# from scipy.optimize import minimize
 import multiprocessing as mp
 import time as ti #time as a variable is used in code, so ti is used
 
 # import stopit # used to kill runs that take too long in analyze_all #consider getting rid of stopit....
 
 #Read in all associated PSDM functions
-from PSDM_functions import *
+from PSDM_functions import min_per_day, lpg, spar_Jac, foul_params, kf_calc
+from PSDM_functions import find_minimum_df, tortuosity, calc_solver_matrix
+from PSDM_functions import density, viscosity, recalc_k, generate_grid
+from PSDM_functions import interp, process_input_data, process_input_file
+# from PSDM_functions import *
+# from PSDM_functions import find_minimum_df
 from PSDM_tools import *
 
 class PSDM():
