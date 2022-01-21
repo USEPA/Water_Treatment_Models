@@ -469,7 +469,7 @@ foul_params = {'water':{'Organic Free':[1., 0., 0., 0.],
                         'Portage': [0.510, -9.21e-7, 0.490, -2.80e-5],
                         'Karlsruhe': [0.65, -6.71e-7, 0.35, -1.00e-4],
                         'Wausau': [0.83, -9.12e-7, 0.17, -2.65e-4],
-                        'Haughton': [0.66, -1.55e-7, 0.34, -7.29e-5]}, 
+                        'Houghton': [0.66, -1.55e-7, 0.34, -7.29e-5]}, 
                'chemical':{'halogenated alkanes': [1.2, -0.2],
                            'halogenated alkanes QSPR': [1.22, -0.12],
                            'halogenated alkenes': [1.0 , 0.0],
@@ -480,23 +480,37 @@ foul_params = {'water':{'Organic Free':[1., 0., 0., 0.],
                            'phenols': [0.65, 0.35],
                            'PNAs': [0.32, 0.68],
                            'pesticides': [0., 0.05],
-                           'PFAS': {'PFBA': [1.2, -0.2],
-                                    'PFPeA': [1.2, -0.2],
-                                    'PFHxA': [1.2, -0.2],
-                                    'PFHpA': [1.2, -0.2],
-                                    'PFOA': [1.2, -0.2],
-                                    'PFNA': [1.2, -0.2],
-                                    'PFDA': [1.2, -0.2],
-                                    'PFBS': [1.2, -0.2],
-                                    'PFHxS': [1.2, -0.2],
-                                    'PFOS': [1.2, -0.2],
-                                    'PFMOAA': [1.2, -0.2],
-                                    'PFO2HxA': [1.2, -0.2],
-                                    'PFO3OA': [1.2, -0.2],
-                                    'GenX': [1.2, -0.2],
-                                    'PFO4DA': [1.2, -0.2],
-                                    'NafionBP2': [1.2, -0.2],
-                                    'Ave': [1.2, -0.2]} 
+                           ##### PFAS parameters described in Burkhardt et al., 2022, Journal of Environmental Engineering
+                           ##### volume 148, no. 3, page 04021086:  https://doi.org/10.1061/(ASCE)EE.1943-7870.0001964
+                           'PFAS': {'PFBA': [0.82, 0.12],
+                                    'PFPeA': [0.67, 0.19],
+                                    'PFHxA': [0.55, 0.28],
+                                    'PFHpA': [0.44, 0.36],
+                                    'PFOA': [0.34, 0.44],
+                                    'PFNA': [0.24, 0.53],
+                                    'PFDA': [0.17, 0.61],
+                                    'PFBS': [0.68, 0.24],
+                                    'PFHxS': [0.44, 0.48],
+                                    'PFHpS': [0.34, 0.57],
+                                    'PFOS': [0.25, 0.66],
+                                    'PFMOAA': [0.88, 0.055],
+                                    'PFO2HxA': [0.63, 0.17],
+                                    'PFO3OA': [0.43, 0.27],
+                                    'GenX': [0.50, 0.34],
+                                    'PFO4DA': [0.25, 0.37],
+                                    'NafionBP2': [0.29, 0.63],
+                                    '62FTS': [0.38, 0.62],
+                                    '82FTS': [0.20, 0.79],
+                                    ## Extra, extrapoloated/estimated from above
+                                    'PFPrS': [0.63, 0.14], # linear extrapolation for sulfonated C3
+                                    'PMPA': [0.63, 0.17],  # copied from PFO2HxA, similar #C #F ether
+                                    # special added for QSPR Paper
+                                    'TCE': [1.0, 0.],
+                                    #'PFOS_sp': [1.22, -0.12],
+                                    #'PFOA_sp': [1.22, -0.12],
+                                    #average, do not use generally
+                                    'Ave': [0.45, 0.41]} 
+
                            }}
 #Update PFHpS
 
