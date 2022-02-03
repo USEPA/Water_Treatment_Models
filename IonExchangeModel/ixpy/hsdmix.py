@@ -385,7 +385,7 @@ class HSDMIX:
             cc = -CT
    
             Cc_eq = np.zeros([nz])
-            Cc_eq = (-bb + np.sqrt(bb**2 - 4 * aa * cc))/(2*aa)
+            Cc_eq = 2 * cc / (-bb - np.sqrt(bb**2 - 4 * aa * cc))  
 
             Cc_tile = np.tile(Cc_eq, (NION, 1))
             
@@ -403,8 +403,6 @@ class HSDMIX:
         
         if np.any(valences == 2):
             calc_Ceq = calc_Ceq_dv
-            u[RESIN:, dv_idx, :] = Q/1e3 # so the quadratic formula doesn't explode
-            u[RESIN:, PRESAT, :] = Q - (ndv * Q / 1e3)  
             
         else:
             calc_Ceq = calc_Ceq_mv
