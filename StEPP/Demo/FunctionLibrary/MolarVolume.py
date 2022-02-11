@@ -12,11 +12,11 @@ def MolarVolume(Chemical):
     ChemicalProperties = df[Chemical]
     #Column for Specific Chemical
     
-#    ChemicalMass = ChemicalProperties[0]
-#    LiqDen = LD(Chemical)
+    ChemicalMass = ChemicalProperties[0]
+    LiqDen = LD(Chemical)
     
-#    Volume = ChemicalMass/LiquidDensity
+    Volume = ChemicalMass/LiquidDensity
 
-#    return Volume
+    return Volume
 
 print(MolarVolume("Water"))
