@@ -1,0 +1,12 @@
+﻿Property,Water,CO2,H202,O2
+A,1,1,1,1
+B,1,1,1,1
+C,2,2,2,2
+D,3,3,3,3
+E,5,5,5,5
+T,8,8,8,8
+Height,13,13,13,13
+Weight,21,21,21,21
+Shape,Triangle,Square,Pentagon,Hexagon
+Color,Blue,Orange,Teal,Red
+FavoriteBand,Strokes,RageAgainsttheMachine,LedZepplin,Pink Floyd
