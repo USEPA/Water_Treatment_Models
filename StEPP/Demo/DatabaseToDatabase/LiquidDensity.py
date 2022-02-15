@@ -4,6 +4,7 @@ import numpy as np
 
 def GetLDVariables(A, B, C, D, E, T):
     
+    
     df = pd.read_csv('Chemicals.csv')                 #ReadCSVDatabase
 
     df.set_index("Property", inplace=True)
@@ -29,7 +30,10 @@ def GetLDVariables(A, B, C, D, E, T):
     Database = pd.DataFrame(Data)                     #Create a data frame
     Database.to_csv('ChemicalOutput.csv', index = False) #Create CSV file out of Data frame
 
-
+    try:
+        GetLDVariables(A, B, C, D, E, T)
+    except:
+        print('Not found in database')
 
 
 Vars = GetLDVariables("A", "B", "C", "D", "E", "T")
