@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 
-
-def GetLDVariables(A, B, C, D, E, T):
+def GetVPVariables(A, B, C, D, E, T):
     
     try:
         df = pd.read_csv('Chemicals.csv')                 #ReadCSVDatabase
@@ -32,13 +31,13 @@ def GetLDVariables(A, B, C, D, E, T):
 
     except KeyError:
         print('Data not found in database')
-
+        
 Vars = GetLDVariables("A", "B", "C", "D", "E", "T")
-      
-def LiquidDensity(Chemical):
+
+def VapePressure(Chemical):
     
     ab = pd.read_csv('ChemicalOutput.csv')            #Read new CSV file
-   
+    
     ChemicalProperties = ab[Chemical]
     #Column for Specific Chemical
     
@@ -46,15 +45,13 @@ def LiquidDensity(Chemical):
     B = ChemicalProperties[1] #Get B Constant
     C = ChemicalProperties[2] #Get C Constant
     D = ChemicalProperties[3] #Get D Constant
+    E = ChemicalProperties[4] #Get E Constant
     T = ChemicalProperties[5] #Get Temperature
     
-    if B*(1-(T/C)**D) != 0 and C !=0:
-        #Prevent divide by 0
-        
-        LD = A/(B*(1-(T/C))**D)
-        #Formula from 
-        #Physical and Thermodynamic Properties of Pure Chemicals: Data Compilation
+    VP = np.exp(A + (B/T) + C*np.log(T) + D*T**E)
+    #Formula from
+    #Physical and Thermodynamic Properties of Pure Chemicals: Data Compilation
     
-    return LD
+    return VP
 
-print(LiquidDensity("Water"))
+print(VapePressure("Water"))
