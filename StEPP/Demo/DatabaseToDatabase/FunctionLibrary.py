@@ -1,6 +1,38 @@
 import pandas as pd
 import numpy as np
 
+t=5
+
+def GetChemical(chemical):
+    
+    #Read Data
+    ChemicalData = pd.read_csv('Chemicals.csv')
+    
+    #Get Constants
+    #Get Index of Row we want
+    lst = []
+    ChemicalObject = ChemicalData['Chemical']
+    ChemicalList = ChemicalObject.values
+    
+    for i in ChemicalList:
+        lst.append(i)
+    
+    indexer = lst.index(chemical)
+    
+    ChemicalVariableData = ChemicalData.loc[indexer, ['A','B','C','D','E']]
+    
+    #Create Dataframe
+    #Put constants in dataframe_constants
+    
+    ChemicalConstants = pd.DataFrame(ChemicalVariableData)
+    
+    #Assign data for function
+    FormulaConstants = ChemicalVariableData.values
+    
+    return FormulaConstants
+
+
+
 def LiquidDensity(lst):
         
         for i in lst:
@@ -8,7 +40,7 @@ def LiquidDensity(lst):
         #Formula from 
         #Physical and Thermodynamic Properties of Pure Chemicals: Data Compilation
     
-    return LD
+        return LD
 
 
 
