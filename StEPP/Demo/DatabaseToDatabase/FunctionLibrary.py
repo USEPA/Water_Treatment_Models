@@ -1,81 +1,112 @@
 import pandas as pd
 import numpy as np
 
-t=5
 
-def GetChemical(chemical):
+def GetChemical(chemicals):
     
-    #Read Data
+    #Read in Data
     ChemicalData = pd.read_csv('Chemicals.csv')
     
-    #Get Constants
-    #Get Index of Row we want
-    lst = []
-    ChemicalObject = ChemicalData['Chemical']
-    ChemicalList = ChemicalObject.values
     
+    #Define Lists
+    index_list = []
+    lst = []
+    ChemicalList = ChemicalData['Chemical']
+    
+    
+    #Convert ChemicalList from Object to List to make my life easier
     for i in ChemicalList:
         lst.append(i)
+        
     
-    indexer = lst.index(chemical)
+    #For element in chemicals, if element is in ChemicalList (lst), get index
+    #of that element in ChemicalList
+    for i in chemicals:
+        for j in lst:
+            if i==j:
+                index_list.append(lst.index(i))
+                
     
-    ChemicalVariableData = ChemicalData.loc[indexer, ['A','B','C','D','E']]
+    #Get constants from database for chosen chemicals
+    ChemicalVariableData = ChemicalData.loc[index_list, ['A','B','C','D','E']]
     
-    #Create Dataframe
-    #Put constants in dataframe_constants
     
+    #Create Dataframe of constants for later use
     ChemicalConstants = pd.DataFrame(ChemicalVariableData)
     
-    #Assign data for function
+    
+    #Return the value of those constants to put into formulas
     FormulaConstants = ChemicalVariableData.values
+    
     
     return FormulaConstants
 
 
-
-def LiquidDensity(lst):
+def liquiddensity(lst):
         
-        for i in lst:
-            LD = i/(i*(1-(t/i))**i)
+    for i in lst:
+        calculated_ld = i/(i*(1-(t/i))**i)
         #Formula from 
         #Physical and Thermodynamic Properties of Pure Chemicals: Data Compilation
     
-        return LD
+    return calculated_ld
 
 
 
 
-def VapePressure(lst):
+def vaporpressure(lst):
     
     for i in lst:
-        VP = np.exp(i + (i/t) + i*np.log(t) + i*t**i)
+        calculated_vp = np.exp(i + (i/t) + i*np.log(t) + i*t**i)
     #Formula from
     #Physical and Thermodynamic Properties of Pure Chemicals: Data Compilation
     
-    return VP
+    return calculated_vp
 
 
-
-# def MolarVolume(Chemical):
+def Results(chemicals, t=5):
     
-#     ChemicalProperties = df[Chemical]
-#     #Column for Specific Chemical
+    #Empty list to store calculations
+    #List of Chemicals
+    allproperties = []
+    vaporpressures = []
+    liquiddensities = []         
+    chemicallist = chemicals        
     
-#     ChemicalMass = ChemicalProperties[0]
-#     LD = LiquidDensity.LiquidDensity(Chemical)
+    #Store variables to get calculations
+    chemproperties = GetChemical(chemicals) 
+    #Returns a list of chemical properties for each chemical ([[Chemial1_Properties],...,[ChemicalN_Properties]])
     
-#     Volume = ChemicalMass/LiquidDensity
-#     #Formula from 
-#     #Physical and Thermodynamic Properties of Pure Chemicals: Data Compilation
+    #Add calculations to list
+    for i in chemproperties:
+        vaporpressures.append(vaporpressure(i))
+        liquiddensities.append(liquiddensity(i))
+    #For each chemical in list, add each vapor pressure to a list
+    
+    allproperties.append(vaporpressures)
+    allproperties.append(liquiddensities)
+    
+    #Convert to datagrame
+    properties = pd.DataFrame(data=allproperties, index=['Predicted Vapor Pressure', 'Predicted Liquid Density'], columns=chemicallist)
+                                                                                 
+    return properties
 
-#     return Volume
 
-# print(MolarVolume("Water"))
-
+print(Results(['Water', 'O2','CO2']))
 
 
-# df = pd.read_csv('Chemicals.csv', header = 0)
-# #Load CSV File
+
+
+
+
+
+#print(ResultsDataframe(mychemicallist))
+
+#properties = pd.DataFrame(data=GetChemical(['Water', 'O2']), index=['Water', 'O2'], columns=['A', 'B', 'C', 'D', 'E'])
+#print(properties)
+
+#water = GetChemical("Water")
+#print(pd.DataFrame(data=liquiddensity(water), index=None, columns=None))
 
 # def LiquidDiffusivity(Chemical):
     
@@ -87,3 +118,4 @@ def VapePressure(lst):
 #     #Aqueous Solutions
     
 #     return Diffusivity
+
