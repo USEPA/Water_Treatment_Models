@@ -1,6 +1,10 @@
 import pandas as pd
 import numpy as np
 
+#Importing StEPP Data
+#stepp_data = pd.read_csv('steppdata.xlsx')
+
+
 
 def GetChemical(chemicals):
     
@@ -64,7 +68,7 @@ def vaporpressure(lst):
     return calculated_vp
 
 
-def Results(chemicals, t=5):
+def properties(chemicals, t=5):
     
     #Empty list to store calculations
     #List of Chemicals
@@ -87,12 +91,12 @@ def Results(chemicals, t=5):
     allproperties.append(liquiddensities)
     
     #Convert to datagrame
-    properties = pd.DataFrame(data=allproperties, index=['Predicted Vapor Pressure', 'Predicted Liquid Density'], columns=chemicallist)
+    results = pd.DataFrame(data=allproperties, index=['Predicted Vapor Pressure', 'Predicted Liquid Density'], columns=chemicallist)
                                                                                  
-    return properties
+    return results
 
 
-print(Results(['Water', 'O2','CO2']))
+print(properties(['Water', 'O2','CO2']))
 
 
 
