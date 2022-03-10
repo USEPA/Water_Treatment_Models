@@ -164,7 +164,8 @@ class HSDMIX:
             self.C_out2 = self.C_out2.drop('PH', axis=1)
             
         self.names = self.ions.index.values 
-            
+        self.Cin_t = self.Cin_temp
+        
     
     def save_results(self, output_file_name, **kwargs):
         '''
