@@ -140,7 +140,8 @@ class HSDMIX:
                                                                conv_conc, \
                                                                self.MW2, \
                                                                self.val2)
-        
+        self.Cin_t=self.C_out2
+            
         if 'BICARBONATE' not in self.C_out2.columns:
             
             if 'ALKALINITY' in self.C_out2.columns:
@@ -162,9 +163,8 @@ class HSDMIX:
             self.ions = self.ions.drop('ALKALINITY')
         if 'PH' in self.C_out2.columns:
             self.C_out2 = self.C_out2.drop('PH', axis=1)
-            
-        self.names = self.ions.index.values 
-        self.Cin_t = self.Cin_temp
+        
+        self.names = self.ions.index.values
         
     
     def save_results(self, output_file_name, **kwargs):
