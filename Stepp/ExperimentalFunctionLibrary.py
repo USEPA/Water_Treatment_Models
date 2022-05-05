@@ -39,21 +39,10 @@ def experimentalvalues(chemicals):
     experimentalkoa = stepp_data.loc[index_list, ['OCTANOL_AIR_PARTITION_COEFF_LOGKOA_OPERA_PRED']]
     
     
-    # #We want to put the vapor and liquid values into an 'experimental data frame'
-    evd=experimentalvapordata.values
-    eld=experimentalliquiddensity.values
-    emw=experimentalmolecularweight.values
-    ebp=experimentalboilingpoint.values
-    es=experimentalsolubility.values
-    ekoa=experimentalkoa.values
-    
     #With the way the data is stored by default I flattened to make my life easier
-    flatevd=list(np.concatenate(evd).flat)
-    flateld=list(np.concatenate(eld).flat)
-    flatemw=list(np.concatenate(emw).flat)
-    flatebp=list(np.concatenate(ebp).flat)
-    flates=list(np.concatenate(es).flat)
-    flatekoa=list(np.concatenate(ekoa).flat)
+    flateld=list(np.concatenate(experimentalliquiddensity.values).flat)
+    flatemw=list(np.concatenate(experimentalmolecularweight.values).flat)
+    
     
     #Caluclation for molar volume
     for mass,density in zip(flatemw,flateld):
@@ -63,12 +52,12 @@ def experimentalvalues(chemicals):
                 molarvolume.append("-")
     
     #Store all the data for a dataframe
-    experimentaldata.append(flatevd)
-    experimentaldata.append(flateld)
-    experimentaldata.append(flatemw)
-    experimentaldata.append(flatebp)
-    experimentaldata.append(flates)
-    experimentaldata.append(flatekoa)
+    experimentaldata.append(list(np.concatenate(experimentalvapordata.values).flat))
+    experimentaldata.append(list(np.concatenate(experimentalliquiddensity.values).flat))
+    experimentaldata.append(list(np.concatenate(experimentalmolecularweight.values).flat))
+    experimentaldata.append(list(np.concatenate(experimentalboilingpoint.values).flat))
+    experimentaldata.append(list(np.concatenate(experimentalsolubility.values).flat))
+    experimentaldata.append(list(np.concatenate(experimentalkoa.values).flat))
     experimentaldata.append(molarvolume)
 
     return experimentaldata
