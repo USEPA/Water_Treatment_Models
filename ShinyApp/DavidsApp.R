@@ -1,54 +1,57 @@
-library(shiny)
+library(readxl)
 
-ui<-navbarPage(
-  title='Ion Exchange Model',
-  main_page<-tabPanel(title="Analysis",
-                      titlePanel("Analysis"),
-                      sidebarLayout(
-                        sidebarPanel(
-                          title="Inputs",
-                          fileInput("csv_input", "Select CSV File to Import", accept=".csv"),
-                          checkboxGroupInput("ChemicalList", "Chemicals",
-                                             c("Chloride", "Sulfate", "Bicarbonate", "Nitrate")),
-                          actionButton("run_button", "Run Analysis", icon=icon("play"))
-                        ),
-                        mainPanel(
-                          tabsetPanel(
-                            tabPanel(
-                              title="Plot",
-                              plotOutput("plot_1")
-                            ),
-                            tabPanel(
-                              title="Statistics",
-                              
-                            )
-                          )
-                        )
-                      )
-                    ),
-  about_page<-tabPanel(title="About")
-)
-
-server<-function(input,output){
+if (interactive()) {
   
-  data_input<-reactive({
-    req(input$csv_input)
-    fread(input$csv_input$datapath)
-  })
+  ui <- fluidPage(
+    sidebarLayout(
+      sidebarPanel(
+        fileInput("file1", "Choose CSV File", accept = ".xlsx"),
+        selectInput("ChemicalList", "Chemicals",
+                    c("Chloride" = 1, "Sulfate" = 2, "Bicarbonate" = 3, "Nitrate" = 4)),
+        actionButton("run_button", "Run Analysis", icon=icon("play")),
+      ),
+      mainPanel(
+        tabsetPanel(
+          tabPanel(
+            title="Data",  
+            tableOutput("contents")
+          ),
+          tabPanel(
+            title="Analysis",
+            plotOutput("Plot")
+          )
+        )
+      )
+    )
+  )
   
-  observeEvent(data_input(), {
-    choices<-c(not_sel,names(data_input()))
-    updateSelectInput(inputId="ChemicalList", choices=choices)
-  })
+  server <- function(input, output) {
+    output$contents <- renderTable({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      read_excel(file$datapath, sheet=1)
+    })
+    
+    
+    
+    dat<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, 1, outlet_id])
+    dat1<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, 2, outlet_id])
+    dat2<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, 3, outlet_id])
+    dat3<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, 4, outlet_id])
+    
+    
+    output$Plot<-renderPlot(ggplot()+
+                              geom_point(dat, mapping=aes(x = hours, y = conc))+
+                              geom_point(dat1, mapping=aes(x = hours, y = conc), color="blue")+
+                              geom_point(dat2, mapping=aes(x = hours, y = conc), color="red")+
+                              geom_point(dat3, mapping=aes(x = hours, y = conc), color="green")
+                              )
+    
+          
+  }
   
-  ChemicalList<-eventReactive(input$run_button, input$ChemicalList)
-  
-  plot_1<-eventReactive(input$run_button, {
-    draw_plot_1(data_input(), ChemicalList())
-  })
-  
-  output$plot_1<-renderPlot(plot_1())
-  
-}
-
-shinyApp(ui=ui, server=server)
+  shinyApp(ui, server)
