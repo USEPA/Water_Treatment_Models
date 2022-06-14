@@ -19,6 +19,9 @@ if (interactive()) {
             
             title="Data",
             
+            tabsetPanel(
+              tabPanel(
+                title="Parameters",
             fluidRow(
               column(1,
                      br(), br(), br(),
@@ -133,11 +136,131 @@ if (interactive()) {
               column(3, 
                      textOutput("tv")),
               column(4,
-                     textOutput("tunit")))
+                     textOutput("tunit"))),
               
             
             
             ),
+            
+            tabPanel(
+              title='Ions',
+                fluidRow(
+                column(1,
+                         textOutput("ChemicalNames")),
+                column(2, offset=1,
+                       textOutput("mw")),
+                column(3,
+                       textOutput("KxA")),
+                column(4,
+                       textOutput("Valence")),
+                #column(5,
+                #       textOutput("kL")),
+                # column(6,
+                #        textOutput("Ds"))
+
+            ),
+            
+            br(), br(),
+            
+              fluidRow(
+                column(1,
+                       textOutput("Chloride")),
+                column(2, offset=1,
+                       textOutput("Chloridemw")),
+                column(3,
+                       textOutput("ChlorideKxA")),
+                column(4,
+                       textOutput("ChlorideValence"))
+              ),
+            
+              fluidRow(
+                column(1,
+                       textOutput("Sulfate")),
+                column(2, offset=1,
+                       textOutput("Sulfatemw")),
+                column(3,
+                       textOutput("SulfateKxA")),
+                column(4,
+                       textOutput("SulfateValence"))
+              ),
+                
+                fluidRow(
+                  column(1,
+                         textOutput("Bicarbonate")),
+                  column(2, offset=1,
+                         textOutput("Bicarbonatemw")),
+                  column(3,
+                         textOutput("BicarbonateKxA")),
+                  column(4,
+                         textOutput("BicarbonateValence"))
+                ),
+                
+                fluidRow(
+                  column(1,
+                         textOutput("Nitrate")),
+                  column(2, offset=1,
+                         textOutput("Nitratemw")),
+                  column(3,
+                         textOutput("NitrateKxA")),
+                  column(4,
+                         textOutput("NitrateValence"))
+                ),
+            
+          
+                
+              
+             ),
+            
+            tabPanel(
+              title='Inital Concentration',
+              fluidRow(
+                column(1,
+                       textOutput("Name2")),
+                column(2, offset=1,
+                       textOutput("InitialTime")),
+                column(3,
+                       textOutput("FinalTime"))
+              ),
+              
+              fluidRow(
+                column(1,
+                       textOutput("Chloride2")),
+                column(2,
+                       textOutput("Chlorideti")),
+                column(3,
+                       textOutput("Chloridetf"))
+              ),
+              
+              fluidRow(
+                column(1,
+                       textOutput("Sulfate2")),
+                column(2,
+                       textOutput("Sulfateti")),
+                column(3,
+                       textOutput("Sulfatetf"))
+              ),
+              
+              fluidRow(
+                column(1,
+                       textOutput("Bicarbonate2")),
+                column(2,
+                       textOutput("Bicarbonateti")),
+                column(3,
+                       textOutput("Bicarbonatetf"))
+              ),
+              
+              fluidRow(
+                column(1,
+                       textOutput("Nitrate2")),
+                column(2,
+                       textOutput("Nitrateti")),
+                column(3,
+                       textOutput("Nitratetf"))
+              )
+              
+              
+            )
+            )),
           
           
           
@@ -153,11 +276,11 @@ if (interactive()) {
             
             fluidRow(
               column(1,
-                     textOutput("Group1")),
+                     tableOutput("Group1")),
               column(2, offset=2,
-                     textOutput("Char1"),
-                     textOutput("Char2"),
-                     textOutput("Char3"))),
+                     tableOutput("Char1"),
+                     tableOutput("Char2"),
+                     tableOutput("Char3"))),
             
           br(),
           
@@ -176,6 +299,16 @@ if (interactive()) {
   )
   
   server <- function(input, output) {
+    
+    params2<-reactive({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      params<-read_xlsx(file$datapath, sheet=1)
+    })
     
     output$Q<-renderText("Capacity of Chloride on Resin")
     output$rb<-renderText("Radius of Resin Bead")
@@ -202,6 +335,16 @@ if (interactive()) {
     
     output$Time<-renderText("Time")
     output$TS<-renderText("Time Step")
+    
+    output$ChemicalNames<-renderText("Chemical Names")
+    output$mw<-renderText("mw")
+    output$KxA<-renderText("KxA")
+    output$Valence<-renderText("Valence")
+    
+    output$Name2<-renderText("Name")
+    output$InitialTime<-renderText("Inital Time")
+    output$FinalTime<-renderText("Final Time")
+    
     
     
     output$Qv <- renderText({
@@ -468,6 +611,202 @@ if (interactive()) {
       tvunits<-filter(params, name=="time")$units
     })
     
+    output$Chloride <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      chloridename<-filter(ions, name=="CHLORIDE")$name
+    })
+    
+    output$Chloridemw <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      chloridename<-filter(ions, name=="CHLORIDE")$mw
+    })
+    
+    output$ChlorideKxA <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      chloridename<-filter(ions, name=="CHLORIDE")$KxA
+    })
+    
+    output$ChlorideValence <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      chloridename<-filter(ions, name=="CHLORIDE")$valence
+    })
+    
+    output$Sulfate <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      sulfatename<-filter(ions, name=="SULFATE")$name
+    })
+    
+    output$Sulfatemw <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      sulfatename<-filter(ions, name=="SULFATE")$mw
+    })
+    
+    output$SulfateKxA <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      sulfatename<-filter(ions, name=="SULFATE")$KxA
+    })
+    
+    output$SulfateValence <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      sulfatename<-filter(ions, name=="SULFATE")$valence
+    })
+    
+    
+    output$Bicarbonate <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      bicarbonatename<-filter(ions, name=="BICARBONATE")$name
+    })
+    
+    output$Bicarbonatemw <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      bicarbonatename<-filter(ions, name=="BICARBONATE")$mw
+    })
+    
+    output$BicarbonateKxA <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      bicarbonatename<-filter(ions, name=="BICARBONATE")$KxA
+    })
+    
+    output$BicarbonateValence <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      bicarbonatename<-filter(ions, name=="BICARBONATE")$valence
+    })
+    
+    
+    output$Nitrate <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      nitratename<-filter(ions, name=="NITRATE")$name
+    })
+    
+    output$Nitratemw <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      nitratename<-filter(ions, name=="NITRATE")$mw
+    })
+    
+    output$NitrateKxA <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      nitratename<-filter(ions, name=="NITRATE")$KxA
+    })
+    
+    output$NitrateValence <- renderText({
+      file <- input$file1
+      ext <- tools::file_ext(file$datapath)
+      
+      req(file)
+      validate(need(ext == "xlsx", "Please upload a csv file"))
+      
+      ions<-read_xlsx(file$datapath, sheet=2)
+      nitratename<-filter(ions, name=="NITRATE")$valence
+    })
+    
+    
+    
+    
+    
+    mytheme <-  theme(panel.background = element_rect(fill = "white", colour = NA),
+                      panel.grid.major = element_line(colour = "grey70", size = 0.2),
+                      panel.grid.minor = element_line(colour = "grey85", size = 0.5),
+                      legend.position = "top",
+                      legend.title = element_text(colour = "black", size = 8, face = "bold", hjust = 0.5),
+                      legend.text = element_text(colour = "black", size = 8),
+                      legend.key.size = unit(0.5, "line"),
+                      strip.text = element_text(colour = "black", size = 7),
+                      axis.ticks = element_line(colour = "black", size = 1),
+                      axis.line = element_line(colour = "black", size = 1, lineend = "square"),
+                      axis.text.x = element_text(colour = "black", size = 8),
+                      axis.text.y = element_text(colour = "black", size = 8),
+                      axis.title.x = element_text(colour = "black", size = 8),
+                      axis.title.y = element_text(colour = "black", size = 8))
     
     
     
@@ -476,20 +815,44 @@ if (interactive()) {
     dat2<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, 3, outlet_id])
     dat3<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, 4, outlet_id])
     
-    #bonusdat<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, 5, outlet_id])
+    bonusdataframe<-data.frame(hours=c(), conc=c())
+    bonusdataframe2<-data.frame(hours=c(), conc=c())
     
-    #inputdat<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, selection, outlet_id])
+    
+    for (x in 5:nrow(fulldata)){
+      dx_frame<-data.frame(
+        hours=out[[1]], conc=out[[2]][, liquid_id, x, outlet_id], chemical=fulldata[x,1]
+      )
+      bonusdataframe<-rbind(dx_frame, bonusdataframe2)
+    }
     
     
-    output$Plot<-renderPlot(ggplot()+
-                              geom_point(dat, mapping=aes(x = hours, y = conc))+
-                              geom_point(dat1, mapping=aes(x = hours, y = conc), color="blue")+
-                              geom_point(dat2, mapping=aes(x = hours, y = conc), color="red")+
-                              geom_point(dat3, mapping=aes(x = hours, y = conc), color="green")
+    chlorideframe<-data.frame(
+      hours=out[[1]], conc=out[[2]][, liquid_id, 1, outlet_id], Chemical=rep("Chloride", nrow(dat))
     )
     
-    output$ExtraChemicals<-renderPlot(ggplot()+
-                                        geom_point(bonusdat, mapping=aes(x = hours, y = conc)))
+    sulfateframe<-data.frame(
+      hours=out[[1]], conc=out[[2]][, liquid_id, 2, outlet_id], Chemical=rep("Sulfate", nrow(dat))
+    )
+    
+    bicarbonateframe<-data.frame(
+      hours=out[[1]], conc=out[[2]][, liquid_id, 3, outlet_id], Chemical=rep("Bicarbonate", nrow(dat))
+    )
+    
+    nitrateframe<-data.frame(
+      hours=out[[1]], conc=out[[2]][, liquid_id, 4, outlet_id], Chemical=rep("Nitrate", nrow(dat))
+    )
+    
+    alldata<-rbind(chlorideframe,nitrateframe,bicarbonateframe,sulfateframe)
+    
+    
+    
+    output$Plot<-renderPlot(ggplot(alldata, mapping=aes(x=hours, y=conc, color=Chemical)) +
+                              geom_point()
+    )
+    
+    output$ExtraChemicals<-renderPlot(ggplot(bonusdataframe, mapping=aes(x=hours, y=conc, color=name)) +
+                                        geom_point())
     
   }
   
