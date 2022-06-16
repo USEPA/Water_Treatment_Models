@@ -796,18 +796,17 @@ if (interactive()) {
     mytheme <-  theme(panel.background = element_rect(fill = "white", colour = NA),
                       panel.grid.major = element_line(colour = "grey70", size = 0.2),
                       panel.grid.minor = element_line(colour = "grey85", size = 0.5),
-                      legend.position = "top",
-                      legend.title = element_text(colour = "black", size = 8, face = "bold", hjust = 0.5),
-                      legend.text = element_text(colour = "black", size = 8),
-                      legend.key.size = unit(0.5, "line"),
+                      legend.title = element_text(colour = "black", size = 12, face = "bold", hjust = 0.5),
+                      legend.text = element_text(colour = "black", size = 12),
+                      legend.key.size = unit(1, "line"),
                       strip.text = element_text(colour = "black", size = 7),
                       axis.ticks = element_line(colour = "black", size = 1),
                       axis.line = element_line(colour = "black", size = 1, lineend = "square"),
                       axis.text.x = element_text(colour = "black", size = 8),
                       axis.text.y = element_text(colour = "black", size = 8),
-                      axis.title.x = element_text(colour = "black", size = 8),
-                      axis.title.y = element_text(colour = "black", size = 8))
-    
+                      axis.title.x = element_text(colour = "black", size = 15),
+                      axis.title.y = element_text(colour = "black", size = 15),
+                      plot.title=element_text(colour="black",size=15,face="bold", hjust=0.5))
     
     
     dat<-data.frame(hours = out[[1]], conc = out[[2]][, liquid_id, 1, outlet_id])
@@ -847,15 +846,26 @@ if (interactive()) {
     
     
     
-    output$Plot<-renderPlot(ggplot(alldata, mapping=aes(x=hours, y=conc, color=Chemical)) +
-                              geom_point()
-    )
+    observeEvent(input$run_button, {
+      output$Plot<-renderPlot(
+        
+        ggplot(alldata, mapping=aes(x=hours, y=conc, color=Chemical)) +
+          geom_point() + mytheme + ggtitle("Standard Chemical Concentration over Time")
+      )
+    })
     
-    output$ExtraChemicals<-renderPlot(ggplot(bonusdataframe, mapping=aes(x=hours, y=conc, color=name)) +
-                                        geom_point())
+    observeEvent(input$run_button, {
+      output$ExtraChemicals<-renderPlot(
+        
+        ggplot(bonusdataframe, mapping=aes(x=hours, y=conc, color=name)) +
+          geom_point() + mytheme + ggtitle("Unique Chemical Concentration over Time")
+      )
+    })
     
   }
   
   shinyApp(ui, server)
 }
+
+
 
