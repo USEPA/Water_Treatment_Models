@@ -448,8 +448,9 @@ class PSDM():
                 int_effl = quad(f_effl, 0, breakthrough_time, points=xdata)[0]
                 qtmp = flow * self.t_mult * (int_infl - int_effl) * self.mass_mul
                 q_meas = qtmp/carbon_mass #ug/g
-                k = q_meas / ((aveC*self.mass_mul) ** self.xn)     
                 aveC = int_infl/breakthrough_time # recalculate only what is inside breakthrough
+                k = q_meas / ((aveC*self.mass_mul) ** self.xn)     
+                
         elif self.brk_type == 'force':# and self.brk_df != None:
             brk_df = self.brk_df
             maxx = self.duration
