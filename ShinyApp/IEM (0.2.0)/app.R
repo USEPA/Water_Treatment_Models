@@ -13,7 +13,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                 sidebarLayout(
                   sidebarPanel(
                     fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
-                    actionButton("apply_button", "Apply Data"),
+                    #actionButton("apply_button", "Apply Data"),
                     actionButton("run_button", "Run Analysis", icon=icon("play")),
                     tableOutput("sum"),
                     tableOutput("sum2"),
@@ -398,67 +398,67 @@ server <- function(input, output, session) {
   })
 
   velocityconv<-reactive({
-    if(input$VelocityVariable=="ft/s"){
+    if(input$velocityunits=="ft/s"){
       velocityconv<-input$Vv*ft2cm
     }
-    if(input$VelocityVariable=="m/s"){
+    if(input$velocityunits=="m/s"){
       velocityconv<-input$Vv*m2cm
     }
-    if(input$VelocityVariable=="cm/s"){
+    if(input$velocityunits=="cm/s"){
       velocityconv<-input$Vv*cm2cm
     }
-    if(input$VelocityVariable=="in/s"){
+    if(input$velocityunits=="in/s"){
       velocityconv<-input$Vv*in2cm
     }
-    if(input$VelocityVariable=="m/min"){
+    if(input$velocityunits=="m/min"){
       velocityconv<-input$Vv*mmin2cms
     }
-    if(input$VelocityVariable=="ft/min"){
+    if(input$velocityunits=="ft/min"){
       velocityconv<-input$Vv*ftmin2cms
     }
     velocityconv
   })
 
   transferconv<-reactive({
-    if(input$VelocityVariable=="ft/s"){
-      velocityconv<-input$kL*ft2cm
+    if(input$filmunits=="ft/s"){
+      transferconv<-input$kL*ft2cm
     }
-    if(input$VelocityVariable=="m/s"){
-      velocityconv<-input$kL*m2cm
+    if(input$filmunits=="m/s"){
+      transferconv<-input$kL*m2cm
     }
-    if(input$VelocityVariable=="cm/s"){
-      velocityconv<-input$kL*cm2cm
+    if(input$filmunits=="cm/s"){
+      transferconv<-input$kL*cm2cm
     }
-    if(input$VelocityVariable=="in/s"){
-      velocityconv<-input$kL*in2cm
+    if(input$filmunits=="in/s"){
+      transferconv<-input$kL*in2cm
     }
-    if(input$VelocityVariable=="m/min"){
-      velocityconv<-input$kL*mmin2cms
+    if(input$filmunits=="m/min"){
+      transferconv<-input$kL*mmin2cms
     }
-    if(input$VelocityVariable=="ft/min"){
-      velocityconv<-input$kL*ftmin2cms
+    if(input$filmunits=="ft/min"){
+      transferconv<-input$kL*ftmin2cms
     }
     transferconv
   })
 
   diffusionconv<-reactive({
-    if(input$VelocityVariable=="ft/s^2"){
-      velocityconv<-input$kL*ft2cm
+    if(input$diffusionunits=="ft/s^2"){
+      diffusionconv<-input$kL*ft2cm
     }
-    if(input$VelocityVariable=="m/s^2"){
-      velocityconv<-input$kL*m2cm
+    if(input$diffusionunits=="m/s^2"){
+      diffusionconv<-input$kL*m2cm
     }
-    if(input$VelocityVariable=="cm/s^2"){
-      velocityconv<-input$kL*cm2cm
+    if(input$diffusionunits=="cm/s^2"){
+      diffusionconv<-input$kL*cm2cm
     }
-    if(input$VelocityVariable=="in/s^2"){
-      velocityconv<-input$kL*in2cm
+    if(input$diffusionunits=="in/s^2"){
+      diffusionconv<-input$kL*in2cm
     }
-    if(input$VelocityVariable=="m/min^2"){
-      velocityconv<-input$kL*mmin22cms2
+    if(input$diffusionunits=="m/min^2"){
+      diffusionconv<-input$kL*mmin22cms2
     }
-    if(input$VelocityVariable=="ft/min^2"){
-      velocityconv<-input$kL*ftmin22cms2
+    if(input$diffusionunits=="ft/min^2"){
+      diffusionconv<-input$kL*ftmin22cms2
     }
   })
 
@@ -483,13 +483,13 @@ server <- function(input, output, session) {
     }
   })
 
+
   
-  
-  newdataframe<-eventReactive(input$apply_button, {
+  newdataframe<-eventReactive(input$run_button, {
     saveddataframe<-data.frame(
       name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
-      value=c(input$Qv, input$EBEDv, input$Lv, input$Vv, input$rbv, input$kLv, input$Dsv, input$nrv, input$nzv, input$tv),
-      units=c(input$qunits, input$EBEDunits, input$rbunits, input$LengthUnits, input$velocityunits, input$filmunits, input$diffusionunits, input$radialunits, input$axialunits, input$timeunits)
+      value=c(input$Qv, input$EBEDv, lengthconv(), velocityconv(), beadradiusconv(), input$kLv, input$Dsv, input$nrv, input$nzv, input$tv),
+      units=c(input$qunits, input$EBEDunits, input$LengthUnits, input$velocityunits, input$rbunits, input$filmunits, input$diffusionunits, input$radialunits, input$axialunits, input$timeunits)
     )
     saveddataframe
   })
@@ -1009,7 +1009,7 @@ server <- function(input, output, session) {
     rownums
   })
 
-  # bonusdataframe3<-eventReactive(input$apply_button, {for (i in 5:Index()) {
+  # bonusdataframe3<-eventReactive(input$run_button, {for (i in 5:Index()) {
   #   dx_frame<-data.frame(
   #    hours=out()[[1]], conc=out()[[2]][, liquid_id(), i, outlet_id()], chemical=iondataframe()[i,1]
   #     )
@@ -1017,7 +1017,7 @@ server <- function(input, output, session) {
   #
   # bonusdataframe2<-reactive({rbind(bonusdataframe3(), bonusdataframe)})
 
-  bonusdataframe3<-eventReactive(input$apply_button, {for (x in 5:Index()){
+  bonusdataframe3<-eventReactive(input$run_button, {for (x in 5:Index()){
 
     dx_frame<-data.frame(
       hours=out()[[1]], conc=out()[[2]][, liquid_id(), x, outlet_id()], chemical=iondataframe()[x,1]
@@ -1030,7 +1030,7 @@ server <- function(input, output, session) {
   })
 
 
-  output$sum<-renderTable(bonusdataframe3())
+
 
 
   chlorideframe<-reactive({data.frame(
@@ -1086,3 +1086,4 @@ server <- function(input, output, session) {
 
 
 shinyApp(ui, server)
+
