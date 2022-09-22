@@ -16,6 +16,9 @@ ui <- fluidPage(theme=shinytheme("united"),
                     actionButton("apply_button", "Apply Data"),
                     actionButton("run_button", "Run Analysis", icon=icon("play")),
                     tableOutput("sum"),
+                    tableOutput("sum2"),
+                    tableOutput("sum3"),
+                    tableOutput("sum4"),
                     br(), br(),
                     
                   ),
@@ -52,8 +55,8 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                      
                                                      column(4,
                                                             selectInput("qunits", "", c("meq/L")),
-                                                            selectInput("rbunits", "", c("")),
-                                                            selectInput("EBEDunits", "", c("cm")))
+                                                            selectInput("rbunits", "", c("cm", "m", "mm", "in", "ft")),
+                                                            selectInput("EBEDunits", "", c("")))
                                                    ),
                                                    
                                                    
@@ -87,8 +90,8 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                             
                                                             numericInput("Fv", "",0)),
                                                      column(4,
-                                                            selectInput("LengthUnits", "", c("cm")),
-                                                            selectInput("velocityunits", "", c("cm/s")),
+                                                            selectInput("LengthUnits", "", c("cm", "m", "mm", "in", "ft")),
+                                                            selectInput("velocityunits", "", c("cm/s", "ft/s", "m/s", "in/s", "m/min", "ft/min")),
                                                             selectInput("DiameterUnits","",c("cm^2")),
                                                             selectInput("flowrateunits","",c("cm2/s")))
                                                      
@@ -119,7 +122,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                             numericInput("Dsv", "",0.0000002)),
                                                      column(4,
                                                             br(),
-                                                            selectInput("filmunits","",c("cm/s")),
+                                                            selectInput("filmunits","",c("cm/s", "in/s", "m/min", "ft/min")),
                                                             br(), br(),
                                                             selectInput("diffusionunits","",c("cm2/s")))
                                                    ),
@@ -167,7 +170,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                      column(3, 
                                                             numericInput("tv", "",1)),
                                                      column(4,
-                                                            selectInput("timeunits","",c("hr")))),
+                                                            selectInput("timeunits","",c("s", "min", "hr", "day", "month", "year")))),
                                                    
                                                    textOutput("inputnum"),
                                                    
@@ -340,7 +343,146 @@ server <- function(input, output, session) {
   observe({updateTextInput(session, "nzv", value=axial())})
   observe({updateTextInput(session, "tv", value=time())  })
   
-  
+  m2cm=100
+  mm2cm=0.1
+  cm2cm=1
+  in2cm=2.54
+  ft2cm=30.48
+  mmin2cms=1.666667
+  ftmin2cms=0.508
+  mmin22cms2=0.027778
+  ftmin22cms2=0.00846667
+  sec2sec=1
+  min2sec=60
+  hour2sec=360
+  day2sec=8640
+  month2sec=259200
+  year2sec=3153600
+
+  beadradiusconv<-reactive({
+    if(input$rbunits=="m"){
+      beadradiusconv<-input$rbv*m2cm
+    }
+    if(input$rbunits=="mm"){
+      beadradiusconv<-input$rbv*mm2cm
+    }
+    if(input$rbunits=="cm"){
+      beadradiusconv<-input$rbv*cm2cm
+    }
+    if(input$rbunits=="in"){
+      beadradiusconv<-input$rbv*in2cm
+    }
+    if(input$rbunits=="ft"){
+      beadradiusconv<-input$rbv*ft2cm
+    }
+    beadradiusconv
+  })
+
+  lengthconv<-reactive({
+    if(input$LengthUnits=="m"){
+      lengthconv<-input$Lv*m2cm
+    }
+    if(input$LengthUnits=="mm"){
+      lengthconv<-input$Lv*mm2cm
+    }
+    if(input$LengthUnits=="cm"){
+      lengthconv<-input$Lv*cm2cm
+    }
+    if(input$LengthUnits=="in"){
+      lengthconv<-input$Lv*in2cm
+    }
+    if(input$LengthUnits=="ft"){
+      lengthconv<-input$Lv*ft2cm
+    }
+    lengthconv
+  })
+
+  velocityconv<-reactive({
+    if(input$VelocityVariable=="ft/s"){
+      velocityconv<-input$Vv*ft2cm
+    }
+    if(input$VelocityVariable=="m/s"){
+      velocityconv<-input$Vv*m2cm
+    }
+    if(input$VelocityVariable=="cm/s"){
+      velocityconv<-input$Vv*cm2cm
+    }
+    if(input$VelocityVariable=="in/s"){
+      velocityconv<-input$Vv*in2cm
+    }
+    if(input$VelocityVariable=="m/min"){
+      velocityconv<-input$Vv*mmin2cms
+    }
+    if(input$VelocityVariable=="ft/min"){
+      velocityconv<-input$Vv*ftmin2cms
+    }
+    velocityconv
+  })
+
+  transferconv<-reactive({
+    if(input$VelocityVariable=="ft/s"){
+      velocityconv<-input$kL*ft2cm
+    }
+    if(input$VelocityVariable=="m/s"){
+      velocityconv<-input$kL*m2cm
+    }
+    if(input$VelocityVariable=="cm/s"){
+      velocityconv<-input$kL*cm2cm
+    }
+    if(input$VelocityVariable=="in/s"){
+      velocityconv<-input$kL*in2cm
+    }
+    if(input$VelocityVariable=="m/min"){
+      velocityconv<-input$kL*mmin2cms
+    }
+    if(input$VelocityVariable=="ft/min"){
+      velocityconv<-input$kL*ftmin2cms
+    }
+    transferconv
+  })
+
+  diffusionconv<-reactive({
+    if(input$VelocityVariable=="ft/s^2"){
+      velocityconv<-input$kL*ft2cm
+    }
+    if(input$VelocityVariable=="m/s^2"){
+      velocityconv<-input$kL*m2cm
+    }
+    if(input$VelocityVariable=="cm/s^2"){
+      velocityconv<-input$kL*cm2cm
+    }
+    if(input$VelocityVariable=="in/s^2"){
+      velocityconv<-input$kL*in2cm
+    }
+    if(input$VelocityVariable=="m/min^2"){
+      velocityconv<-input$kL*mmin22cms2
+    }
+    if(input$VelocityVariable=="ft/min^2"){
+      velocityconv<-input$kL*ftmin22cms2
+    }
+  })
+
+  timeconv<-reactive({
+    if(input$timeunits=="s"){
+      timeconv<-input$timeunits*sec2sec
+    }
+    if(input$timeunits=="min"){
+      timeconv<-input$timeunits*min2sec
+    }
+    if(input$timeunits=="hr"){
+      timeconv<-input$timeunits*hour2sec
+    }
+    if(input$timeunits=="day"){
+      timeconv<-input$timeunits*day2sec
+    }
+    if(input$timeunits=="month"){
+      timeconv<-input$timeunits*month2sec
+    }
+    if(input$timeunits=="year"){
+      timeconv<-input$timeunits*year2sec
+    }
+  })
+
   
   
   newdataframe<-eventReactive(input$apply_button, {
@@ -814,16 +956,20 @@ server <- function(input, output, session) {
     return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
   }
   
-  out <- reactive({
+  out <-reactive({
     HSDMIX_solve(newdataframe(), iondataframe(), cindataframe(), nt_report)})
   
+  output$sum<-renderTable(newdataframe())
+  output$sum2<-renderTable(iondataframe())
+  output$sum3<-renderTable(cindataframe())
+  output$sum4<-renderTable(out())
   
   # find outlet indices
   
   outlet_id <- reactive({dim(out()[[2]])[4]})
   liquid_id <- reactive({dim(out()[[2]])[2]})
-  
-  
+
+
   mytheme <-  theme(panel.background = element_rect(fill = "white", colour = NA),
                     panel.grid.major = element_line(colour = "grey70", size = 0.2),
                     panel.grid.minor = element_line(colour = "grey85", size = 0.5),
@@ -838,39 +984,39 @@ server <- function(input, output, session) {
                     axis.title.x = element_text(colour = "black", size = 15),
                     axis.title.y = element_text(colour = "black", size = 15),
                     plot.title=element_text(colour="black",size=15,face="bold", hjust=0.5))
-  
-  
+
+
   dat<-reactive({data.frame(hours = out()[[1]], conc = out()[[2]][, liquid_id(), 1, outlet_id()])})
   dat1<-reactive({data.frame(hours = out()[[1]], conc = out()[[2]][, liquid_id(), 2, outlet_id()])})
   dat2<-reactive({data.frame(hours = out()[[1]], conc = out()[[2]][, liquid_id(), 3, outlet_id()])})
   dat3<-reactive({data.frame(hours = out()[[1]], conc = out()[[2]][, liquid_id(), 4, outlet_id()])})
-  
+
   bonusdataframe<-data.frame(hours=c(), conc=c())
   bonusdataframe2<-data.frame(hours=c(), conc=c())
-  
+
   fulldata<-reactive({
     file <- input$file1
     ext <- tools::file_ext(file$datapath)
-    
+
     req(file)
     validate(need(ext == "xlsx", "Please upload a xlsx file"))
-    
+
     inputfile<-read_xlsx(file$datapath, sheet=2)
   })
-  
+
   Index<-reactive({
     rownums<-nrow(iondataframe())
     rownums
   })
-  
+
   # bonusdataframe3<-eventReactive(input$apply_button, {for (i in 5:Index()) {
   #   dx_frame<-data.frame(
   #    hours=out()[[1]], conc=out()[[2]][, liquid_id(), i, outlet_id()], chemical=iondataframe()[i,1]
   #     )
   # }})
-  # 
+  #
   # bonusdataframe2<-reactive({rbind(bonusdataframe3(), bonusdataframe)})
-  
+
   bonusdataframe3<-eventReactive(input$apply_button, {for (x in 5:Index()){
 
     dx_frame<-data.frame(
@@ -882,63 +1028,61 @@ server <- function(input, output, session) {
   }
     bonusdataframe
   })
-  
-  
- output$sum<-renderTable(bonusdataframe3())
-  
-  
+
+
+  output$sum<-renderTable(bonusdataframe3())
+
+
   chlorideframe<-reactive({data.frame(
     hours=out()[[1]], conc=out()[[2]][, liquid_id(), 1, outlet_id()], Chemical=rep("Chloride", nrow(dat()))
-    
+
   )
   })
-  
+
   sulfateframe<-reactive({data.frame(
     hours=out()[[1]], conc=out()[[2]][, liquid_id(), 2, outlet_id()], Chemical=rep("Sulfate", nrow(dat()))
   )})
-  
+
   bicarbonateframe<-reactive({data.frame(
     hours=out()[[1]], conc=out()[[2]][, liquid_id(), 3, outlet_id()], Chemical=rep("Bicarbonate", nrow(dat()))
   )})
-  
+
   nitrateframe<-reactive({data.frame(
     hours=out()[[1]], conc=out()[[2]][, liquid_id(), 4, outlet_id()], Chemical=rep("Nitrate", nrow(dat()))
   )})
-  
+
   alldata<-reactive({rbind(chlorideframe(),nitrateframe(),bicarbonateframe(),sulfateframe())})
-  
+
   #output$dataview<-renderTable(chlorideframe())
-  
-  
+
+
   # output$Plot<-renderPlot(
   # ggplot(alldata(), mapping=aes(x=hours, y=conc, color=Chemical)) +
   # geom_point() + mytheme + ggtitle("Counter Ion Concentration Over Time")
   # )
-  #  
+  #
   #  output$ExtraChemicals<-renderPlot(
   #  ggplot(bonusdataframe3(), mapping=aes(x=hours, y=conc, color=name)) +
   #  geom_point()  + mytheme+ ggtitle("Ion Concentration Over Time")
   #   )
-  
+
   observeEvent(input$run_button, {
     output$Plot<-renderPlot(
-      
+
       ggplot(alldata(), mapping=aes(x=hours, y=conc, color=Chemical)) +
         geom_point() + mytheme + ggtitle("Counter-Ion Concentration over Time")
     )
   })
-  
+
   observeEvent(input$run_button, {
     output$ExtraChemicals<-renderPlot(
-      
+
       ggplot(bonusdataframe3(), mapping=aes(x=hours, y=conc, color=name)) +
         geom_point()  + mytheme+ ggtitle("Ion Concentration over Time")
     )
   })
-  
-}
+
+ }
 
 
 shinyApp(ui, server)
-
-
