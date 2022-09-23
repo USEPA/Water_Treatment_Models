@@ -35,13 +35,17 @@ mkl.set_num_threads(1)
 import warnings
 warnings.simplefilter("ignore")
 
-import pylab as plt
+from copy import deepcopy
+
+import matplotlib.pyplot as plt
 import numpy as np
+# from numpy import interp
 import pandas as pd
 import scipy as sp
 # from scipy import special
 from scipy.integrate import quad, solve_ivp
 from scipy.interpolate import interp1d
+from scipy.stats import linregress
 # from scipy.optimize import minimize
 import multiprocessing as mp
 import time as ti #time as a variable is used in code, so ti is used
@@ -52,10 +56,22 @@ import time as ti #time as a variable is used in code, so ti is used
 from PSDM_functions import min_per_day, lpg, spar_Jac, foul_params, kf_calc
 from PSDM_functions import find_minimum_df, tortuosity, calc_solver_matrix
 from PSDM_functions import density, viscosity, recalc_k, generate_grid
-from PSDM_functions import interp, process_input_data, process_input_file
+from PSDM_functions import interp 
+from PSDM_functions import process_input_data, process_input_file
 # from PSDM_functions import *
 # from PSDM_functions import find_minimum_df
-from PSDM_tools import *
+# from PSDM_tools import *
+
+def run_MP_helper(test_column, k, invN, compound, k_mult):
+    mp.freeze_support()
+    
+    test_column.test_range = np.array([k])
+    test_column.xn_range = np.array([invN])
+    try: # if it fails, just make a huge ssq. 
+        compound, k, xn, ssqs, model_data = test_column.run_psdm_kfit(compound)
+    except:
+        ssqs = pd.DataFrame(1e9, columns=[invN], index=[k_mult] )
+    return [k, invN, ssqs.values[0][0], compound, k_mult]
 
 class PSDM():
     def __init__(self, column_data, comp_data, rawdata_df, **kw):
@@ -102,11 +118,20 @@ class PSDM():
             chem_type:
                 default = 'halogenated alkenes'
             
+            mass_transfer:
+                can be a dictionary with "{compound: {'kf': value, 'dp': value, 'ds':value}}"
+                or
+                can be a pandas dataframe with columns of compounds and index of ['kf','dp', 'ds']
+                
+                A value of zero will indicate that a user wants the correlation value.
+                for dictionary, all values of 'kf', 'dp', or 'ds' do not have to be provided.
+            
             test_range: default = np.linspace(1, 5, 41)
             xn_range:   default = np.arange(0.20, 0.95, 0.05)
             
             
         '''
+        # mp.freeze_support()
         self.project_name = kw.get('project_name','PSDM')
         
         #collocation initilazation
@@ -284,6 +309,31 @@ class PSDM():
                          label=key)
             plt.legend()
         
+        
+        ### adding mass transfer keyword
+        self.mass_transfer = pd.DataFrame(0, columns=self.compounds, index=['kf','dp','ds'])
+        mass_transfer_data = kw.get('mass_transfer', 'None')
+        if type(mass_transfer_data) == str:
+            pass
+        elif type(mass_transfer_data) == pd.core.frame.DataFrame:
+            try:
+                for comp in mass_transfer_data.columns:
+                    for val_type in mass_transfer_data.index:
+                        self.mass_transfer.loc[val_type.lower(), comp] = mass_transfer_data[comp][val_type]
+            except:
+                print('Error in inputing mass_transfer values')
+        elif type(mass_transfer_data) == dict:
+            try:
+                for comp in mass_transfer_data.keys():
+                    for val_type in mass_transfer_data[comp].keys():
+                        self.mass_transfer.loc[val_type.lower(), comp] = mass_transfer_data[comp][val_type]
+            except:
+                print('Error in inputing mass_transfer values')
+        
+        else:
+            print('mass_transfer input must be a dictionary: {compound: {kf|dp|ds: value}}')
+        # print(self.mass_transfer)
+        
 # =============================================================================
 # end __init__
 # =============================================================================
@@ -310,8 +360,6 @@ class PSDM():
                 if comp in dict_keys:
                     b1[comp] = pfas_dict[comp][0]
                     b2[comp] = pfas_dict[comp][1]
-#                    b1[comp] = 1 - pfas_dict[comp][1]
-#                    b2[comp] = 1 - pfas_dict[comp][0]
                     #forces the intercept of molar K reduction to 100% at t=0
                 else: #if no specific value provided, return 'Average'
                     b1[comp] = pfas_dict['Ave'][0]
@@ -341,10 +389,12 @@ class PSDM():
             return data_store
         
     def __calculate_capacity(self, compound):
+        # print(compound)
         flow = self.flrt * self.flow_mult
         breakthrough_code = 'none'
         carbon_mass = self.wt
         infl = self.data_df[self.influent][compound]
+        infl[infl == 0] = 1e-3  ### prevents divide by zero error
         effl = self.data_df[self.carbon][compound]
         
         breakthrough_time = self.duration
@@ -367,8 +417,8 @@ class PSDM():
         
             done = False
             if not donothing:
-                yte = effl.values
-                yti = infl.values
+                yte = effl.values.astype('float64')
+                yti = infl.values.astype('float64')
                 
                 #check if there are already zeros (breakthrough point exact)
                 tmp_time = perc_diff[perc_diff==0.].index
@@ -405,7 +455,7 @@ class PSDM():
                                 breakthrough_time = test
                                 done = True
                 
-                #check for correlational agreement with values, to imply breakthrough
+                ### check for correlational agreement with values, to imply breakthrough
                 if not done:
                     length = len(yte)
                     corrv = np.array([np.corrcoef(yte[i:i+3],yti[i:i+3])[0,1] \
@@ -420,17 +470,19 @@ class PSDM():
                             elif corrv[i] < 0.95:
                                 break
         
-                nZc = np.count_nonzero(yte)     #used to determine linear regression
-                
+
                 #try to estimate the breakthrough
-                if not done:
-                    x = xdata[-(nZc+1):]
-                    y = yte[-(nZc+1):]
-                    A = np.vstack([x,np.ones(len(x))]).T
-                    m,c = np.linalg.lstsq(A,y)[0]   #fits line  
+                if not done:                
+                    nZc = np.count_nonzero(yte)     #used to determine linear regression
+                    if yte[-(nZc+1)] !=0:
+                        nZc += 1 ## adds one more to non-zero value, if original nZc does not equal 0.
+                    x = xdata[-(nZc+1):].astype('float64')
+                    y = yte[-(nZc+1):].astype('float64')
+                    
+                    m, b, *extra = linregress(x, y)
                     
                     if m > 0:
-                        intersection = (infl.mean() - c)/m
+                        intersection = (infl.mean() - b)/m
                     else:
                         intersection = self.duration#np.max(xt) #aveC
                     
@@ -441,15 +493,28 @@ class PSDM():
                     yte = np.append(yte, aveC)
                     xdata = np.append(xdata, breakthrough_time)
            
-                f_infl = interp1d(xdata, yti)
-                f_effl = interp1d(xdata, yte)
+            
+                f_infl = interp1d(xdata, yti, fill_value='extrapolate')
+               
+                if breakthrough_time <= np.max(xdata):
+                    xdata_trunc = xdata[xdata <= breakthrough_time]
+                    # print(xdata_trunc)
+                    num_vals = len(xdata_trunc)#.shape[0]
+                    f_effl = interp1d(xdata[:num_vals+1], yte[:num_vals+1], fill_value='extrapolate')
+                else:
+                    f_effl = interp1d(xdata, yte, fill_value='extrapoloate')
                 
-                int_infl = quad(f_infl, 0, breakthrough_time, points=xdata)[0]
-                int_effl = quad(f_effl, 0, breakthrough_time, points=xdata)[0]
+                try:
+                    int_infl = quad(f_infl, 0, breakthrough_time, points=xdata)[0]
+                    int_effl = quad(f_effl, 0, breakthrough_time, points=xdata)[0]
+                except Exception as e:
+                    print(e)
+                    int_infl = quad(f_infl, 0, breakthrough_time)[0]
+                    int_effl = quad(f_effl, 0, breakthrough_time)[0]
                 qtmp = flow * self.t_mult * (int_infl - int_effl) * self.mass_mul
                 q_meas = qtmp/carbon_mass #ug/g
                 aveC = int_infl/breakthrough_time # recalculate only what is inside breakthrough
-                k = q_meas / ((aveC*self.mass_mul) ** self.xn)     
+                k = q_meas / ((aveC*self.mass_mul) ** self.xn) 
                 
         elif self.brk_type == 'force':# and self.brk_df != None:
             brk_df = self.brk_df
@@ -464,8 +529,8 @@ class PSDM():
                 xdata = xdata[xdata <= brkdy]
                 
                 if brkdy == 1000: #report min, but no breakthrough
-                    qtmp = quad(f_infl, 0, maxx, points = xdata)[0] - \
-                           quad(f_effl, 0, maxx, points = xdata)[0]
+                    qtmp = quad(f_infl, 0, maxx, points=xdata)[0] - \
+                           quad(f_effl, 0, maxx, points=xdata)[0]
                     aveC = np.mean(infl)
                 else:
                     if brkdy in xdata:
@@ -476,12 +541,12 @@ class PSDM():
                         tmpxdata = np.append(tmpxdata, tmpC)
                         aveC = quad(f_infl,0, brkdy)[0]/brkdy
                         xdata = np.append(xdata, brkdy)
-                    qtmp = quad(f_infl, 0, brkdy, points = xdata)[0] - \
-                           quad(f_effl, 0, brkdy, points = xdata)[0]
+                    qtmp = quad(f_infl, 0, brkdy, points=xdata)[0] - \
+                           quad(f_effl, 0, brkdy, points=xdata)[0]
                     breakthrough_time = brkdy
                 
-                int_infl = quad(f_infl, 0, breakthrough_time, points = xdata)[0]
-                int_effl = quad(f_effl, 0, breakthrough_time, points = xdata)[0]
+                int_infl = quad(f_infl, 0, breakthrough_time, points=xdata)[0]
+                int_effl = quad(f_effl, 0, breakthrough_time, points=xdata)[0]
                 qtmp = flow * self.t_mult * (int_infl - int_effl) * self.mass_mul
                 q_meas = qtmp/carbon_mass #ug/g
                 k = q_meas / ((aveC*self.mass_mul) ** self.xn) 
@@ -532,6 +597,8 @@ class PSDM():
         best_vals: [Dp, Ds, kf]
         flow rate assumed to be in 'ml/min' in column properties
         '''
+        mp.freeze_support()
+        
         #pull information out of solver_data/self
         wr = self.wr
         nc = self.nc
@@ -576,6 +643,11 @@ class PSDM():
         #convert cbo to molar values
         cbo = inf * self.mass_mul / mw #/ 1000. #(* self.mass_mult ????)
         time = (inf.index * t_mult).values
+        if inf.index[-1] < 10 and self.time_type == 'days':
+            dstep = 15.
+        elif self.time_type == 'min':
+            dstep = 1.
+            
         if cbo.iloc[0] == 0.:
             cb0 = 1.
         else:
@@ -588,8 +660,8 @@ class PSDM():
         except:
             brk = np.max(inf.index.values)
                
-        tortu = 1.0                             # tortuosity
-        psdfr = 5.0                             # pore to surface diffusion ratio
+        tortu = self.tortu                             # tortuosity
+        psdfr = self.psdfr                             # pore to surface diffusion ratio
         nd = nc - 1
         
         difl = 13.26e-5/(((vw * 100.)**1.14)*(mol_vol**0.589)) #vb
@@ -597,14 +669,21 @@ class PSDM():
         
         #set film and pore diffusion
         multi_p = difl/(2*rad) # multiplier used for kf calculation
-        kf_v = kf_calc(multi_p, self.re, sc, ebed, corr='Chern and Chien')
+        if self.mass_transfer[compound]['kf'] == 0:
+            kf_v = kf_calc(multi_p, self.re, sc, ebed, corr='Chern and Chien')
+        else:
+            kf_v = self.mass_transfer[compound]['kf']
+            
 
         if compound == 'Test':
             kf_v = self.k_data['Test']['kf'] #will break
             
         cout = eff * self.mass_mul / mw / cb0 #/ 1000.
         
-        dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
+        if self.mass_transfer[compound]['dp'] == 0.:
+            dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
+        else:
+            dp_v = self.mass_transfer[compound]['dp']
         
         # @stopit.threading_timeoutable()
         def run(k_val, xn):
@@ -623,8 +702,14 @@ class PSDM():
             #==============================================================================
             molar_k = k_val / mw / ((1. / mw) ** xn)  
             xni = 1./xn
-           
-            ds_v = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn)
+            
+            
+            if self.mass_transfer[compound]['ds'] == 0.:
+                ds_v = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn)
+            else:
+                ds_v = self.mass_transfer[compound]['ds']
+            
+            
             if water_type != 'Organic Free':
                 ds_v /= 1e10 #1e6
 
@@ -679,11 +764,13 @@ class PSDM():
             if water_type != 'Organic Free':
                 tortu = tortuosity(time_temp)
             else:
-                tortu = np.ones(len(time_temp))
+                tortu = np.ones(len(time_temp)) * self.tortu ## maybe?
             facA = (1./tortu - d)/(1. - d)
             foulFA = (1./molar_k_t(time_temp))**xni
             
             ydot_tmp = np.zeros((nc+1, mc))
+            self.ydot = ydot_tmp * 1.
+            
             def diffun(t, y0):
                 nonlocal aau
                 nonlocal ydot_tmp
@@ -716,7 +803,7 @@ class PSDM():
                 cbs = stdv*(y0tmp[nc]-cpore_tmp)
                 cbs[0] = 0. 
                 
-                bb = interp(facA[idx:idx+2],extra)*np.dot(bedp, cpore) +\
+                bb = interp(facA[idx:idx+2], extra)*np.dot(bedp, cpore) +\
                       np.dot(beds, y0tmp[:nc, :])
                 
                 ww = wr[:nd]@bb
@@ -733,7 +820,7 @@ class PSDM():
                 ydot[-1,1:] = (-dgt*(az[:,0]*cinfl + aau) - 3.* cbs)[1:]  #dgt was changed from dg1  
                 ydot = ydot.reshape((nc+1)*(mc))
                 return ydot
-
+            
             try:
                 y = solve_ivp(diffun,\
                                 (0, ttol),\
@@ -750,10 +837,13 @@ class PSDM():
                 self.ydot = y.y * cb0 * mw / self.mass_mul
                 self.yt = y.t / tconv / t_mult
             except Exception as e:
-                print('Error produced: ', e,'\n', compound)
+                print(f"Error produced: {compound} - {e}")
                 t_temp = np.linspace(0, ttol, 20)
                 cp_tmp = np.ones(20) # need a better error position
                 cp = interp1d(t_temp, cp_tmp, fill_value='extrapolate')
+                ### below 2 lines are still causing issues with lead_lag code
+                self.yt = t_temp / tconv / t_mult
+                self.ydot = np.zeros(((nc+1)*(mc), len(self.yt))) ### should at least make them the same shape as expected
             
             ssq = ((cout_f(time_dim2)-cp(time_dim2))**2).sum()
             return cp, ssq
@@ -800,18 +890,19 @@ class PSDM():
                                   columns = ['data'], \
                                   index = itp)
         
-        writer = pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') #'-'+repr(round(best_val_xn,2))
-        
-        model_data.to_excel(writer, 'model_fit')
-        
-        inf.to_excel(writer, 'influent')
-        eff.to_excel(writer, 'effluent')
-        
         data_tmp = pd.Series([sc, self.re, difl, kf_v, best_val_k, best_val_xn,\
                      dp_v, ds_v, min_val, self.ebct, self.sf], \
                      index = ['Sc','Re','difl','kf','K','1/n','dp','ds','ssq','ebct','sf'])
-        data_tmp.to_excel(writer, 'parameters')
+        
         if self.optimize_flag:
+            writer = pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') #'-'+repr(round(best_val_xn,2))
+
+            model_data.to_excel(writer, 'model_fit')
+            
+            inf.to_excel(writer, 'influent')
+            eff.to_excel(writer, 'effluent')
+            data_tmp.to_excel(writer, 'parameters')
+
             ti.sleep(1)
             writer.save()
             
@@ -1263,26 +1354,28 @@ class PSDM():
             if plot:
                 plt.figure()
                 plt.plot(inf.index, inf.values, marker='x', label='influent')
-                plt.plot(eff.index, eff.values, marker='o', label='effluent')
+                plt.plot(eff.index, eff.values, marker='.',
+                         markerfacecolor='None',label='effluent')
                 #plot model results
-                plt.plot(md.index, md.values,\
-                         label = repr(round(best_val_k,3))+\
-                         ' - ' + repr(round(best_val_xn, 3)))
+                plt.plot(md.index, 
+                         md.values,
+                         label=f"K: {best_val_k:.2f}, 1/n: {best_val_xn:.3f}")
+
                 
                 plt.legend()
-                plt.title(compound+' - '+self.carbon)
-                plt.savefig(self.carbon+'_'+compound+'.png',dpi=300)
+                plt.title(f"{compound} - {self.carbon}")
+                plt.savefig(f"{self.carbon}_{compound}.png",dpi=300)
                 plt.close()
                 
                 plt.figure()
                 ssqs[ssqs>np.percentile(ssqs, 25)] = np.percentile(ssqs, 25)
                 plt.contourf(ssqs.columns, ssqs.index, ssqs.values)
-                plt.title(compound+' - '+self.carbon)
-                plt.savefig('ssq_'+self.carbon+'_'+compound+'.png',dpi=300)
+                plt.title(f"{compound} - {self.carbon}")
+                plt.savefig(f"ssq_{self.carbon}_{compound}.png",dpi=300)
                 plt.close()
             
             if save_file:
-                writer = pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx')
+                writer = pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx")
                 ssqs.to_excel(writer, 'Sheet1')
                 writer.save()
                 
@@ -1371,7 +1464,7 @@ class PSDM():
             
             return ssqs.values[0][0]
         
-        dtypes = [('k',float),('1/n',float),('ssq',float)]
+        # dtypes = [('k',float),('1/n',float),('ssq',float)]
         opt_flg = self.optimize_flag
         orig_test_range = self.test_range * 1.
         orig_xn_range = np.round(self.xn_range * 1.,5)
@@ -1484,7 +1577,7 @@ class PSDM():
                     pmk = best_k_factor + sign * des_k # initiates xn
                     count = 0
                     decreasing = True
-                    while pmk >= min_k_factor and decreasing:
+                    while pmk >= min_k_factor and decreasing:# and pmk > 0:
                         x0 = [pmk, best_xn]
                         ssq = min_fun(x0, compound, k_val, q_val)
                         
@@ -1520,7 +1613,7 @@ class PSDM():
                 correct_direction = False
                 sign = 1
                 pmk = best_k_factor + sign * des_k # initiates xn
-                count_check = 0
+                # count_check = 0
                 
                 while pmk <= max_k_factor and decreasing:
                     count = 0
@@ -1548,7 +1641,7 @@ class PSDM():
                     pmk = best_k_factor + sign * des_k # initiates xn
                     decreasing = True
                     
-                    while pmk >= min_k_factor and decreasing:
+                    while pmk >= min_k_factor and decreasing:# and pmk > 0.:
                         count = 0
                         for xn in new_xn_range:
                             x0 = [pmk, xn]
@@ -1569,7 +1662,7 @@ class PSDM():
             #convert back to best_k
             best_k = best_k_factor * recalc_k(k_val, q_val, self.xn, best_xn)
             
-            print('K: ', np.round(best_k,3), '1/n: ', best_xn)
+            print(f"K: {best_k:.3f} -- 1/n: {best_xn:.3f}")
             self.k_data[compound]['K'] = best_k * 1
             self.k_data[compound]['1/n'] = best_xn * 1
             
@@ -1577,19 +1670,21 @@ class PSDM():
                 inf = self.data_df[self.influent][compound]
                 eff = self.data_df[self.carbon][compound]
                 
-                plt.plot(inf.index, inf.values, 'ro:', 
+                plt.plot(inf.index, inf.values, marker='.', ls=':', 
+                         color='silver', 
                          markerfacecolor='None', label='influent') #empty circle
-                plt.plot(eff.index, eff.values, 'b+', label='effluent')
+                plt.plot(eff.index, eff.values, marker='+', ls='None', 
+                         color='grey', label='effluent')
                 
                 #re-run best fit... 
                 self.test_range = np.array([best_k])
                 self.xn_range = np.array([best_xn])
                 _, _, _, _, md = self.run_psdm_kfit(compound)
                 
-                plt.plot(md.index, md.values,'b-', label='model')
+                plt.plot(md.index, md.values, ls='-',marker='None',color='black',
+                         label='model')
                 
-                plt.title(compound+'\nK: '+repr(np.round(best_k,3))+' - 1/n: '+
-                          repr(np.round(best_xn,4)))
+                plt.title(f"{compound}\nK: {best_k:.3f} - 1/n: {best_xn:.3f}")
                 plt.xlabel('Time (days)')
                 plt.ylabel('Concentration (ng/L)')
                 plt.legend()
@@ -1639,7 +1734,7 @@ class PSDM():
         tau = self.tau
         rad = self.rad
         compound_list = self.compounds
-        
+                
         water_type = self.water_type
         
         k_v = self.k_data.loc['K']
@@ -1651,7 +1746,7 @@ class PSDM():
         if self.time_type == 'days':
             dstep = 0.25 * min_per_day
         else:
-            dstep = 15.       
+            dstep = 1.       
             
         #set up bindings for nonlocal varaibles
         cinf = 1.
@@ -1661,7 +1756,7 @@ class PSDM():
         time_dim2 = 1.
         ttol = 1.
         tstep = 1.
-        ds_v = 1.
+        ds_v = 1. #### need to add in user input mass transfer ###TODO!
                 
         inf = self.data_df[self.influent]
         
@@ -1681,11 +1776,12 @@ class PSDM():
         
         #set film and pore diffusion
         multi_p = difl/(2*rad) # multiplier used for kf calculation
+        ## calculate everything first, replace as needed
         kf_v = kf_calc(multi_p, self.re, sc, ebed, corr='Chern and Chien')
-#        if compound == 'Test':
-#            kf_v = self.k_data['Test']['kf'] #will break
                     
         dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
+        
+        
         
         # @stopit.threading_timeoutable()
         def run():
@@ -1707,9 +1803,19 @@ class PSDM():
             xni = 1./xn_v
             
             ds_v = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn_v)
+            
+            for cdx in self.mass_transfer.columns:
+                if self.mass_transfer[cdx]['kf'] > 0.:
+                    kf_v[cdx] = self.mass_transfer[cdx]['kf']
+                if self.mass_transfer[cdx]['dp'] > 0.:
+                    dp_v[cdx] = self.mass_transfer[cdx]['dp']
+                if self.mass_transfer[cdx]['ds'] > 0.:
+                    ds_v[cdx] = self.mass_transfer[cdx]['ds']
+                    ### should this be before or after the fouling? 
+            
             if water_type != 'Organic Free':
                 ds_v /= 1e10 #1e6  #original code =1e-30, but this caused instability
-
+            
             d = (ds_v/dp_v)[self.compounds]
             
             qe = molar_k * cb0**xn_v
@@ -1799,9 +1905,9 @@ class PSDM():
             #initialize storage arrays/matrices
             n = self.num_comps * (nc+1)*mc
             y0 = np.zeros(n)
-            yt0 = np.zeros(self.__altshape)
-            z = np.zeros(self.__altshape)
-            q0 = np.zeros(self.__altshape)
+            # yt0 = np.zeros(self.__altshape)
+            # z = np.zeros(self.__altshape)
+            # q0 = np.zeros(self.__altshape)
             aau = np.zeros((self.num_comps, mc))
             aau2 = np.zeros((self.num_comps, mc))
 
@@ -1826,7 +1932,7 @@ class PSDM():
                 cinfl = interp(cinfA[idx:idx+2], extra)
                 foul_fac = interp(foulFA[idx:idx+2], extra).reshape(ThreeDSize)
                 facAv = interp(facA[idx:idx+2], extra).reshape(ThreeDSize)
-
+                
                 # trying to eliminate for loops
                 z2 = np.multiply(ym_vA, y0tmp[:,:nc,:mc])
                 z2[z2<0] = 0.
@@ -1901,7 +2007,7 @@ class PSDM():
                             y0, \
                             method=self.solver,\
                             jac_sparsity=self.jac_sparse,\
-                            # max_step=tstep/3.,\
+                            max_step=tstep/3.,\
                             )
             
             # defines interpolating function of predicted effluent
@@ -1932,6 +2038,165 @@ class PSDM():
         best_fit = run()
         return best_fit
     #end multi_run
+    
+    
+    
+# =============================================================================
+#     NEW BELOW, may delete
+# =============================================================================
+    
+    # def __run_MP_helper(self, k, invN, compound, k_mult):
+    #     mp.freeze_support()
+    #     self.test_range = np.array([k])
+    #     self.xn_range = np.array([invN])
+    #     compound, best_val_k, best_val_xn, ssqs, model_data = self.run_psdm_kfit(compound)
+    #     print(ssqs)
+    #     return k, invN, ssqs, compound, k_mult
+        
+    
+    def run_all_MP(self, plot=False, save_file=False):
+        '''
+        Parameters
+        ----------
+        plot : BOOL, optional
+            Are plots generated during this function. The default is False.
+        save_file : BOOL, optional
+            Are results files generated during this function. The default is True.
+        optimize : string, optional
+            'brute' or 'staged' are acceptable options. The default is 'staged'.
+        init_grid : INT, optional
+            Number of grid points for staged optimizer. The default is 5.
+        init_loop : INT, optional
+            Number of refinement loops for staged optimizer. The default is 3.
+
+        Current Behavior
+        ----------------
+        All files will be overwritten. No file checking is currently performed.
+        
+        Returns
+        -------
+        None. Optimized k & 1/n values are saved to Class object, 
+        and can be saved in script that calls this function.
+
+        '''
+        
+        
+        #forces single run to handle optimizing in this funciton, not run_psdm_kfit
+        opt_flg = self.optimize_flag
+        orig_test_range = self.test_range * 1.
+        orig_xn_range = self.xn_range * 1.
+        self.optimize_flag = False
+        
+        num_processes = self.processes - 2
+        
+        k_range = self.test_range
+        xn_range = self.xn_range
+
+
+        for compound in self.compounds:
+            print(compound, ' running')
+
+            k_val = self.k_data[compound]['K']
+            q_val = self.k_data[compound]['q']
+            
+            inf = self.data_df[self.influent][compound]
+            eff = self.data_df[self.carbon][compound]
+            
+            k_mult = {}
+            models = []
+            
+            
+            for xns in xn_range:
+                k_mult[xns] = recalc_k(k_val, q_val, self.xn, xns)
+            
+            for k in k_range:
+                for xn in xn_range:
+                    models.append([deepcopy(self), k * k_mult[xn], xn, 
+                                   compound, k])
+
+            # processes = []
+            # for row in models:
+            #     p = mp.Process(target=run_MP_helper, args=(*row, ))
+            #     processes.append(p)
+            
+            # result_list = [x.start() for x in processes]
+            # print('Here')
+            # for item in result_list:
+            #     item.join()
+            
+            pool = mp.Pool(processes=num_processes)
+            retval = pool.starmap(run_MP_helper, models)
+            pool.close()
+            pool.join()
+                    
+            data_pd = pd.DataFrame(retval, columns=['K2','1/n','ssq','compound','K'])
+            ssqs = pd.pivot_table(data_pd,values=['ssq'], 
+                                             index=['K'],
+                                             columns=['1/n'],
+                                             aggfunc=np.max,
+                                             )['ssq']
+            
+            # print(np.round(ssqs.min().min(),6), np.round(ssqs.max().max(),6))
+            if ~np.isclose(ssqs.min().min(), ssqs.max().max()):# np.floor(ssqs.values[0][0]):
+                # print('I am here')
+            
+                min_val = find_minimum_df(ssqs)
+                best_val_xn = min_val.columns[0]
+                best_val_k = min_val.index[0] * k_mult[best_val_xn]
+                min_val = min_val.values[0][0]
+                
+                self.xn_range = np.array([best_val_xn])
+                self.test_range = np.array([best_val_k])
+                _, _, _, _, md = self.run_psdm_kfit(compound)
+                
+                if plot:
+                    plt.figure()
+                    plt.plot(inf.index, inf.values, marker='x', label='influent')
+                    plt.plot(eff.index, eff.values, marker='.',
+                              markerfacecolor='None',label='effluent')
+                    #plot model results
+                    plt.plot(md.index, 
+                              md.values,
+                              label=f"K: {best_val_k:.2f}, 1/n: {best_val_xn:.3f}")
+    
+                    
+                    plt.legend()
+                    plt.title(f"{compound} - {self.carbon}")
+                    plt.savefig(f"{self.carbon}_{compound}.png",dpi=300)
+                    plt.close()
+                    
+                    plt.figure()
+                    ssqs[ssqs>np.percentile(ssqs, 25)] = np.percentile(ssqs, 25)
+                    plt.contourf(ssqs.columns, ssqs.index, ssqs.values)
+                    plt.title(f"{compound} - {self.carbon}")
+                    plt.savefig(f"ssq_{self.carbon}_{compound}.png",dpi=300)
+                    plt.close()
+                
+                if save_file:
+                    writer = pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx")
+                    ssqs.to_excel(writer, 'Sheet1')
+                    writer.save()
+                    
+                    writer = pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
+                                            compound+'.xlsx')
+                
+                    md.to_excel(writer, 'model_fit')
+                    
+                    inf.to_excel(writer, 'influent')
+                    eff.to_excel(writer, 'effluent')
+                    
+                    data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
+                                  min_val, self.ebct, self.sf], \
+                                  index=['Re','K','1/n','ssq','ebct','sf'])
+                    data_tmp.to_excel(writer, 'parameters')
+                    writer.save()
+                
+                self.k_data[compound]['K'] = best_val_k * 1
+                self.k_data[compound]['1/n'] = best_val_xn * 1
+
+        self.xn_range = orig_xn_range
+        self.test_range = orig_test_range
+        self.optimize_flag = opt_flg #resets to original value
     
 # =============================================================================
 # END OF PSDM CLASS
