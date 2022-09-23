@@ -1,3 +1,13 @@
 # Byte-compiled files
 __pycache__/
 *.py[cod]
+PSDM/PSDM_Trichloroethylene-F400.xlsx
+PSDM/best_fits-PSDM.xlsx
+PSDM/Trichloroethylene_F400_example3.png
+PSDM/Trichloroethylene_F400_example2.png
+PSDM/Trichloroethylene_F400_example1a.png
+PSDM/Trichloroethylene_F400_example1.png
+PSDM/Example_TCE_F400_example2.xlsx
+PSDM/Example_TCE_F400_example1a.xlsx
+PSDM/Example_TCE_F400_example1.xlsx
+PSDM/.ipynb_checkpoints/Simple_Example-checkpoint.ipynb
