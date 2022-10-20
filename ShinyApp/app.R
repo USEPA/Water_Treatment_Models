@@ -163,7 +163,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                    
                                                    #Parameters Row 5#
                                                    
-                                                  
+                                                   
                                                    
                                                    br(), br(), br(),
                                                    
@@ -180,7 +180,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                           
                                           
                                           tabPanel("Ions",
-                                                   DT::dataTableOutput("IonsTable"),
+                                                   tableOutput("IonsTable"),
                                                    br(),
                                                    
                                                    fluidRow(
@@ -189,7 +189,8 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                             actionButton("add", "Add Ion")),
                                                      column(2, offset=1,
                                                             textInput("name", "name"),
-                                                            numericInput("mw", "mw", 1)),
+                                                            numericInput("mw", "mw", 1),
+                                                            numericInput("avgconc", "Average Concentration", 5)),
                                                      column(3,
                                                             numericInput("KxA", "KxA", 1),
                                                             numericInput("valence", "valence", 1)),
@@ -198,14 +199,13 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                             numericInput("kL", "kL", 1),
                                                             numericInput("Ds", "Ds", 1),
                                                             textOutput("nameerror")),
-                                                    )),
+                                                   )),
                                           
                                           tabPanel("Initial Concentration",
                                                    
                                                    DT::dataTableOutput("ICTable"),
-                                                   numericInput("avgconc", "Average Concentration", 5),
-                                                   actionButton("add2", "Add Concentration"),
                                                   
+                                                   
                                                    
                                                    
                                                    
@@ -223,7 +223,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                ),
                                
                                tabPanel("Statistics",
-                                        ),
+                               ),
                                
                                tabPanel("Output Data",
                                         tableOutput("sum"),
@@ -232,9 +232,9 @@ ui <- fluidPage(theme=shinytheme("united"),
                                         tableOutput("sum4"),
                                         tableOutput("dataview"),
                                         tableOutput("summary2")
-                                        )
-                    
-                  ))))
+                               )
+                               
+                    ))))
 
 
 server <- function(input, output, session) {
@@ -251,7 +251,9 @@ server <- function(input, output, session) {
     params
   })
   
-  ion2<-reactive({
+  iondat<-reactiveVal()
+  
+  observe({
     file <- input$file1
     ext <- tools::file_ext(file$datapath)
     
@@ -260,12 +262,12 @@ server <- function(input, output, session) {
     
     ions<-read_xlsx(file$datapath, sheet=2)
     
-    ions
+    iondat(ions)
   })
   
-  output$IonsTable<-renderDataTable({ion2()})
+  cindat<-reactiveVal()
   
-  cin2<-reactive({
+  observe({
     file <- input$file1
     ext <- tools::file_ext(file$datapath)
     
@@ -274,10 +276,9 @@ server <- function(input, output, session) {
     
     cin2<-read_xlsx(file$datapath, sheet=3)
     
-    cin2
+    cindat(cin2)
   })
   
-  output$ICTable<-renderDataTable({cin2()})
   
   capacity<-reactive({
     cap<-filter(params2(), name=="Q")$value
@@ -483,38 +484,38 @@ server <- function(input, output, session) {
     saveddataframe
   })
   
-  ionrow<-reactive({
-    ionframe<-data.frame(
-      name=c(input$name), mw=c(input$mw), KxA=c(input$KxA), valence=c(input$valence), kL=c(input$kL), Ds=c(input$Ds)
-    )
-    ionframe
+  observeEvent(input$add, {
+    iondat(tibble::add_row(iondat(), name=input$name, mw=input$mw, KxA=input$KxA, valence=input$valence, kL=input$kL, Ds=input$Ds))  
   })
   
+  output$IonsTable<-renderTable({iondat()})
   
   
-  iondataframe<-eventReactive(input$add, {
-    newiondataframe<-rbind(ion2(), ionrow())
-    newiondataframe
+  
+  observeEvent(input$add, {
+    cindat(tibble::add_column(cindat(), !! input$name:=input$avgconc))
   })
   
-  cincolumn<-reactive({
-    cinframe<-data.frame(
-      PFAS=c(input$avgconc, input$avgconc)
-    )
-    cinframe
-  })
+  # cincolumn<-reactive({
+  #   cinframe<-data.frame(
+  #     PFAS=c(input$avgconc, input$avgconc)
+  #   )
+  #   cinframe
+  # })
+  # 
+  # cin2<-eventReactive(input$add, {
+  #   newcindataframe<-cbind(cin2(), cincolumn())
+  # })
   
-  cindataframe<-eventReactive(input$add2, {
-    newcindataframe<-cbind(cin2(), cincolumn())
-  })
+  output$ICTable<-renderDataTable({cindat()})
   
   #output$IonsTable<-eventReactive(input$add, {renderDataTable(iondataframe())})
   #
   
   
-  output$dataview<-renderTable(ionrow())
-  output$summary2<-renderTable(iondataframe())
-  output$summary3<-renderTable(cindataframe())
+  #output$dataview<-renderTable(ionrow())
+  output$summary2<-renderTable(iondat())
+  output$summary3<-renderTable(cindat())
   
   
   
@@ -565,16 +566,16 @@ server <- function(input, output, session) {
     output$ionadded<-renderText("Ion Added")
   })
   
-  observeEvent(input$add2, {
+  observeEvent(input$add, {
     output$concentrationadded<-renderText("Concentration Added")
   })
   
   observeEvent(input$run_button, {
     output$analysisran<-renderText("Analysis is Running")
   })
-
   
-
+  
+  
   
   S_PER_HR <- 60 * 60 # seconds per hour
   
@@ -963,11 +964,11 @@ server <- function(input, output, session) {
   }
   
   out <-reactive({
-    HSDMIX_solve(newdataframe(), iondataframe(), cindataframe(), nt_report)})
+    HSDMIX_solve(newdataframe(), iondat(), cindat(), nt_report)})
   
   output$sum<-renderTable(newdataframe())
-  output$sum2<-renderTable(iondataframe())
-  output$sum3<-renderTable(cindataframe())
+  output$sum2<-renderTable(iondat())
+  output$sum3<-renderTable(cindat())
   output$sum4<-renderTable(out())
   
   # find outlet indices
@@ -1010,16 +1011,13 @@ server <- function(input, output, session) {
     inputfile<-read_xlsx(file$datapath, sheet=2)
   })
   
-  Index<-reactive({
-    rownums<-nrow(iondataframe())
-    rownums
-  })
+
   
   
-  bonusdataframe3<-eventReactive(input$run_button, {for (x in 5:Index()){
+  bonusdataframe3<-eventReactive(input$run_button, {for (x in 5:nrow(iondat())){
     
     dx_frame<-data.frame(
-      hours=out()[[1]], conc=out()[[2]][, liquid_id(), x, outlet_id()], chemical=iondataframe()[x,1]
+      hours=out()[[1]], conc=out()[[2]][, liquid_id(), x, outlet_id()], chemical=iondat()[x,1]
     )
     
     bonusdataframe<-rbind(dx_frame, bonusdataframe2)
@@ -1089,97 +1087,89 @@ server <- function(input, output, session) {
   outputall<-reactiveValues(counterion=0)
   outputbonus<-reactiveValues(ion=0)
   
-  # nitrateholder<-observeEvent(input$run_button, {
-  #   req(alldatacc0())
-  #   
-  #   holderframe<-alldatacc0()
-  #   holderframe$conc<-nitrateconverted$conc
-  #   
-  #   holderframe
-  # })
-  # 
-  # chlorideholder<-observeEvent(input$run_button, {
-  #   req(alldatacc0())
-  #   
-  #   holderframe<-alldatacc0()
-  #   holderframe$conc<-chlorideconverted$conc
-  #   
-  #   holderframe
-  # })
-  # 
-  # sulfateholder<-observeEvent(input$run_button, {
-  #   req(alldatacc0())
-  #   
-  #   holderframe<-alldatacc0()
-  #   holderframe$conc<-sulfateconverted$conc
-  #   
-  #   holderframe
-  # })
-  # 
-  # bicarbonateholder<-observeEvent(input$run_button, {
-  #   req(alldatacc0())
-  #   
-  #   holderframe<-alldatacc0()
-  #   holderframe$conc<-bicaronateconverted$conc
-  #   
-  #   holderframe
-  # })
+  chloridecc0<-reactive({
+    cnotvalue<-chlorideframe()$conc[[1]]
+  })
   
-  # alldatacc02<-reactive({rbind(chlorideholder(), nitrateholder(), bicarbonateholder(), sulfateholder())})
+  nitratecc0<-reactive({
+    nnotvalue<-nitrateframe()$conc[[1]]
+  })
+  
+  bicarbonatecc0<-reactive({
+    bnotvalue<-bicarbonateframe()$conc[[1]]
+  })
+  
+  sulfatecc0<-reactive({
+    snotvalue<-sulfateframe()$conc[[1]]
+  })
+  
+  chlorideframecc0<-reactive({chlorideframe()})
+  nitrateframecc0<-reactive({nitrateframe()})
+  bicarbonateframecc0<-reactive({bicarbonateframe()})
+  sulfateframecc0<-reactive({sulfateframe()})
   
   
-  # observeEvent(input$run_button, {
-  #   req(alldata())
-  # 
-  #   if(input$timeunits=="s"){
-  #     outputall$time<-alldata()$hours*3600
-  #   }
-  #   if(input$timeunits=="min"){
-  #     outputall$time<-alldata()$hours*60
-  #   }
-  #   if(input$timeunits=="hr"){
-  #     outputall$time<-alldata()$hours*1
-  #   }
-  #   if(input$timeunits=="day"){
-  #     outputall$time<-alldata()$hours/24
-  #   }
-  #   if(input$timeunits=="month"){
-  #     outputall$time<-alldata()$hours/720 #Assume 30 days in a month
-  #   }
-  #   if(input$timeunits=="year"){
-  #     outputall$time<-alldata()$hours/8760
-  #   }
-  # })
-  # 
-  # observeEvent(input$run_button, {
-  #   req(bonusdataframe3())
-  #   
-  #   if(input$timeunits=="s"){
-  #     outputall$time<-bonusdataframe3()$hours*3600
-  #   }
-  #   if(input$timeunits=="min"){
-  #     outputall$time<-bonusdataframe3()$hours*60
-  #   }
-  #   if(input$timeunits=="hr"){
-  #     outputall$time<-bonusdataframe3()$hours*1
-  #   }
-  #   if(input$timeunits=="day"){
-  #     outputall$time<-bonusdataframe3()$hours/24
-  #   }
-  #   if(input$timeunits=="month"){
-  #     outputall$time<-bonusdataframe3()$hours/720 #Assume 30 days in a month
-  #   }
-  #   if(input$timeunits=="year"){
-  #     outputall$time<-bonusdataframe3()$hours/8760
-  #   }
-  # })
+  reactive({chlorideframecc0()$conc<-chlorideframecc0()$conc/chloridecc0()})
+  reactive({nitrateframecc0()$conc<-nitrateframecc0()$conc/nitratecc0()})
+  reactive({bicarbonatecc0()$conc<-bicarbonateframecc0()$conc/bicarbonatecc0()})
+  reactive({sulfateframecc0()$conc<-sulfateframecc0()$conc/sulfatecc0()})
+  
+  allcc0<-reactive({rbind(chlorideframecc0(),nitrateframecc0(), bicarbonateframecc0(), sulfateframecc0())})
+  
+  
+  
+  observeEvent(input$run_button, {
+    req(alldata())
+    
+    if(input$timeunits=="s"){
+      outputall$time<-alldata()$hours*3600
+    }
+    if(input$timeunits=="min"){
+      outputall$time<-alldata()$hours*60
+    }
+    if(input$timeunits=="hr"){
+      outputall$time<-alldata()$hours*1
+    }
+    if(input$timeunits=="day"){
+      outputall$time<-alldata()$hours/24
+    }
+    if(input$timeunits=="month"){
+      outputall$time<-alldata()$hours/720 #Assume 30 days in a month
+    }
+    if(input$timeunits=="year"){
+      outputall$time<-alldata()$hours/8760
+    }
+  })
+  
+  observeEvent(input$run_button, {
+    req(bonusdataframe3())
+    
+    if(input$timeunits=="s"){
+      outputall$time<-bonusdataframe3()$hours*3600
+    }
+    if(input$timeunits=="min"){
+      outputall$time<-bonusdataframe3()$hours*60
+    }
+    if(input$timeunits=="hr"){
+      outputall$time<-bonusdataframe3()$hours*1
+    }
+    if(input$timeunits=="day"){
+      outputall$time<-bonusdataframe3()$hours/24
+    }
+    if(input$timeunits=="month"){
+      outputall$time<-bonusdataframe3()$hours/720 #Assume 30 days in a month
+    }
+    if(input$timeunits=="year"){
+      outputall$time<-bonusdataframe3()$hours/8760
+    }
+  })
   
   
   observeEvent(input$run_button,{
     req(alldata())
     
     if(input$OCunits=="c/c0"){
-      outputall$counterion <- alldata()$conc
+      outputall$counterion <- allcc0()$conc
     }
     if(input$OCunits=="mg/L"){
       outputall$counterion <- alldata()$conc*1
@@ -1196,7 +1186,7 @@ server <- function(input, output, session) {
     req(bonusdataframe3())
     
     if(input$OCunits=="c/c0"){
-      outputbonus$ion<-bonusdataframe3()$conc
+      outputbonus$ion<-bonusdataframe3()$conc*1
     }
     if(input$OCunits=="mg/L"){
       outputbonus$ion<-bonusdataframe3()$conc*1
@@ -1238,7 +1228,7 @@ server <- function(input, output, session) {
       geom_point()  + mytheme+ ggtitle("Ion Concentration over Time")
   )
   
-
+  
 }
 
 
