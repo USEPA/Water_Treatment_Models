@@ -16,8 +16,10 @@ ui <- fluidPage(theme=shinytheme("united"),
                     fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                     #actionButton("apply_button", "Apply Data"),
                     textOutput("OutputConcentration"),
-                    selectInput("OCunits", "", c("c/c0", "mg/L", "ug/L", "ng/L")),
-                    selectInput("timeunits","",c("s", "min", "hr", "day", "month", "year")),
+                    selectInput("OCunits", "Output Concentration Units", c("c/c0", "mg/L", "ug/L", "ng/L")),
+                    selectInput("timeunits","Time Units",c("s", "min", "hr", "day", "month", "year")),
+                    numericInput("starttime", "Inital Time", 0),
+                    numericInput("endtime", "Final Time", 40),
                     actionButton("run_button", "Run Analysis", icon=icon("play")),
                     textOutput("ionadded"),
                     textOutput("concentrationadded"),
@@ -275,9 +277,13 @@ server <- function(input, output, session) {
     validate(need(ext == "xlsx", "Please upload a csv file"))
     
     cin2<-read_xlsx(file$datapath, sheet=3)
+    cin2$time<-list(input$starttime, input$endtime)
     
     cindat(cin2)
   })
+  
+  
+  
   
   
   capacity<-reactive({
@@ -496,26 +502,6 @@ server <- function(input, output, session) {
     cindat(tibble::add_column(cindat(), !! input$name:=input$avgconc))
   })
   
-  # cincolumn<-reactive({
-  #   cinframe<-data.frame(
-  #     PFAS=c(input$avgconc, input$avgconc)
-  #   )
-  #   cinframe
-  # })
-  # 
-  # cin2<-eventReactive(input$add, {
-  #   newcindataframe<-cbind(cin2(), cincolumn())
-  # })
-  
-  output$ICTable<-renderDataTable({cindat()})
-  
-  #output$IonsTable<-eventReactive(input$add, {renderDataTable(iondataframe())})
-  #
-  
-  
-  #output$dataview<-renderTable(ionrow())
-  output$summary2<-renderTable(iondat())
-  output$summary3<-renderTable(cindat())
   
   
   
@@ -559,7 +545,6 @@ server <- function(input, output, session) {
   output$InitialTime<-renderText("Inital")
   output$FinalTime<-renderText("Final")
   
-  output$OutputConcentration<-renderText("Output Concentration")
   output$OC<-renderText("Units")  
   
   observeEvent(input$add, {
@@ -1229,13 +1214,13 @@ server <- function(input, output, session) {
   })
   
   output$sum<-renderTable(newdataframe())
-  output$sum2<-renderPrint(nrow(iondat()))
-  output$sum3<-renderTable(bonusdataframe3())
+  output$sum2<-renderPrint(iondat())
+  output$sum3<-renderTable(cindat())
   #output$sum4<-renderTable(processed_data2())
   
   output$Plot <- renderPlot(
     ggplot(processed_data(), mapping=aes(x=hours, y=conc, color=Chemical)) +
-      geom_point() + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) + ggtitle("Counter-Ion Concentration over Time")
+      geom_point() + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) + xlim(input$starttime,input$endtime) + ggtitle("Counter-Ion Concentration over Time")
   )
   
   output$ExtraChemicals <- renderPlot(
