@@ -204,7 +204,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                           tabPanel("Initial Concentration",
                                                    
                                                    DT::dataTableOutput("ICTable"),
-                                                  
+                                                   
                                                    
                                                    
                                                    
@@ -227,7 +227,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                
                                tabPanel("Output Data",
                                         tableOutput("sum"),
-                                        tableOutput("sum2"),
+                                        textOutput("sum2"),
                                         tableOutput("sum3"),
                                         tableOutput("sum4"),
                                         tableOutput("dataview"),
@@ -966,10 +966,9 @@ server <- function(input, output, session) {
   out <-reactive({
     HSDMIX_solve(newdataframe(), iondat(), cindat(), nt_report)})
   
-  output$sum<-renderTable(newdataframe())
-  output$sum2<-renderTable(iondat())
-  output$sum3<-renderTable(cindat())
-  output$sum4<-renderTable(out())
+  # output$sum<-renderTable(newdataframe())
+  # output$sum2<-renderTable(iondat())
+  # output$sum3<-renderTable(cindat())
   
   # find outlet indices
   
@@ -977,20 +976,20 @@ server <- function(input, output, session) {
   liquid_id <- reactive({dim(out()[[2]])[2]})
   
   
-  mytheme <-  theme(panel.background = element_rect(fill = "white", colour = NA),
-                    panel.grid.major = element_line(colour = "grey70", size = 0.2),
-                    panel.grid.minor = element_line(colour = "grey85", size = 0.5),
-                    legend.title = element_text(colour = "black", size = 12, face = "bold", hjust = 0.5),
-                    legend.text = element_text(colour = "black", size = 12),
-                    legend.key.size = unit(1, "line"),
-                    strip.text = element_text(colour = "black", size = 7),
-                    axis.ticks = element_line(colour = "black", size = 1),
-                    axis.line = element_line(colour = "black", size = 1, lineend = "square"),
-                    axis.text.x = element_text(colour = "black", size = 8),
-                    axis.text.y = element_text(colour = "black", size = 8),
-                    axis.title.x = element_text(colour = "black", size = 15),
-                    axis.title.y = element_text(colour = "black", size = 15),
-                    plot.title=element_text(colour="black",size=15,face="bold", hjust=0.5))
+  mytheme <-  reactive({theme(panel.background = element_rect(fill = "white", colour = NA),
+                              panel.grid.major = element_line(colour = "grey70", size = 0.2),
+                              panel.grid.minor = element_line(colour = "grey85", size = 0.5),
+                              legend.title = element_text(colour = "black", size = 12, face = "bold", hjust = 0.5),
+                              legend.text = element_text(colour = "black", size = 12),
+                              legend.key.size = unit(1, "line"),
+                              strip.text = element_text(colour = "black", size = 7),
+                              axis.ticks = element_line(colour = "black", size = 1),
+                              axis.line = element_line(colour = "black", size = 1, lineend = "square"),
+                              axis.text.x = element_text(colour = "black", size = 8),
+                              axis.text.y = element_text(colour = "black", size = 8),
+                              axis.title.x = element_text(colour = "black", size = 15),
+                              axis.title.y = element_text(colour = "black", size = 15),
+                              plot.title=element_text(colour="black",size=15,face="bold", hjust=0.5))})
   
   
   dat<-reactive({data.frame(hours = out()[[1]], conc = out()[[2]][, liquid_id(), 1, outlet_id()])})
@@ -1011,24 +1010,33 @@ server <- function(input, output, session) {
     inputfile<-read_xlsx(file$datapath, sheet=2)
   })
   
-
   
   
+  #iondatlength
+  #chemicalcheck
   bonusdataframe3<-eventReactive(input$run_button, {for (x in 5:nrow(iondat())){
     
     dx_frame<-data.frame(
       hours=out()[[1]], conc=out()[[2]][, liquid_id(), x, outlet_id()], chemical=iondat()[x,1]
     )
     
-    bonusdataframe<-rbind(dx_frame, bonusdataframe2)
+    bonusdataframe<-rbind(bonusdataframe, dx_frame)
     
   }
     bonusdataframe
   })
   
+  # bonusdataframe3=list()
+  # 
+  # eventReactive(input$run_button, {
+  #   for(i in 5:nrow(iondat())){
+  #     dx_frame<-data.frame(
+  #         hours=out()[[1]], conc=out()[[2]][, liquid_id(), i, outlet_id()], chemical=iondat()[i,1])
+  #     bonusdataframe3[[i]]<-dx_frame
+  #   }
+  # })
   
-  
-  
+  #bonusdataframe3=reactive({do.call(rbind, bonusdataframe3())})
   
   chlorideframe<-reactive({data.frame(
     hours=out()[[1]], conc=out()[[2]][, liquid_id(), 1, outlet_id()], Chemical=rep("Chloride", nrow(dat()))
@@ -1169,7 +1177,7 @@ server <- function(input, output, session) {
     req(alldata())
     
     if(input$OCunits=="c/c0"){
-      outputall$counterion <- allcc0()$conc
+      outputall$counterion <- alldata()$conc
     }
     if(input$OCunits=="mg/L"){
       outputall$counterion <- alldata()$conc*1
@@ -1204,28 +1212,35 @@ server <- function(input, output, session) {
     
     plot_data <- alldata()
     plot_data$conc <- outputall$counterion
-    #plot_data$hours <- outputall$time
+    plot_data$hours <- outputall$time
     plot_data
   })
+  
+  
+  
   
   processed_data2 <- eventReactive(input$run_button, {
     req(bonusdataframe3())
     
     plot_data2 <- bonusdataframe3()
     plot_data2$conc <- outputbonus$ion
-    #plot_data2$hours <- outputbonus$hours
+    plot_data2$hours <- outputall$time
     plot_data2
   })
   
+  output$sum<-renderTable(newdataframe())
+  output$sum2<-renderPrint(nrow(iondat()))
+  output$sum3<-renderTable(bonusdataframe3())
+  #output$sum4<-renderTable(processed_data2())
   
   output$Plot <- renderPlot(
     ggplot(processed_data(), mapping=aes(x=hours, y=conc, color=Chemical)) +
-      geom_point() + mytheme + ggtitle("Counter-Ion Concentration over Time")
+      geom_point() + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) + ggtitle("Counter-Ion Concentration over Time")
   )
   
   output$ExtraChemicals <- renderPlot(
     ggplot(processed_data2(), mapping=aes(x=hours, y=conc, color=name)) +
-      geom_point()  + mytheme+ ggtitle("Ion Concentration over Time")
+      geom_point()  + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) + ggtitle("Ion Concentration over Time")
   )
   
   
