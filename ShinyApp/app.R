@@ -16,10 +16,9 @@ ui <- fluidPage(theme=shinytheme("united"),
                     fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                     #actionButton("apply_button", "Apply Data"),
                     textOutput("OutputConcentration"),
-                    selectInput("OCunits", "Output Concentration Units", c("c/c0", "mg/L", "ug/L", "ng/L")),
-                    selectInput("timeunits","Time Units",c("s", "min", "hr", "day", "month", "year")),
-                    numericInput("starttime", "Inital Time", 0),
-                    numericInput("endtime", "Final Time", 40),
+                    selectInput("OCunits", "", c("c/c0", "mg/L", "ug/L", "ng/L")),
+                    numericInput("displacementtime", "Displacement Time", 0),
+                    selectInput("timeunits","",c("hr", "day", "month", "year")),
                     actionButton("run_button", "Run Analysis", icon=icon("play")),
                     textOutput("ionadded"),
                     textOutput("concentrationadded"),
@@ -277,13 +276,10 @@ server <- function(input, output, session) {
     validate(need(ext == "xlsx", "Please upload a csv file"))
     
     cin2<-read_xlsx(file$datapath, sheet=3)
-    cin2$time<-list(input$starttime, input$endtime)
+    cin2$time<-list(0, input$displacementtime)
     
     cindat(cin2)
   })
-  
-  
-  
   
   
   capacity<-reactive({
@@ -479,7 +475,19 @@ server <- function(input, output, session) {
     }
   })
   
+  timeconverter<-reactiveVal()
   
+  observeEvent(input$run_button, {
+    if(input$timeunits=="hr"){
+      timeconverter(3600)
+    }
+    if(input$timeunits=="day"){
+      timeconverter(86400)
+    }
+    if(input$timeunits=="month"){
+      timeconverter(2592000)
+    }
+  })
   
   newdataframe<-eventReactive(input$run_button, {
     saveddataframe<-data.frame(
@@ -502,6 +510,26 @@ server <- function(input, output, session) {
     cindat(tibble::add_column(cindat(), !! input$name:=input$avgconc))
   })
   
+  # cincolumn<-reactive({
+  #   cinframe<-data.frame(
+  #     PFAS=c(input$avgconc, input$avgconc)
+  #   )
+  #   cinframe
+  # })
+  # 
+  # cin2<-eventReactive(input$add, {
+  #   newcindataframe<-cbind(cin2(), cincolumn())
+  # })
+  
+  output$ICTable<-renderDataTable({cindat()})
+  
+  #output$IonsTable<-eventReactive(input$add, {renderDataTable(iondataframe())})
+  #
+  
+  
+  #output$dataview<-renderTable(ionrow())
+  output$summary2<-renderTable(iondat())
+  output$summary3<-renderTable(cindat())
   
   
   
@@ -545,6 +573,7 @@ server <- function(input, output, session) {
   output$InitialTime<-renderText("Inital")
   output$FinalTime<-renderText("Final")
   
+  output$OutputConcentration<-renderText("Output Concentration")
   output$OC<-renderText("Units")  
   
   observeEvent(input$add, {
@@ -758,7 +787,7 @@ server <- function(input, output, session) {
   }
   
   # Solve function for Shiny App ----
-  HSDMIX_solve <- function (params, ions, Cin, nt_report){
+  HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
     
     NR <- filter(params, name == "nr")$value # numer of grid points along bead radius
     NZ <- filter(params, name == "nz")$value # number of grid points along column axis.
@@ -788,7 +817,7 @@ server <- function(input, output, session) {
     NION <- length(ion_names)
     LIQUID <- NR + 1 # mnemonic device
     
-    C_in_t[, 1] <- C_in_t[, 1] * S_PER_HR # convert time specification from hours to seconds
+    C_in_t[, 1] <- C_in_t[, 1] * inputtime # convert time specification from hours to seconds
     
     
     t_max = C_in_t[Nt_interp, 1]
@@ -949,7 +978,7 @@ server <- function(input, output, session) {
   }
   
   out <-reactive({
-    HSDMIX_solve(newdataframe(), iondat(), cindat(), nt_report)})
+    HSDMIX_solve(newdataframe(), iondat(), cindat(), timeconverter(), nt_report)})
   
   # output$sum<-renderTable(newdataframe())
   # output$sum2<-renderTable(iondat())
@@ -1114,12 +1143,6 @@ server <- function(input, output, session) {
   observeEvent(input$run_button, {
     req(alldata())
     
-    if(input$timeunits=="s"){
-      outputall$time<-alldata()$hours*3600
-    }
-    if(input$timeunits=="min"){
-      outputall$time<-alldata()$hours*60
-    }
     if(input$timeunits=="hr"){
       outputall$time<-alldata()$hours*1
     }
@@ -1136,13 +1159,6 @@ server <- function(input, output, session) {
   
   observeEvent(input$run_button, {
     req(bonusdataframe3())
-    
-    if(input$timeunits=="s"){
-      outputall$time<-bonusdataframe3()$hours*3600
-    }
-    if(input$timeunits=="min"){
-      outputall$time<-bonusdataframe3()$hours*60
-    }
     if(input$timeunits=="hr"){
       outputall$time<-bonusdataframe3()$hours*1
     }
@@ -1214,13 +1230,13 @@ server <- function(input, output, session) {
   })
   
   output$sum<-renderTable(newdataframe())
-  output$sum2<-renderPrint(iondat())
-  output$sum3<-renderTable(cindat())
+  output$sum2<-renderPrint(nrow(iondat()))
+  output$sum3<-renderTable(alldata())
   #output$sum4<-renderTable(processed_data2())
   
   output$Plot <- renderPlot(
     ggplot(processed_data(), mapping=aes(x=hours, y=conc, color=Chemical)) +
-      geom_point() + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) + xlim(input$starttime,input$endtime) + ggtitle("Counter-Ion Concentration over Time")
+      geom_point() + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) +xlim(0,input$displacementtime) + ggtitle("Counter-Ion Concentration over Time")
   )
   
   output$ExtraChemicals <- renderPlot(
