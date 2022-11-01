@@ -1014,20 +1014,6 @@ server <- function(input, output, session) {
   bonusdataframe<-data.frame(hours=c(), conc=c())
   bonusdataframe2<-data.frame(hours=c(), conc=c())
   
-  fulldata<-reactive({
-    file <- input$file1
-    ext <- tools::file_ext(file$datapath)
-    
-    req(file)
-    validate(need(ext == "xlsx", "Please upload a xlsx file"))
-    
-    inputfile<-read_xlsx(file$datapath, sheet=2)
-  })
-  
-  
-  
-  #iondatlength
-  #chemicalcheck
   bonusdataframe3<-eventReactive(input$run_button, {for (x in 5:nrow(iondat())){
     
     dx_frame<-data.frame(
