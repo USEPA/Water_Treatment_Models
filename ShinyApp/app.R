@@ -14,16 +14,18 @@ ui <- fluidPage(theme=shinytheme("united"),
                 sidebarLayout(
                   sidebarPanel(
                     fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
+                    textOutput("reject"),
                     #actionButton("apply_button", "Apply Inputs"),
                     textOutput("OutputConcentration"),
-                    selectInput("OCunits", "", c("mg/L", "ug/L", "ng/L", "c/c0")),
-                    numericInput("displacementtime", "Displacement Time", 40),
+                    selectInput("OCunits", "Output Concentration", c("mg/L", "ug/L", "ng/L", "c/c0")),
+                    numericInput("displacementtime", "Run Duration", 40),
                     selectInput("timeunits","",c("hr", "day", "month", "year")),
                     actionButton("run_button", "Run Analysis", icon=icon("play")),
                     textOutput("ionadded"),
                     textOutput("concentrationadded"),
                     textOutput("analysisran"),
                     br(), br(),
+            
                     
                   ),
                   
@@ -32,7 +34,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                     navbarPage("Ion Exchange Model",
                                
                                
-                               tabPanel("Input Data",
+                               tabPanel("Input",
                                         
                                         tabsetPanel(
                                           tabPanel("Parameters",
@@ -64,10 +66,8 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                    ),
                                                    
                                                    
-                                                   
-                                                   br(),
-                                                   br(),
-                                                   br(),
+                                                   hr(),
+                                                 
                                                    
                                                    #Parameters Row 2#
                                                    
@@ -103,9 +103,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                    ),
                                                    
                                                    
-                                                   br(),
-                                                   br(),
-                                                   br(),
+                                                  hr(),
                                                    
                                                    #Parameters Row 3#
                                                    
@@ -134,9 +132,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                    
                                                    
                                                    
-                                                   br(),
-                                                   br(),
-                                                   br(),
+                                                  hr(),
                                                    
                                                    #Parameters Row 4#
                                                    
@@ -159,7 +155,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                             selectInput("axialunits","",c("")))),
                                                    
                                                    
-                                                   br(), br(), br(),
+                                                  hr(),
                                                    
                                                    
                                                    #Parameters Row 5#
@@ -202,7 +198,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                             textOutput("nameerror")),
                                                    )),
                                           
-                                          tabPanel("Initial Concentration",
+                                          tabPanel("Concentrations",
                                                    
                                                    DT::dataTableOutput("ICTable"),
                                                    
@@ -216,7 +212,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                
                                
                                
-                               tabPanel("Analysis",
+                               tabPanel("Output",
                                         
                                         plotOutput("Plot"),
                                         plotOutput("ExtraChemicals")
@@ -226,11 +222,12 @@ ui <- fluidPage(theme=shinytheme("united"),
                                tabPanel("Statistics",
                                ),
                                
-                               tabPanel("Output Data",
+                               tabPanel("Summary",
                                         tableOutput("sum"),
                                         tableOutput("sum2"),
                                         tableOutput("sum3"),
-                                        tableOutput("sum4")
+                                        tableOutput("sum4"),
+                                        textOutput("sum5"),
                                         #tableOutput("dataview"),
                                         #tableOutput("summary2")
                                )
@@ -240,6 +237,12 @@ ui <- fluidPage(theme=shinytheme("united"),
 
 server <- function(input, output, session) {
   
+  output$reject<-renderPrint({
+    req(input$file1)
+    
+    if(input$file1$type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"){ stop("Please upload a .xlsx file")}
+    
+  })
   
   paramdataframe<-reactiveVal()
   paramvals<-reactiveValues()
@@ -272,7 +275,7 @@ server <- function(input, output, session) {
     ext <- tools::file_ext(file$datapath)
     
     req(file)
-    validate(need(ext == "xlsx", "Please upload a csv file"))
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     
     params<-read_xlsx(file$datapath, sheet=1)
     
@@ -346,7 +349,7 @@ server <- function(input, output, session) {
     ext <- tools::file_ext(file$datapath)
     
     req(file)
-    validate(need(ext == "xlsx", "Please upload a csv file"))
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     
     ions<-read_xlsx(file$datapath, sheet=2)
     
@@ -360,7 +363,7 @@ server <- function(input, output, session) {
     ext <- tools::file_ext(file$datapath)
     
     req(file)
-    validate(need(ext == "xlsx", "Please upload a csv file"))
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     
     cin2<-read_xlsx(file$datapath, sheet=3)
     cin2$time<-list(0, input$displacementtime)
@@ -368,9 +371,9 @@ server <- function(input, output, session) {
     cindat(cin2)
   })
   
-  output$sum<-renderTable(paramdataframe())
-  output$sum2<-renderTable(iondat())
-  output$sum3<-renderTable(cindat())
+  #output$sum<-renderTable(paramdataframe())
+  #output$sum2<-renderTable(iondat())
+  #output$sum3<-renderTable(cindat())
   #output$sum4<-renderTable(paramdataframe())
   
 
@@ -661,7 +664,7 @@ server <- function(input, output, session) {
   output$InitialTime<-renderText("Inital")
   output$FinalTime<-renderText("Final")
 
-  output$OutputConcentration<-renderText("Output Concentration")
+  #output$OutputConcentration<-renderText("Graph Settings")
   output$OC<-renderText("Units")
 
   observeEvent(input$add, {
@@ -1071,18 +1074,14 @@ server <- function(input, output, session) {
     out(HSDMIX_solve(paramdataframe(), iondat(), cindat(), timeconverter(), nt_report))})
 
 
-  output$sum2<-renderTable(iondat())
-  output$sum3<-renderTable(cindat())
+  #output$sum2<-renderTable(iondat())
+  #output$sum3<-renderTable(cindat())
 
   # find outlet indices
 
   outlet_id <- reactive({dim(out()[[2]])[4]})
   liquid_id <- reactive({dim(out()[[2]])[2]})
 
-  output$sum<-renderTable(paramdataframe())
-  output$sum2<-renderTable(iondat())
-  output$sum3<-renderTable(cindat())
-  output$sum4<-renderTable(out())
 
   mytheme <-  reactive({theme(panel.background = element_rect(fill = "white", colour = NA),
                               panel.grid.major = element_line(colour = "grey70", size = 0.2),
@@ -1179,38 +1178,103 @@ server <- function(input, output, session) {
 
   outputall<-reactiveValues(counterion=0)
   outputbonus<-reactiveValues(ion=0)
+  #cc0chloride<-reactiveValues(conc=0)
+  
+  #cc0values<-reactiveValues()
+  #cc0frame<-reactiveValues()
+  #cc0frame<-data.frame(hours=c(), conc=c())
+  
 
-  chloridecc0<-reactive({
-    cnotvalue<-chlorideframe()$conc[[1]]
+  cc0valueschloride<-reactive({unlist(cindat()[2,2])})
+  cc0valuessulfate<-reactive({unlist(cindat()[2,3])})
+  cc0valuesbicarbonate<-reactive({unlist(cindat()[2,4])})
+  cc0valuesnitrate<-reactive({unlist(cindat()[2,5])})
+  
+  #cc0chloride<-reactive(chlorideframe())
+  #cc0chloride<-data.frame(hours=c(), conc=c())
+  
+
+  cc0chloride2<-reactive({
+    req(chlorideframe())
+    
+    cc0chloride<-chlorideframe()
+    cc0chloride$hours<-out()[[1]]
+    cc0chloride$conc<-chlorideframe()$conc/cc0valueschloride()
+    cc0chloride
+  })
+  
+  cc0sulfate2<-reactive({
+    req(sulfateframe())
+    
+    cc0sulfate<-sulfateframe()
+    cc0sulfate$hours<-out()[[1]]
+    cc0sulfate$conc<-sulfateframe()$conc/cc0valuessulfate()
+    cc0sulfate
+  })
+  
+  cc0bicarbonate2<-reactive({
+    req(bicarbonateframe())
+
+    cc0bicarbonate<-bicarbonateframe()
+    cc0bicarbonate$hours<-out()[[1]]
+    cc0bicarbonate$conc<-bicarbonateframe()$conc/cc0valuesbicarbonate()
+    cc0bicarbonate
+  })
+  
+  cc0nitrate2<-reactive({
+    req(nitrateframe())
+
+    cc0nitrate<-nitrateframe()
+    cc0nitrate$hours<-out()[[1]]
+    cc0nitrate$conc<-nitrateframe()$conc/cc0valuesnitrate()
+    cc0nitrate
   })
 
-  nitratecc0<-reactive({
-    nnotvalue<-nitrateframe()$conc[[1]]
+  alldatacc0<-reactive({rbind(cc0chloride2(),cc0nitrate2(),cc0bicarbonate2(),cc0sulfate2())})
+  
+  
+  bonusdf<-reactiveValues()
+
+  #  bonusdf2<-reactive({
+  #   req(bonusdataframe3())
+  # 
+  #   bonusdf<-bonusdataframe3()
+  #   bonusdf$conc<-bonusdataframe3()$conc[0:201]/unlist(cindat()[2,6])
+  #   bonusdf
+  # })
+   
+   # bonusdf3<-reactive({
+   #   req(bonusdataframe3())
+   #   
+   #   for(n in 1:1){
+   #     
+   #     bonusdf$i<-bonusdataframe3()$conc[(i-1)*201:i*201]
+   #   }
+   #   bonusdf
+   # })
+  
+  bonuscc0<-data.frame(hours=c(), conc=c())
+
+  bonusdf2<-reactive({
+    req(bonusdataframe3())
+    bonuscc0<-data.frame(hours=c(), conc=c())
+
+
+    for(n in 1:1){
+
+      dxframe<-data.frame(hours=out()[[1]], conc=(bonusdataframe3()$conc[(((n-1)*200)+1):(n*201)])/unlist(cindat()[2,n+5:nrow(iondat())]))
+
+      bonuscc0<-rbind(bonuscc0, dxframe)
+
+     }
+    bonuscc0
   })
 
-  bicarbonatecc0<-reactive({
-    bnotvalue<-bicarbonateframe()$conc[[1]]
-  })
+  #output$sum<-renderTable(bonusdf3())
+  output$sum2<-renderTable(bonusdf2())
+  output$sum3<-renderTable(cindat()[2,4])
 
-  sulfatecc0<-reactive({
-    snotvalue<-sulfateframe()$conc[[1]]
-  })
-  # #
-  # # chlorideframecc0<-reactive({chlorideframe()})
-  # # nitrateframecc0<-reactive({nitrateframe()})
-  # # bicarbonateframecc0<-reactive({bicarbonateframe()})
-  # # sulfateframecc0<-reactive({sulfateframe()})
-  # #
-  # #
-  # # reactive({chlorideframecc0()$conc<-chlorideframecc0()$conc/chloridecc0()})
-  # # reactive({nitrateframecc0()$conc<-nitrateframecc0()$conc/nitratecc0()})
-  # # reactive({bicarbonatecc0()$conc<-bicarbonateframecc0()$conc/bicarbonatecc0()})
-  # # reactive({sulfateframecc0()$conc<-sulfateframecc0()$conc/sulfatecc0()})
-  # #
-  # # allcc0<-reactive({rbind(chlorideframecc0(),nitrateframecc0(), bicarbonateframecc0(), sulfateframecc0())})
-  # #
-  #
-  #
+
   observeEvent(input$run_button, {
     req(alldata())
 
@@ -1244,12 +1308,13 @@ server <- function(input, output, session) {
     }
   })
 
-
+  #
   observeEvent(input$run_button,{
     req(alldata())
+    #req(cc0frame2())
 
     if(input$OCunits=="c/c0"){
-      outputall$counterion <- alldata()$conc
+      outputall$counterion <- alldatacc0()$conc
     }
     if(input$OCunits=="mg/L"){
       outputall$counterion <- alldata()$conc*1
@@ -1266,7 +1331,7 @@ server <- function(input, output, session) {
     req(bonusdataframe3())
 
     if(input$OCunits=="c/c0"){
-      outputbonus$ion<-bonusdataframe3()$conc*1
+      outputbonus$ion<-bonusdf2()$conc
     }
     if(input$OCunits=="mg/L"){
       outputbonus$ion<-bonusdataframe3()$conc*1
@@ -1278,6 +1343,12 @@ server <- function(input, output, session) {
       outputbonus$ion<-bonusdataframe3()$conc*1000000
     }
   })
+
+  # output$sum<-renderTable(cc0chloride())
+  # output$sum2<-renderTable(chlorideframe())
+  # output$sum3<-renderTable(cc0valueschloride())
+  #output$sum4<-renderTable(cc0frame())
+  #output$sum5<-renderText(cc0chloriderframe())
 
   processed_data <- eventReactive(input$run_button,{
     req(alldata())
@@ -1310,8 +1381,7 @@ server <- function(input, output, session) {
     ggplot(processed_data2(), mapping=aes(x=hours, y=conc, color=name)) +
       geom_point()  + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) + ggtitle("Ion Concentration over Time")
   )
-  
-  
+
 }
 
 
