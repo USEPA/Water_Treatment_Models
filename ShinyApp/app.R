@@ -8,6 +8,7 @@ library(deSolve)
 library(orthopolynom)
 library(DT)
 library(tibble)
+library(plotly)
 
 ui <- fluidPage(theme=shinytheme("united"),
                 
@@ -47,7 +48,7 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                      column(2, offset=1,
                                                             br(),
                                                             textOutput("Q"),
-                                                            br(), 
+                                                            br(), br(), 
                                                             textOutput("rb"),
                                                             br(), br(), 
                                                             textOutput("EBED")),
@@ -214,13 +215,11 @@ ui <- fluidPage(theme=shinytheme("united"),
                                
                                tabPanel("Output",
                                         
-                                        plotOutput("Plot"),
+                                        plotlyOutput("Plot"),
                                         plotOutput("ExtraChemicals")
                                         
                                ),
-                               
-                               tabPanel("Statistics",
-                               ),
+                              
                                
                                tabPanel("Summary",
                                         tableOutput("sum"),
@@ -243,6 +242,7 @@ server <- function(input, output, session) {
     if(input$file1$type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"){ stop("Please upload a .xlsx file")}
     
   })
+  
   
   paramdataframe<-reactiveVal()
   paramvals<-reactiveValues()
@@ -285,44 +285,54 @@ server <- function(input, output, session) {
   
   #These values are taken from paramdat so that they can be used to update paramdataframe
   capacity<-eventReactive(input$file1, {
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="Q")$value
     val})
 
   eebed<-eventReactive(input$file1,{
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="EBED")$value
     val})
 
   length2<-eventReactive(input$file1,{
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="L")$value
     val })
 
   velocity<-eventReactive(input$file1, {
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="v")$value
     val})
 
   beadradius<-eventReactive(input$file1,{
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="rb")$value
     val})
 
 
   film<-eventReactive(input$file1,{
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="kL")$value
     val})
 
   diffuse<-eventReactive(input$file1,{
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="Ds")$value
     val})
 
 
   radial<-eventReactive(input$file1,{
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="nr")$value
     val})
 
   axial<-eventReactive(input$file1,{
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="nz")$value
     val})
 
   time<-eventReactive(input$file1,{
+    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
     val<-filter(paramdat(), name=="time")$value
     val})
 
@@ -340,9 +350,17 @@ server <- function(input, output, session) {
   observe({updateNumericInput(session, "tv", value=time())  })
   
   
+  preiondat<-data.frame(name=c("CHLORIDE", "SULFATE", "BICARBONATE", "NITRATE", "PFOA"),
+                        mw=c(34.95, 96.06, 12, 14, 414.07),
+                        KxA=c(1, 0.028, 0.37, 13, 2500),
+                        valence=c(1, 2, 1, 1, 1),
+                        kL=c(1, 0.00021, 0.00021, 0.00021, 0.00021),
+                        Ds=c(1, 0.0000002, 0.0000002, 0.0000002, 0.0000002))
   
+  precindat<-data.frame(time=c(0, 40.5), CHLORIDE=c(4.99, 4.99), SULFATE=c(3.12, 4.01), BICARBONATE=c(3.75, 3.75), NITRATE=c(0.714, 0.714), PFOA=c(0.000001, 0.000001))
   
   iondat<-reactiveVal()
+  iondat(preiondat)
   
   observe({
     file <- input$file1
@@ -357,6 +375,7 @@ server <- function(input, output, session) {
   })
   
   cindat<-reactiveVal()
+  cindat(precindat)
   
   observe({
     file <- input$file1
@@ -371,64 +390,6 @@ server <- function(input, output, session) {
     cindat(cin2)
   })
   
-  #output$sum<-renderTable(paramdataframe())
-  #output$sum2<-renderTable(iondat())
-  #output$sum3<-renderTable(cindat())
-  #output$sum4<-renderTable(paramdataframe())
-  
-
-  # capacity<-reactive({
-  #   val<-filter(paramdat(), name=="Q")$value
-  #   val})
-  # 
-  # eebed<-reactive({
-  #   val<-filter(paramdat(), name=="EBED")$value
-  #   val})
-  # 
-  # length2<-reactive({
-  #   val<-filter(paramdat(), name=="L")$value
-  #   val })
-  # 
-  # velocity<-reactive({
-  #   val<-filter(paramdat(), name=="v")$value
-  #   val})
-  # 
-  # beadradius<-reactive({
-  #   val<-filter(paramdat(), name=="rb")$value
-  #   val})
-  # 
-  # 
-  # film<-reactive({
-  #   val<-filter(paramdat(), name=="kL")$value
-  #   val})
-  # 
-  # diffuse<-reactive({
-  #   val<-filter(paramdat(), name=="Ds")$value
-  #   val})
-  # 
-  # 
-  # radial<-reactive({
-  #   val<-filter(paramdat(), name=="nr")$value
-  #   val})
-  # 
-  # axial<-reactive({
-  #   val<-filter(paramdat(), name=="nz")$value
-  #   val})
-  # 
-  # time<-reactive({
-  #   val<-filter(paramdat(), name=="time")$value
-  #   val})
-  # 
-  # observe({updateTextInput(session, "Vv", value=velocity())})
-  # observe({updateTextInput(session, "rbv", value=beadradius())})
-  # observe({updateTextInput(session, "Qv", value=capacity())})
-  # observe({updateTextInput(session, "EBEDv", value=eebed())})
-  # observe({updateTextInput(session, "Lv", value=length2())})
-  # observe({updateTextInput(session, "kLv", value=film())})
-  # observe({updateTextInput(session, "Dsv", value=diffuse())})
-  # observe({updateTextInput(session, "nrv", value=radial())})
-  # observe({updateTextInput(session, "nzv", value=axial())})
-  # observe({updateTextInput(session, "tv", value=time())  })
 
   m2cm=100
   mm2cm=0.1
@@ -545,26 +506,6 @@ server <- function(input, output, session) {
     }
   })
 
-  # observeEvent(input$timeunits, {
-  #   if(input$timeunits=="s"){
-  #     timeconv<-input$timeunits*sec2sec
-  #   }
-  #   if(input$timeunits=="min"){
-  #     timeconv<-input$timeunits*min2sec
-  #   }
-  #   if(input$timeunits=="hr"){
-  #     timeconv<-input$timeunits*hour2sec
-  #   }
-  #   if(input$timeunits=="day"){
-  #     timeconv<-input$timeunits*day2sec
-  #   }
-  #   if(input$timeunits=="month"){
-  #     timeconv<-input$timeunits*month2sec
-  #   }
-  #   if(input$timeunits=="year"){
-  #     timeconv<-input$timeunits*year2sec
-  #   }
-  # })
 
   timeconverter<-reactiveVal()
 
@@ -580,14 +521,6 @@ server <- function(input, output, session) {
     }
   })
 
-  # newdataframe<-eventReactive(input$apply_button, {
-  #   saveddataframe<-data.frame(
-  #     name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
-  #     value=c(input$Qv, input$EBEDv, lengthconv(), velocityconv(), beadradiusconv(), input$kLv, input$Dsv, input$nrv, input$nzv, 1),
-  #     units=c(input$qunits, input$EBEDunits, input$LengthUnits, input$velocityunits, input$rbunits, input$filmunits, input$diffusionunits, input$radialunits, input$axialunits, input$timeunits)
-  #   )
-  #   saveddataframe
-  # })
 
   observeEvent(input$add, {
     iondat(tibble::add_row(iondat(), name=input$name, mw=input$mw, KxA=input$KxA, valence=input$valence, kL=input$kL, Ds=input$Ds))
@@ -601,27 +534,8 @@ server <- function(input, output, session) {
     cindat(tibble::add_column(cindat(), !! input$name:=input$avgconc))
   })
 
-  # cincolumn<-reactive({
-  #   cinframe<-data.frame(
-  #     PFAS=c(input$avgconc, input$avgconc)
-  #   )
-  #   cinframe
-  # })
-  #
-  # cin2<-eventReactive(input$add, {
-  #   newcindataframe<-cbind(cin2(), cincolumn())
-  # })
 
   output$ICTable<-renderDataTable({cindat()})
-
-  #output$IonsTable<-eventReactive(input$add, {renderDataTable(iondataframe())})
-  #
-
-
-  #output$dataview<-renderTable(ionrow())
-  output$summary2<-renderTable(iondat())
-  output$summary3<-renderTable(cindat())
-
 
 
   #------------------------------#
@@ -629,9 +543,9 @@ server <- function(input, output, session) {
   #------------------------------#
 
 
-  output$Q<-renderText("Capacity of Chloride on Resin")
-  output$rb<-renderText("Radius of Resin Bead")
-  output$EBED<-renderText("Porosity of Bed")
+  output$Q<-renderText("Resin Capacity")
+  output$rb<-renderText("Bead Radius")
+  output$EBED<-renderText("Bed Porosity")
   output$name<-renderText("Name")
 
   output$CS<-renderText("Column Specifications")
@@ -664,7 +578,6 @@ server <- function(input, output, session) {
   output$InitialTime<-renderText("Inital")
   output$FinalTime<-renderText("Final")
 
-  #output$OutputConcentration<-renderText("Graph Settings")
   output$OC<-renderText("Units")
 
   observeEvent(input$add, {
@@ -1074,9 +987,6 @@ server <- function(input, output, session) {
     out(HSDMIX_solve(paramdataframe(), iondat(), cindat(), timeconverter(), nt_report))})
 
 
-  #output$sum2<-renderTable(iondat())
-  #output$sum3<-renderTable(cindat())
-
   # find outlet indices
 
   outlet_id <- reactive({dim(out()[[2]])[4]})
@@ -1140,59 +1050,19 @@ server <- function(input, output, session) {
     hours=out()[[1]], conc=out()[[2]][, liquid_id(), 4, outlet_id()], Chemical=rep("Nitrate", nrow(dat()))
   )})
 
-  #
-  #
-  #
-  # # outputcc0<-reactiveValues(chloride=0, sulfate=0, bicarbonate=0, nitrate=0)
-  # #
-  # # sulfateconverted<- observeEvent(input$run_button, {
-  # #   req(sulfateframe())
-  # #
-  # #   outputcc0$sulfate<-sulfateframe()$conc/sulfateframe()[[0]]
-  # #
-  # # })
-  # #
-  # # chlorideconverted<-observeEvent(input$run_button, {
-  # #   req(chlorideframe())
-  # #
-  # #   outputcc0$chloride<-chlorideframe()$conc/chlorideframe()[[0]]
-  # # })
-  # #
-  # # bicarbonateconverted<-observeEvent(input$run_button, {
-  # #   req(bicarbonateframe())
-  # #
-  # #   outputcc0$bicarbonate<-bicarbonateframe()$conc/bicarbonateframe()[[0]]
-  # # })
-  # #
-  # # nitrateconverted<-observeEvent(input$run_button, {
-  # #   req(nitrateframe())
-  # #
-  # #   outputcc0$nitrate<-nitrateframe()$conc/nitrateframe()[[0]]
-  # # })
-  #
-  #
-  #
-  #
+ 
   alldata<-reactive({rbind(chlorideframe(),nitrateframe(),bicarbonateframe(),sulfateframe())})
-  #alldatacc0<-reactive({data.frame(hours=alldata()$hours, conc=1, alldata()$Chemical)})
+ 
 
   outputall<-reactiveValues(counterion=0)
   outputbonus<-reactiveValues(ion=0)
-  #cc0chloride<-reactiveValues(conc=0)
   
-  #cc0values<-reactiveValues()
-  #cc0frame<-reactiveValues()
-  #cc0frame<-data.frame(hours=c(), conc=c())
-  
-
   cc0valueschloride<-reactive({unlist(cindat()[2,2])})
   cc0valuessulfate<-reactive({unlist(cindat()[2,3])})
   cc0valuesbicarbonate<-reactive({unlist(cindat()[2,4])})
   cc0valuesnitrate<-reactive({unlist(cindat()[2,5])})
   
-  #cc0chloride<-reactive(chlorideframe())
-  #cc0chloride<-data.frame(hours=c(), conc=c())
-  
+
 
   cc0chloride2<-reactive({
     req(chlorideframe())
@@ -1235,23 +1105,6 @@ server <- function(input, output, session) {
   
   bonusdf<-reactiveValues()
 
-  #  bonusdf2<-reactive({
-  #   req(bonusdataframe3())
-  # 
-  #   bonusdf<-bonusdataframe3()
-  #   bonusdf$conc<-bonusdataframe3()$conc[0:201]/unlist(cindat()[2,6])
-  #   bonusdf
-  # })
-   
-   # bonusdf3<-reactive({
-   #   req(bonusdataframe3())
-   #   
-   #   for(n in 1:1){
-   #     
-   #     bonusdf$i<-bonusdataframe3()$conc[(i-1)*201:i*201]
-   #   }
-   #   bonusdf
-   # })
   
   bonuscc0<-data.frame(hours=c(), conc=c())
 
@@ -1294,6 +1147,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$run_button, {
     req(bonusdataframe3())
+    req(bonusdf2())
     if(input$timeunits=="hr"){
       outputall$time<-bonusdataframe3()$hours*1
     }
@@ -1344,43 +1198,102 @@ server <- function(input, output, session) {
     }
   })
 
-  # output$sum<-renderTable(cc0chloride())
+  output$sum<-renderTable(alldata()$Chemical)
   # output$sum2<-renderTable(chlorideframe())
   # output$sum3<-renderTable(cc0valueschloride())
   #output$sum4<-renderTable(cc0frame())
   #output$sum5<-renderText(cc0chloriderframe())
 
-  processed_data <- eventReactive(input$run_button,{
+  processed_data <- eventReactive(input$run_button, {
     req(alldata())
-
+  
     plot_data <- alldata()
     plot_data$conc <- outputall$counterion
     plot_data$hours <- outputall$time
     plot_data
   })
 
-
-
-
   processed_data2 <- eventReactive(input$run_button, {
     req(bonusdataframe3())
-
+  
     plot_data2 <- bonusdataframe3()
     plot_data2$conc <- outputbonus$ion
     plot_data2$hours <- outputall$time
     plot_data2
   })
+  
+  outputall2<-reactiveValues()
+  processed_data4<-reactiveValues()
+
+  observe({
+    req(processed_data())
+
+    if(input$timeunits=="hr"){
+      outputall2$time<-processed_data()$hours*1
+    }
+    if(input$timeunits=="day"){
+      outputall2$time<-processed_data()$hours/24
+    }
+    if(input$timeunits=="month"){
+      outputall2$time<-processed_data()$hours/720 #Assume 30 days in a month
+    }
+    if(input$timeunits=="year"){
+      outputall2$time<-processed_data()$hours/8760
+    }
+  })
+
+  observe({
+    req(processed_data())
+    #req(cc0frame2())
+
+    if(input$OCunits=="c/c0"){
+      outputall2$counterion <- processed_data()$conc
+    }
+    if(input$OCunits=="mg/L"){
+      outputall2$counterion <- processed_data()$conc*1
+    }
+    if(input$OCunits=="ug/L"){
+      outputall2$counterion <- processed_data()$conc*1000
+    }
+    if(input$OCunits=="ng/L"){
+      outputall2$counterion <- processed_data()$conc*1000000
+    }
+  })
 
 
-  output$Plot <- renderPlot(
-    ggplot(processed_data(), mapping=aes(x=hours, y=conc, color=Chemical)) +
-      geom_point() + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) +xlim(0,input$displacementtime) + ggtitle("Counter-Ion Concentration over Time")
-  )
+  processed_data3 <- reactive({
+    req(processed_data())
+    req(alldata())
+
+    plot_data <- alldata()
+    plot_data$conc <- outputall2$counterion
+    plot_data$hours <- outputall2$time
+    plot_data$Chemical <- alldata()$Chemical
+    
+    plot_data
+  })
+
+  
+  
+  # output$Plot <- renderPlot(
+  #   ggplot(processed_data3(), mapping=aes(x=hours, y=conc, color=Chemical)) +
+  #     geom_point() + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) +xlim(0,input$displacementtime) + ggtitle("Counter-Ion Concentration over Time")
+  # )
+  
+  fig<-reactive({plot_ly(processed_data3(), x=~hours, y=~conc,type='scatter', mode="lines", color=~Chemical)})
+  fig2<-reactive({fig()%>%layout(title="Counter-Ion Concentration over Time",
+                    xaxis=list(title=input$timeunits, range=list(0,input$displacementtime)),
+                    yaxis=list(title=input$OCunits))})
+  
+  output$Plot<-renderPlotly(
+    fig2())
 
   output$ExtraChemicals <- renderPlot(
     ggplot(processed_data2(), mapping=aes(x=hours, y=conc, color=name)) +
       geom_point()  + mytheme() + xlab(input$timeunits) + ylab(input$OCunits) + ggtitle("Ion Concentration over Time")
   )
+  
+  #output$Plot<-renderPlot(plot_ly(processed_data(), x=~hours, y=~conc))
 
 }
 
