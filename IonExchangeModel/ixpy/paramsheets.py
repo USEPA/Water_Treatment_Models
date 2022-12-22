@@ -205,7 +205,7 @@ def conv_dens(u_in, u_out, label, caller):
     return cv, u_in, u_out
 
 def conv_area(u_in, u_out, label, caller):
-    units = ['m2', 'cm2', 'mm2', 'ft2', 'in2']
+    units = ['m2', 'cm2', 'mm2', 'in2', 'ft2']
     coefs = [1., 10000., 1000000., 1550.0031, 10.7639]
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     
