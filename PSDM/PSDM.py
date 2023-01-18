@@ -474,6 +474,7 @@ class PSDM():
                 #try to estimate the breakthrough
                 if not done:                
                     nZc = np.count_nonzero(yte)     #used to determine linear regression
+
                     if nZc < len(yte):
                         if yte[-(nZc+1)] != 0:
                             nZc += 1 ## adds one more to non-zero value, if original nZc does not equal 0.
@@ -482,6 +483,8 @@ class PSDM():
                     else:
                         x = xdata[-(nZc):].astype('float64')
                         y = yte[-(nZc):].astype('float64')
+                    
+
                     
                     m, b, *extra = linregress(x, y)
                     

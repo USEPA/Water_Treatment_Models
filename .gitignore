@@ -11,3 +11,6 @@ PSDM/Example_TCE_F400_example2.xlsx
 PSDM/Example_TCE_F400_example1a.xlsx
 PSDM/Example_TCE_F400_example1.xlsx
 PSDM/.ipynb_checkpoints/Simple_Example-checkpoint.ipynb
+IonExchangeModel/ion_exchange_models.egg-info/*
+IonExchangeModel/build/*
+
