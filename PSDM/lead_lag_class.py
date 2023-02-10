@@ -75,10 +75,14 @@ def io_data(data_dict):
     '''
     
     iex_inmem=BytesIO()
-    writer=pd.ExcelWriter(iex_inmem, engine='xlsxwriter')
-    for sheet_name in data_dict.keys():
-        data_dict[sheet_name].to_excel(writer, sheet_name=sheet_name, index=False)
-    writer.save()
+    # writer=pd.ExcelWriter(iex_inmem, engine='xlsxwriter')
+    # for sheet_name in data_dict.keys():
+    #     data_dict[sheet_name].to_excel(writer, sheet_name=sheet_name, index=False)
+    # writer.save()
+    # iex_inmem.seek(0,0)
+    with pd.ExcelWriter(iex_inmem, engine='xlsxwriter') as writer:
+        for sheet_name in data_dict.keys():
+            data_dict[sheet_name].to_excel(writer, sheet_name=sheet_name, index=False)
     iex_inmem.seek(0,0)
     return iex_inmem
 
