@@ -12,6 +12,8 @@ library(plotly)
 library(shinyjs)
 library(tidyr)
 library("writexl")
+library(shinydashboard)
+library(XLConnect)
 
 ui <- fluidPage(theme=shinytheme("united"),
                 useShinyjs(),
@@ -22,14 +24,15 @@ ui <- fluidPage(theme=shinytheme("united"),
                     textOutput("reject"),
                     #actionButton("apply_button", "Apply Inputs"),
                     textOutput("OutputConcentration"),
-                    selectInput("OCunits", "Output Concentration", c("mg/L", "ug/L", "ng/L", "c/c0")),
+                    selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
                     #numericInput("displacementtime", "Run Duration", 40),
-                    selectInput("timeunits","",c("hr", "day", "month", "bed volumes")),
+                    selectInput("timeunits","Output Time Units",c("hr", "day", "month", "bed volumes")),
                     sliderInput("nrv", "Radial Collocation Points",0, 20, 7),
                     sliderInput("nzv", "Axial Collocation Points", 0, 20, 13),
-                    radioButtons("veloselect", "Velocity Input", c("Linear", "Volumetric")),
+                    #radioButtons("veloselect", "Velocity Input", c("Linear", "Volumetric")),
                     actionButton("run_button", "Run Analysis", icon=icon("play")),
-                    actionButton("save_button", "Save Analysis"),
+                    downloadButton("save_button", "Save Data"),
+                    actionButton("Refresh", "Refresh", icon=icon("arrows-rotate")),
                     textOutput("ionadded"),
                     textOutput("concentrationadded"),
                     textOutput("analysisran"),
@@ -62,11 +65,11 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                             textOutput("EBED")),
                                                      column(3,
                                                             
-                                                            numericInput("Qv", "", 1300),
+                                                            numericInput("Qv", "", 1300, min=0),
                                                             
-                                                            numericInput("rbv", "", 0.03375),
+                                                            numericInput("rbv", "", 0.03375, min=0),
                                                             
-                                                            numericInput("EBEDv", "", 0.35)),
+                                                            numericInput("EBEDv", "", 0.35, min=0)),
                                                      
                                                      column(3,
                                                             selectInput("qunits", "", c("meq/L")),
@@ -91,23 +94,28 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                             br(), br(), br(),
                                                             textOutput("Velocity"),
                                                             br(), br(), br(),
+                                                            
                                                             textOutput("Diameter"),
                                                             br(), br(),
                                                             textOutput("Flowrate")),
                                                      column(3,
                                                             
-                                                            numericInput("Lv", "",14.7646875),
+                                                            numericInput("Lv", "",14.7646875, min=0),
                                                             
-                                                            numericInput("Vv", "", 0.122857846019418),
+                                                            numericInput("Vv", "", 0.122857846019418, min=0),
                                                             
-                                                            numericInput("Dv", "", 4),
+                                          
                                                             
-                                                            numericInput("Fv", "",12)),
+                                                            numericInput("Dv", "", 4, min=0),
+                                                            
+                                                            numericInput("Fv", "",12, min=0)),
                                                      column(3,
                                                             selectInput("LengthUnits", "", c("cm", "m", "mm", "in", "ft")),
-                                                            selectInput("velocityunits", "", c("cm/s", "ft/s", "m/s", "in/s", "m/min", "ft/min")),
+                                                            selectInput("velocityunits", "", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")),
                                                             selectInput("DiameterUnits","",c("cm")),
-                                                            selectInput("flowrateunits","",c("cm2/s")))
+                                                            selectInput("flowrateunits","",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))),
+                                                     column(2, br(), br(), br(),
+                                                            radioButtons("veloselect", "", c("Linear", "Volumetric")))
                                                      
                                                      
                                                    ),
@@ -117,27 +125,27 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                    
                                                    #Parameters Row 3#
                                                    
-                                                   fluidRow(
-                                                     column(1,
-                                                            br(), br(), br(),
-                                                            br(), br(), br(),
-                                                            textOutput("MC")),
-                                                     column(2, offset=1,
-                                                            br(), br(),
-                                                            textOutput("kL"),
-                                                            br(), br(), br(),
-                                                            textOutput("Ds")),
-                                                     column(3, 
-                                                            br(),
-                                                            numericInput("kLv", "",0.0021),
-                                                            br(), br(),
-                                                            numericInput("Dsv", "",0.0000002)),
-                                                     column(3,
-                                                            br(),
-                                                            selectInput("filmunits","",c("cm/s", "in/s", "m/min", "ft/min")),
-                                                            br(), br(),
-                                                            selectInput("diffusionunits","",c("cm2/s")))
-                                                   ),
+                                                   # fluidRow(
+                                                   #   column(1,
+                                                   #          br(), br(), br(),
+                                                   #          br(), br(), br(),
+                                                   #          textOutput("MC")),
+                                                   #   column(2, offset=1,
+                                                   #          br(), br(),
+                                                   #          textOutput("kL"),
+                                                   #          br(), br(), br(),
+                                                   #          textOutput("Ds")),
+                                                   #   column(3, 
+                                                   #          br(),
+                                                   #          numericInput("kLv", "",0.0021),
+                                                   #          br(), br(),
+                                                   #          numericInput("Dsv", "",0.0000002)),
+                                                   #   column(3,
+                                                   #          br(),
+                                                   #          selectInput("filmunits","",c("cm/s", "in/s", "m/min", "ft/min")),
+                                                   #          br(), br(),
+                                                   #          selectInput("diffusionunits","",c("cm2/s")))
+                                                   # ),
                                                    
                                                    
                                                    
@@ -146,21 +154,21 @@ ui <- fluidPage(theme=shinytheme("united"),
                                                    
                                                    #Parameters Row 4#
                                                    
-                                                   # fluidRow(
-                                                   #   column(1,
-                                                   #          br(), br(),
-                                                   #          textOutput("SR")),
-                                                   #   column(2, offset=1,
-                                                   #          br(),
-                                                   #          textOutput("nr"),
-                                                   #          br(), br(),
-                                                   #          textOutput("nz")),
-                                                   #   column(2,
-                                                   #          numericInput("nrv", "",7),
-                                                   #          br(), br(),
-                                                   #          numericInput("nzv", "",13)),
-                                                   #   column(2,
-                                                   #          selectInput("radialunits", "", c("")),
+                                                   fluidRow(
+                                                     column(1,
+                                                            br(), br(),
+                                                            textOutput("conctime")),
+                                                     #   column(2, offset=1,
+                                                     #          br(),
+                                                     #          textOutput("nr"),
+                                                     #          br(), br(),
+                                                     #          textOutput("nz")),
+                                                     #   column(2,
+                                                     #          numericInput("nrv", "",7),
+                                                     #          br(), br(),
+                                                     #          numericInput("nzv", "",13)),
+                                                     column(3, offset=6,
+                                                            selectInput("timeunits2", "", c("hr", "day")))),
                                                    #          br(), br(),
                                                    #          selectInput("axialunits","",c("")))),
                                                    
@@ -247,6 +255,8 @@ ui <- fluidPage(theme=shinytheme("united"),
                                           tabPanel("Concentrations",
                                                    
                                                    DT::dataTableOutput("ICTable"),
+                                                   #textOutput("conctime"),
+                                                   selectInput("timeunits2", "", c("hr", "day"))
                                                    
                                                    
                                                    
@@ -260,8 +270,16 @@ ui <- fluidPage(theme=shinytheme("united"),
                                
                                tabPanel("Output",
                                         
-                                        plotlyOutput("Plot"),
-                                        plotlyOutput("ExtraChemicals")
+                                        shinycssloaders::withSpinner(
+                                        plotlyOutput("Plot")),
+                                        br(),
+                                        plotlyOutput("ExtraChemicals"),
+                                        fluidRow(
+                                          column(1,
+                                        tableOutput("params2")),
+                                          column(2, offset=3,
+                                        tableOutput("ions2"))),
+                                        tableOutput("cin2")
                                         
                                ),
                                
@@ -332,8 +350,8 @@ server <- function(input, output, session) {
   #This Dataframe is set up by default of all the default paramater values
   observe({paramdataframe(data.frame(
     name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
-    value=c(paramvals$Qv, paramvals$EBEDv, paramvals$Lv, paramvals$Vv, paramvals$rbv, paramvals$kLv, paramvals$Dsv, paramvals$nrv, paramvals$nzv, 1),
-    units=c(input$qunits, input$EBEDunits, input$LengthUnits, input$velocityunits, input$rbunits, input$filmunits, input$diffusionunits, "", "", input$timeunits)
+    value=c(paramvals$Qv, paramvals$EBEDv, paramvals$Lv, paramvals$Vv, paramvals$rbv, 1, 1, paramvals$nrv, paramvals$nzv, 1),
+    units=c(input$qunits, input$EBEDunits, input$LengthUnits, input$velocityunits, input$rbunits, 1, 1, "", "", input$timeunits)
   ))})
   
   
@@ -424,16 +442,16 @@ server <- function(input, output, session) {
   #observe({updateNumericInput(session, "tv", value=time())  })
   
   lengthvector<-c("cm", "m", "mm", "in", "ft")
-  velocityvector<-c("cm/s", "ft/s", "m/s", "in/s", "m/min", "ft/min")
+  velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")
   
-  lengthvector2<-reactive({c(paramdat()$units[3], lengthvector)})
-  lengthvector3<-reactive({unique(lengthvector2())})
+  lengthvector2<-eventReactive(input$file1, {c(paramdat()$units[3], lengthvector)})
+  lengthvector3<-eventReactive(input$file1, {unique(lengthvector2())})
   
-  velocityvector2<-reactive({c(paramdat()$units[4], velocityvector)})
-  velocityvector3<-reactive({unique(velocityvector2())})
+  velocityvector2<-eventReactive(input$file1, {c(paramdat()$units[4], velocityvector)})
+  velocityvector3<-eventReactive(input$file1, {unique(velocityvector2())})
   
-  rbvector<-reactive(c(paramdat()$units[5], lengthvector))
-  rbvector2<-reactive(unique(rbvector()))
+  rbvector<-eventReactive(input$file1, {c(paramdat()$units[5], lengthvector)})
+  rbvector2<-eventReactive(input$file1, {unique(rbvector())})
   
     observe({updateSelectInput(session, "rbunits", choices=rbvector2())})
     observe({updateSelectInput(session, "LengthUnits", choices=lengthvector3())})
@@ -575,6 +593,12 @@ server <- function(input, output, session) {
     if(input$velocityunits=="ft/min"){
       paramvals$Vv<- paramvals$Vv*0.508
     }
+    if(input$velocityunits=="m/h"){
+      paramvals$Vv<-paramvals$Vv*36
+    }
+    if(input$velocityunits=="gpm/ft^2"){
+      paramvals$Vv<-paramvals$Vv*14.813
+    }
   })
   
   observeEvent(input$filmunits, {
@@ -622,15 +646,12 @@ server <- function(input, output, session) {
   
   timeconverter<-reactiveVal()
   
-  observeEvent(input$timeunits, {
-    if(input$timeunits=="hr"){
+  observeEvent(input$timeunits2, {
+    if(input$timeunits2=="hr"){
       timeconverter(3600)
     }
-    if(input$timeunits=="day"){
+    if(input$timeunits2=="day"){
       timeconverter(86400)
-    }
-    if(input$timeunits=="month"){
-      timeconverter(2592000)
     }
   })
   
@@ -648,10 +669,33 @@ server <- function(input, output, session) {
       if(input$name==iondat$dat$name[x]){
         iondat$dat[x,]<-data.frame(name=input$name, mw=input$mw, KxA=input$KxA, valence=input$valence, kL=input$kL, Ds=input$Ds)
       }
-      else  iondat$dat <- add_row(iondat$dat, name=input$name, mw=input$mw, KxA=input$KxA, valence=input$valence, kL=input$kL, Ds=input$Ds)
+      else
+        
+        iondat$dat <- add_row(iondat$dat, name=input$name, mw=input$mw, KxA=input$KxA, valence=input$valence, kL=input$kL, Ds=input$Ds)
     }
   })
   
+  output$sum3<-renderTable(iondat$dat$name[1])
+  output$sum4<-renderTable(iondat$dat[1,])
+  
+  iondatdisplay<-reactiveValues()
+  
+  observe({iondatdisplay$dat<-iondat$dat})
+  
+  #observe({iondatdisplay$dat$kL<-format(iondat$dat$kL, scientific=TRUE)})
+  #observe({iondatdisplay$dat$Ds<-format(iondat$dat$Ds, scientific=TRUE)})
+  
+  # observeEvent(input$add, {
+  #   for(x in 1:nrow(iondatdisplay$dat)){
+  #     if(input$name==iondatdisplay$dat$name[x]){
+  #       iondatdisplay$dat[x,]<-data.frame(name=input$name, mw=input$mw, KxA=input$KxA, valence=input$valence, kL=input$kL, Ds=input$Ds)
+  #     }
+  #     else  iondatdisplay$dat <- add_row(iondatdisplay$dat, name=input$name, mw=input$mw, KxA=input$KxA, valence=input$valence, kL=input$kL, Ds=input$Ds)
+  #   }
+  # })
+  
+  #observe({iondatdisplay$dat$kL<-format(iondat$dat$kL, scientific=TRUE)})
+  #observe({iondatdisplay$dat$Ds<-format(iondat$dat$Ds, scientific=TRUE)})
   
   output$IonsTable<-renderTable({iondat$dat})
   
@@ -703,7 +747,7 @@ server <- function(input, output, session) {
   output$nr<-renderText("Radial Collocation Points")
   output$nz<-renderText("Axial Collocation Points")
   
-  output$Time<-renderText("Time")
+  output$conctime<-renderText("Time")
   output$TS<-renderText("Time Step")
   
   output$ChemicalNames<-renderText("Chemical Names")
@@ -716,6 +760,10 @@ server <- function(input, output, session) {
   output$FinalTime<-renderText("Final")
   
   output$OC<-renderText("Units")
+  
+  output$params2<-renderTable(paramdataframe())
+  output$ions2<-renderTable(iondat$dat)
+  output$cin2<-renderTable(cindat())
   
   output$about<-renderText("The Ion Exchange Model is a tool used to predict the concentration of PFAS chemicals over time
                            as a function of the water treatment apparatus. The computational model was developed by Levi Halpert,
@@ -741,10 +789,6 @@ server <- function(input, output, session) {
   
   observeEvent(input$add, {
     output$concentrationadded<-renderText("Concentration Added")
-  })
-  
-  observeEvent(input$run_button, {
-    output$analysisran<-renderText("Analysis is Running")
   })
   
   
@@ -1191,8 +1235,10 @@ server <- function(input, output, session) {
                                                conc=allchemicalscorrected3()[,2])})
   allchems<-reactive({cbind(timeframe(), allchemicalscorrected4())})
   
+  allchemicals2<-reactive({cbind(timeframe(), allchemicals())})
+  
 
-  output$sum<-renderTable(allchems())
+  output$sum<-renderTable(allchemicals2())
 
 
 #------------------------------------------------------------------------------#
@@ -1350,20 +1396,52 @@ processed_data2 <- reactive({
 
 # ##COUNTER-ION TIME CONVERSIONS - Takes values from counterion df and puts them in outputcounterions$time
 
-observeEvent(input$save_button, {
-  write_xlsx(processed_data3(), getwd())
+# observeEvent(input$save_button, {
+#   write_xlsx(allchemicals2(),path = tempfile(fileext = ".xlsx"),col_names = TRUE, format_headers = TRUE,use_zip64 = FALSE)
+# })
+
+output$save_button<-downloadHandler(
+  filename=function(){"IEX_Data.xlsx"},
+  content=function(filename){
+    write.xlsx(paramdat(), filename)
+    write.xlsx(iondat(), filename)
+    write.xlsx(cindat(), filename)
+    write.xlsx(allchemicals2(), filename)
+  }
+
+)
+
+observeEvent(input$Refresh, {
+  outputcounterions$time<-0
+  outputions$time<-0
+  outputcounterions$conc<-0
+  outputions$conc<-0
+  out(0)
+  updateSelectInput(session, "rbunits", choices=c("cm", "m", "mm", "in", "ft"))
+  updateSelectInput(session, "LengthUnits", choices=c("cm", "m", "mm", "in", "ft"))
+  updateSelectInput(session, "velocityunits", choices=c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2"))
+})
+
+observeEvent(input$file1, {
+  counteriondata<-0
+  iondata<-0
+  out(0)
 })
 
 
+
 fig<-reactive({plot_ly(processed_data(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name)})
-fig2<-reactive({fig()%>%layout(title="Counter-Ion Concentration over Time",
+fig2<-reactive({fig()%>%layout(title="Concentration over Time",
+                               legend=list(orientation='h', y =1),
                                xaxis=list(title=input$timeunits),
                                yaxis=list(title=input$OCunits))})
 
 bonusfig<-reactive({plot_ly(processed_data2(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name)})
-bonusfig2<-reactive({bonusfig()%>%layout(title="Ion Concentration over Time", showlegend=TRUE,
+bonusfig2<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
+                                         legend=list(orientation='h', y=1),
+                                         #yaxis=list(range=c(0,)),
                                          xaxis=list(title=input$timeunits),
-                                         yaxis=list(title=input$OCunits))})
+                                         yaxis=list(title=input$OCunits, showexponent='all', exponentformat='e'))})
 
 
 output$Plot<-renderPlotly(
@@ -1373,6 +1451,6 @@ output$ExtraChemicals <- renderPlotly(
   bonusfig2())
 
 }
-
+runGadget(ui, server, viewer = browserViewer(browser = getOption("browser")))
 
 shinyApp(ui, server)
