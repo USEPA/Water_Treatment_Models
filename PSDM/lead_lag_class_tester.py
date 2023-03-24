@@ -9,7 +9,8 @@ Created on Wed Dec 14 15:45:43 2022
 from lead_lag_class import LLobj
 
 import sys
-sys.path.append('C:/Users/JBurkhar/OneDrive - Environmental Protection Agency (EPA)/Profile/Desktop/Git/PSDM/PSDM')
+psdm_loc = 'path_to_PSDM' ## example 'C:/Users/JBurkhar/OneDrive/Desktop/PSDM'
+sys.path.append(psdm_loc)
 
 
 import warnings

@@ -12,8 +12,9 @@ these simulation results.
 """
 
 import sys
-sys.path.append('C:/Users/JBurkhar/OneDrive - Environmental Protection Agency (EPA)/Profile/Desktop/Git/PSDM/PSDM')
-# sys.path.append('C:/Users/JBurkhar/OneDrive - Environmental Protection Agency (EPA)/Profile/Desktop/Git/Water_Treatment_Models/IonExchangeModel/ixpy')
+psdm_loc = 'path_to_PSDM' ## example 'C:/Users/JBurkhar/OneDrive/Desktop/PSDM'
+sys.path.append(psdm_loc)
+
 
 import warnings
 warnings.simplefilter("ignore")
