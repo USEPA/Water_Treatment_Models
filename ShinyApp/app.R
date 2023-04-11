@@ -705,17 +705,19 @@ server <- function(input, output, session) {
     cindat(tibble::add_column(cindat(), !! input$name:=input$avgconc))
   })
   
+  # observe({
+  #   row.names(iondat$dat)<-iondat$dat[,1]
+  # })
+
   observeEvent(input$remove, {
-    if (!is.null(input$ionlist)) {
-      
-      iondat$dat[iondat$dat==input$ionlist,]<- iondat$dat[!iondat$dat==input$ionlist,]
-    }
+    iondat$dat[iondat$dat==input$ionlist,]<- iondat$dat[!iondat$dat==input$ionlist,]
   })
+  
+  
   
   observe({iondat$dat<-unique(iondat$dat)})
   
-  #output$sum2<-renderTable(iondat$dat[iondat$dat==input$ionlist, ])
-  #output$sum3<-renderTable(input$ionlist)
+  
   output$ICTable<-renderDataTable({cindat()})
   
   
@@ -1321,11 +1323,18 @@ allchemicals2<-reactive({cbind(timeframe(), allchemicals())})
 outputcounterions<-reactiveValues(counterion=0)
 outputions<-reactiveValues(ion=0)
 
+
 counteriondata<-reactive({allchems()[0:804,]})
 iondata<-reactive({allchems()[805:nrow(allchems()),]})
 
 counteriondatacc0<-reactive({ allchemicalscc04()[0:804,]})
 iondatacc0<-reactive({allchemicalscc04()[805:nrow(allchems()),]})
+
+output$sum2<-renderTable(counteriondata())
+output$sum3<-renderTable(outputions())
+
+outputcounterions$name<-reactive({counteriondata()$name})
+outputions$name<-reactive({iondata()$name})
 
 observe({
   req(allchemicals2())
@@ -1379,6 +1388,7 @@ processed_data <- reactive({
   plot_data <- counteriondata()
   plot_data$conc <- outputcounterions$conc
   plot_data$hours <- outputcounterions$time
+  #plot_data$name<-outputcounterions$name
   plot_data
 })
 
@@ -1388,6 +1398,7 @@ processed_data2 <- reactive({
   plot_data2 <- iondata()
   plot_data2$conc <- outputions$conc
   plot_data2$hours <- outputions$time
+  #plot_data2$name<-outputions$name
   plot_data2
 })
 
@@ -1403,10 +1414,10 @@ processed_data2 <- reactive({
 output$save_button<-downloadHandler(
   filename=function(){"IEX_Data.xlsx"},
   content=function(filename){
-    write.xlsx(paramdat(), filename)
-    write.xlsx(iondat(), filename)
-    write.xlsx(cindat(), filename)
-    write.xlsx(allchemicals2(), filename)
+    write.xlsx(paramdat(), filename, sheetName="params")
+    write.xlsx(iondat$dat, sheetName="ions", filename, append=TRUE)
+    write.xlsx(cindat(), sheetName="cin", filename, append=TRUE)
+    write.xlsx(allchemicals2(), sheetName="output", filename, append=TRUE)
   }
 
 )
@@ -1422,11 +1433,11 @@ observeEvent(input$Refresh, {
   updateSelectInput(session, "velocityunits", choices=c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2"))
 })
 
-observeEvent(input$file1, {
-  counteriondata<-0
-  iondata<-0
-  out(0)
-})
+# observeEvent(input$file1, {
+#   counteriondata<-0
+#   iondata<-0
+#   out(0)
+# })
 
 
 
