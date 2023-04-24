@@ -311,7 +311,7 @@ class PSDM():
         
         
         ### adding mass transfer keyword
-        self.mass_transfer = pd.DataFrame(0, columns=self.compounds, index=['kf','dp','ds'])
+        self.mass_transfer = pd.DataFrame(0.0, columns=self.compounds, index=['kf','dp','ds'])
         mass_transfer_data = kw.get('mass_transfer', 'None')
         if type(mass_transfer_data) == str:
             pass
