@@ -17,7 +17,7 @@ library(XLConnect)
 library(DataEditR)
 library(shinyStorePlus)
 
-paramsheet<-read.csv("paramsheet.csv")
+#paramsheet<-read.csv("paramsheet.csv")
 ionsheet<-read.csv("ionsheet.csv")
 cinsheet<-read.csv("cinsheet.csv")
 
@@ -274,10 +274,11 @@ ui <- fluidPage(theme=shinytheme("united"),
 
 server <- function(input, output, session) {
   
+  paramsheet<-reactiveVal(read.csv("paramsheet.csv"))
 
   
   observeEvent(input$file1, {
-    refresh()
+    session$reload()
   })
   
   output$reject<-renderPrint({
@@ -308,25 +309,25 @@ server <- function(input, output, session) {
   
   paramdataframe<-reactiveVal()
   paramvals<-reactiveValues()
-  
-  # observe({
-  #   paramvals$Qv<-input$Qv
-  #   paramvals$EBEDv<-input$EBEDv
-  #   paramvals$Lv<-input$Lv
-  #   paramvals$Vv<-input$Vv
-  #   paramvals$rbv<-input$rbv
-  #   paramvals$kLv<-input$kLv
-  #   paramvals$Dsv<-input$Dsv
-  #   paramvals$nrv<-input$nrv
-  #   paramvals$nzv<-input$nzv
-  #   paramvals$time<-1})
-  # 
-  # #This Dataframe is set up by default of all the default paramater values
-  # observe({paramdataframe(data.frame(
-  #   name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
-  #   value=c(paramvals$Qv, paramvals$EBEDv, paramvals$Lv, paramvals$Vv, paramvals$rbv, NA, NA, paramvals$nrv, paramvals$nzv, NA),
-  #   units=c(input$qunits, NA, input$LengthUnits, input$velocityunits, input$rbunits, NA, NA, NA, NA, input$timeunits)
-  # ))})
+
+  observe({
+    paramvals$Qv<-input$Qv
+    paramvals$EBEDv<-input$EBEDv
+    paramvals$Lv<-input$Lv
+    paramvals$Vv<-input$Vv
+    paramvals$rbv<-input$rbv
+    paramvals$kLv<-input$kLv
+    paramvals$Dsv<-input$Dsv
+    paramvals$nrv<-input$nrv
+    paramvals$nzv<-input$nzv
+    paramvals$time<-1})
+
+  #This Dataframe is set up by default of all the default paramater values
+  observe({paramdataframe(data.frame(
+    name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
+    value=c(paramvals$Qv, paramvals$EBEDv, paramvals$Lv, paramvals$Vv, paramvals$rbv, NA, NA, paramvals$nrv, paramvals$nzv, NA),
+    units=c(input$qunits, NA, input$LengthUnits, input$velocityunits, input$rbunits, NA, NA, NA, NA, input$timeunits)
+  ))})
   
   
   #This dataframe is created when a file is inputed, which is formatted exactly like paramdataframe  
@@ -346,56 +347,62 @@ server <- function(input, output, session) {
   
   
   #These values are taken from paramdat so that they can be used to update paramdataframe
-  capacity<-eventReactive(input$file1, {
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="Q")$value
-    val})
-  
-  eebed<-eventReactive(input$file1,{
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="EBED")$value
-    val})
-  
-  length2<-eventReactive(input$file1,{
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="L")$value
-    val })
-  
-  velocity<-eventReactive(input$file1, {
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="v")$value
-    val})
-  
-  beadradius<-eventReactive(input$file1,{
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="rb")$value
-    val})
+  capacity<-reactive({filter(paramsheet(), name=="Q")$value})
+  eebed<-reactive({filter(paramsheet(), name=="EBED")$value})
+  length2<-reactive({filter(paramsheet(), name=="L")$value})
+  velocity<-reactive({filter(paramsheet(), name=="v")$value})
+  beadradius<-reactive({filter(paramsheet(), name=="rb")$value})
+  film<-reactive({filter(paramsheet(), name=="kL")$value})
+  diffuse<-reactive({filter(paramsheet(), name=="Ds")$value})
+  radial<-reactive({filter(paramsheet(), name=="nr")$value})
+  axial<-reactive({filter(paramsheet(), name=="nz")$value})
   
   
-  film<-eventReactive(input$file1,{
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="kL")$value
-    val})
+  # eebed<-eventReactive(input$file1,{
+  #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
+  #   val<-filter(paramdat(), name=="EBED")$value
+  #   val})
   
-  diffuse<-eventReactive(input$file1,{
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="Ds")$value
-    val})
+  # length2<-eventReactive(input$file1,{
+  #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
+  #   val<-filter(paramdat(), name=="L")$value
+  #   val })
+  
+  # velocity<-eventReactive(input$file1, {
+  #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
+  #   val<-filter(paramdat(), name=="v")$value
+  #   val})
+  # 
+  # beadradius<-eventReactive(input$file1,{
+  #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
+  #   val<-filter(paramdat(), name=="rb")$value
+  #   val})
+  # 
+  # 
+  # film<-eventReactive(input$file1,{
+  #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
+  #   val<-filter(paramdat(), name=="kL")$value
+  #   val})
+  # 
+  # diffuse<-eventReactive(input$file1,{
+  #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
+  #   val<-filter(paramdat(), name=="Ds")$value
+  #   val})
   
   axial<-reactive({13})
   radial<-reactive({7})
   time<-reactive({1})
   
   
-  radial<-eventReactive(input$file1,{
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="nr")$value
-    val})
-  
-  axial<-eventReactive(input$file1,{
-    validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
-    val<-filter(paramdat(), name=="nz")$value
-    val})
+  # radial<-eventReactive(input$file1,{
+  #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
+  #   val<-filter(paramdat(), name=="nr")$value
+  #   val})
+  # 
+  # axial<-eventReactive(input$file1,{
+  #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
+  #   val<-filter(paramdat(), name=="nz")$value
+  #   val})
   
   # time<-eventReactive(input$file1,{
   #   validate(need(input$file1$type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Please select xlsx"))
@@ -406,7 +413,7 @@ server <- function(input, output, session) {
   #once the values are defined, they update paramdataframe
   observe({updateNumericInput(session, "Vv", value=velocity())})
   observe({updateNumericInput(session, "rbv", value=beadradius())})
-  observeEvent(input$file1, {updateNumericInput(session, "Qv", value=capacity())})
+  observe({updateNumericInput(session, "Qv", value=capacity())})
   observe({updateNumericInput(session, "EBEDv", value=eebed())})
   observe({updateNumericInput(session, "Lv", value=length2())})
   observe({updateNumericInput(session, "kLv", value=film())})
@@ -1327,10 +1334,10 @@ server <- function(input, output, session) {
   counteriondatacc0<-reactive({ allchemicalscc04()[0:804,]})
   iondatacc0<-reactive({allchemicalscc04()[805:nrow(allchems()),]})
 
-  output$sum<-renderTable(allchemicals())
-  output$sum2<-renderTable(paramdataframe())
-  output$sum3<-renderTable(out())
-  output$sum4<-renderTable(counteriondata())
+  output$sum<-renderTable(paramdataframe())
+  output$sum2<-renderTable(data_edit())
+  output$sum3<-renderTable(data_edit2())
+  #output$sum4<-renderTable(counteriondata())
 
   outputcounterions$name<-reactive({counteriondata()$name})
   outputions$name<-reactive({iondata()$name})
@@ -1460,14 +1467,9 @@ server <- function(input, output, session) {
   output$ExtraChemicals <- renderPlotly(
     bonusfig2())
   
-  appid = "application511"
-  setupStorage(appId = appid,inputs = TRUE)
-  
-  observeEvent(input$clear1,{
-    clearStore(appId = appid)
-  })
+
   
 }
-#runGadget(ui, server, viewer = browserViewer(browser = getOption("browser")))
+runGadget(ui, server, viewer = browserViewer(browser = getOption("browser")))
 
 shinyApp(ui, server)
