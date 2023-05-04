@@ -594,16 +594,16 @@ useShinyjs(),
             br(), br(),
             textOutput("conctime")),
             column(3, offset=6,
-            selectInput("timeunits2", "", c("hr", "day")))),
+            selectInput("timeunits2", "", c("hr", "day"))))),
         
-        h4("Ion List"),
-        dataEditUI("edit-1"),
-        br(), br(),
-        h4("Concentration Points"),
-        dataEditUI("edit-2"),
-        br(), br()
+        # h4("Ion List"),
+        # dataEditUI("edit-1"),
+        # br(), br(),
+        # h4("Concentration Points"),
+        # dataEditUI("edit-2"),
+        # br(), br()
         
-        ))),
+       # ))),
         
         
 
@@ -614,14 +614,14 @@ useShinyjs(),
         
                                
 
-      # tabPanel("Ions",
-      #   h4("Ion List"),
-      #   dataEditUI("edit-1"),
-      #   br(), br(),
-      #   h4("Concentration Points"),
-      #   dataEditUI("edit-2"),
-      #   br(), br()
-      #   ))),
+      tabPanel("Ions",
+        h4("Ion List"),
+        dataEditUI("edit-1"),
+        br(), br(),
+        h4("Concentration Points"),
+        dataEditUI("edit-2"),
+        br(), br()
+        ))),
       
 
 #------------------------------------------------------------------------------#
@@ -1010,28 +1010,111 @@ server <- function(input, output, session) {
   
   
   
-  # conc_convert_list<-list()
-  # conc_vector<-reactiveVal()
-  # correct_conc_units<-reactiveVal()
-  # 
-  # observe({
-  #   for(unit in 1:nrow(iondat())){
-  #     if(iondat()[unit,'conc_units']=="mg"){
-  #       conc_convert_list[unit]<-1
-  #     }
-  #     else if(iondat()[unit,'conc_units']=="ug"){
-  #       conc_convert_list[unit]<-1000
-  #     }
-  #     else if(iondat()[unit,'conc_units']=="ng"){
-  #       conc_convert_list[unit]<-1000000
-  #     }
-  #     conc_vector(conc_convert_list)
-  #   }
-  # })
-  # 
-  # output$sum2<-renderTable(conc_vector())
-  # 
+  conc_convert_list<-list()
+  conc_vector<-reactiveVal()
+  corrected_conc<-reactiveVal()
+  
+  kl_convert_list<-list()
+  kl_vector<-reactiveVal()
+  kl_original<-reactiveVal()
+  observe({kl_original(iondat()[,'kL'])})
+  
+  ds_convert_list<-list()
+  ds_vector<-reactiveVal()
+  ds_original<-reactiveVal()
+  observe({ds_original(iondat()[,'Ds'])})
+  
+  corrected_ion<-reactiveValues()
+  observe({corrected_ion$dat<-iondat()})
+  
+  observe({
+    for(unit in 1:nrow(iondat())){
+      if(iondat()[unit,'conc_units']=="mg"){
+        conc_convert_list[unit]<-1
+      }
+      else if(iondat()[unit,'conc_units']=="ug"){
+        conc_convert_list[unit]<-1000
+      }
+      else if(iondat()[unit,'conc_units']=="ng"){
+        conc_convert_list[unit]<-1000000
+      }
+      conc_vector(conc_convert_list)
+    }
+  })
+  
+  observe({
+    for(unit in 1:nrow(iondat())){
+      if(iondat()[unit, 'kL_units']=='ft/s'){
+        kl_convert_list[unit]<-12*in2cm
+      }
+      else if(iondat()[unit, 'kL_units']=='m/s'){
+        kl_convert_list[unit]<-m2cm
+      }
+      else if(iondat()[unit, 'kL_units']=='cm/s'){
+        kl_convert_list[unit]<-1
+      }
+      else if(iondat()[unit, 'kL_units']=='in/s'){
+        kl_convert_list[unit]<-in2cm
+      }
+      else if(iondat()[unit, 'kL_units']=='m/min'){
+        kl_convert_list[unit]<-mpmin2cmps
+      }
+      else if(iondat()[unit, 'kL_units']=='ft/min'){
+        kl_convert_list[unit]<-ftpmin2cmps
+      }
+      else if(iondat()[unit, 'kL_units']=='m/h'){
+        kl_convert_list[unit]<-mph2cmps
+      }
+      else if(iondat()[unit, 'kL_units']=='gpm/ft^2'){
+        kl_convert_list[unit]<-gpmpft2cmps
+      }
+      kl_vector(kl_convert_list)
+    }
+  })
+  
+  observe({
+    for(unit in 1:nrow(iondat())){
+      if(iondat()[unit, 'Ds_units']=='ft/s^2'){
+        ds_convert_list[unit]<-ftps22cmps2
+      }
+      else if(iondat()[unit, 'Ds_units']=="m/s^2"){
+        ds_convert_list[unit]<-mps22cmps2
+      }
+      else if(iondat()[unit, 'Ds_units']=="cm/s^2"){
+        ds_convert_list[unit]<-1
+      }
+      else if(iondat()[unit, 'Ds_units']=="in/s^2"){
+        ds_convert_list[unit]<-inps22cmps2
+      }
+      else if(iondat()[unit, 'Ds_units']=="m/min^2"){
+        ds_convert_list[unit]<-mph2cmps
+      }
+      else if(iondat()[unit, 'Ds_units']=="ft/min^2"){
+        ds_convert_list[unit]<-ftpm22cmps2
+      }
+      ds_vector(ds_convert_list)
+    }
+  })
+  
 
+  
+  
+  observe({corrected_conc(mapply('*', cindat(), conc_vector()))})
+  
+  kl_adjusted<-reactiveValues(kL=0)
+  observe({kl_adjusted$kL<-mapply('*', kl_vector(), kl_original())})
+  observe({corrected_ion$dat$kL<-kl_adjusted$kL})
+  
+  ds_adjusted<-reactiveValues(Ds=0)
+  observe({ds_adjusted$Ds<-mapply('*', ds_vector(), ds_original())})
+  observe({corrected_ion$dat$Ds<-ds_adjusted$Ds})
+  
+  # observe({
+  #   corrected_ion()$Ds<-kl_vector()*kl_original()
+  # })
+  
+  output$sum2<-renderTable(corrected_ion$dat)
+  
 
   
 #------------------------------------------------------------------------------#
@@ -1041,7 +1124,7 @@ server <- function(input, output, session) {
   out<-reactiveVal()
   
   observeEvent(input$run_button, {
-    out(HSDMIX_solve(paramdataframe(), iondat(), cindat(), timeconverter(), nt_report))
+    out(HSDMIX_solve(paramdataframe(), corrected_ion$dat, corrected_conc(), timeconverter(), nt_report))
   })
 
   # find outlet indices
