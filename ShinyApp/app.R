@@ -469,7 +469,7 @@ ftmin22cms2=0.00846667
 
 
 wd <- getwd()
-process_files(paste0("simpleinput.xlsx"))
+process_files(paste0("config.xlsx"))
 
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -665,6 +665,7 @@ useShinyjs(),
 #------------------------------------------------------------------------------#
                                 #BEGIN SERVER#
 #------------------------------------------------------------------------------#
+
 
 
 
@@ -1003,11 +1004,7 @@ server <- function(input, output, session) {
   })
   
   
-  
-  output$params2<-renderTable(conc_convert_list)
-  output$ions2<-renderTable(iondat$dat)
-  output$cin2<-renderTable(cindat())
-  
+
   
   
   conc_convert_list<-list()
@@ -1109,11 +1106,11 @@ server <- function(input, output, session) {
   observe({ds_adjusted$Ds<-mapply('*', ds_vector(), ds_original())})
   observe({corrected_ion$dat$Ds<-ds_adjusted$Ds})
   
-  # observe({
-  #   corrected_ion()$Ds<-kl_vector()*kl_original()
-  # })
+
   
-  output$sum2<-renderTable(corrected_ion$dat)
+  output$params2<-renderTable(conc_convert_list)
+  output$ions2<-renderTable(iondat$dat)
+  output$cin2<-renderTable(cindat())
   
 
   
