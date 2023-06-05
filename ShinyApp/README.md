@@ -1,6 +1,6 @@
 # Ion Exchange Modeling Tool
 
-The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design. To read a further in depth analysis of the theory behind this model please check out ________.  This tool can be used to determine if Ion Exchange or another method like Granular Activated Carbon is the most efficient for a given water treatment facility.
+The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design. To read a further in depth analysis of the theory behind this model please reference [Anion Exchange Resin and Inorganic Anion Parameter Determination for Model Validation and Evaluation of Unintended Consequences during PFAS Treatment](https://pubs.acs.org/doi/10.1021/acsestwater.2c00572).  This tool can be used to determine if Ion Exchange or another method like Granular Activated Carbon is the most efficient for a given water treatment facility.
 
 1. [Excel Formatting](#excel)
 2. [Quick Start](#quick-start)
@@ -84,7 +84,7 @@ The ions tab is present in order to organize the chemicals that are present in t
 |  Input        	                |Variable   | Description                                                                      | Source    |
 |---            				    |---        |---                                                                               |---        |
 |Molecular Weight               |mw         |The sum of all the masses in a molecule                                           |           |
-|Selectivity                   |KxA        |Reactivity of an ion relative to chloride                                         |*[Source](https://pubs.acs.org/doi/10.1021/acs.est.1c00769)   *       |
+|Selectivity                   |KxA        |Reactivity of an ion relative to chloride                                         |[Source](https://pubs.acs.org/doi/10.1021/acs.est.1c00769)       |
 |Valence                            |           |The number of electrons that a given element or chemical can lose.                |           |
 |Film Transfer Coefficient      |kL         |Mass transfer coefficient in the boundary of the beads                            |           |
 |Surface Diffusion Coefficient  |Ds         |Diffusion coefficient of the chemical in the media                                |           |
