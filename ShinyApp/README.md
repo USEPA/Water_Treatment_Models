@@ -70,11 +70,11 @@ The parameters tab is used to describe the physical constraints of the resin cha
 #### Notes of Resin Capacity (Q)
 The total ion exchange capacity of the resin (Q) is one of the critical input parameters in the HSDMIX Shiny application. This quanitity is defined as the concentration of available exchange sites per unit volume inside a resin bead. This basiss is used in the unerlying model equations. However, several other conventions for defining this quanitity are used in practice. The filter capacity (Q<sub>f</sub>) is commonly provided by resin manufacturers and corresponds to the concentration of fixed sites per volume of the resin bed (that is, the filter). The values of Q and Q<sub>f</sub> are related by bed porosity ($\epsilon$) [EBED in HSDMIX] through equation 1.
 
-$$ Q={Q_f \over 1-\epsilon} \label{eq500}\tag{1} $$
+$$ Q={Q_f \over 1-\epsilon} \label{eq5000}\tag{1} $$
 
 Typical units for Q and Q<sub>f</sub> in the literature are meq/mL, meq/L, or eq/mL. Alternatively, the ion exchange capacity of a resin is sometimes defined on a dry weight basis (Q<sub>m</sub>). The dry weight capacity can be related to Q either by apparent resin density ($\rho$<sub>a</sub>)[RHOP in a Python version of HSDMIX], which is the dry mass of a pellet divided by the pellet's volume when fully hydrated, or through the apparent resin density of the bed ($\rho$<sup>*</sup>), which is the mass of dry resin per filter volume. The relationships between Q<sub>m</sub> and Q are given by equation 2.
 
-$$ Q = {\rho^* Q_m \over 1-\epsilon} = {\rho_a Q_m} \label{eq100}\tag{2}$$
+$$ Q = {\rho^* Q_m \over 1-\epsilon} = {\rho_a Q_m} \label{eq1000}\tag{2}$$
 
 
 Because resin volume and density can change with ionic composition of the resin, Q, Q<sub>f</sub>, and Q<sub>m</sub> may be different for resin in different ionic forms (for instance, hydroxide vs chloride forms of anion exchange resins). There is also some variability in the literature on what is considered "dry" (completely dry, or air dry) for Q<sub>m</sub>. The user is advised to carefully check data sources for resin capacity carefully on these matters. 
@@ -82,13 +82,13 @@ Because resin volume and density can change with ionic composition of the resin,
 ### Ions
 The ions tab is present in order to organize the chemicals that are present in the analysis. This tab can be updated in either excel or in the Ion Exchange app. The ions are added by row with the columns in order being name, molecular weight, KxA, valence, film transfer coefficient, and surface diffusion coefficient. Chloride, Sulfate, Bicarbonate, and Nitrate should always be in the ions tab.
 
-|  Input        	                |Variable   | Description                                                                      | Source    |
-|---            				    |---        |---                                                                               |---        |
+|  Input        	                |Variable   | Description                                                                      |
+|---            				    |---        |---                                                                               |
 |Molecular Weight               |mw         |The sum of all the masses in a molecule                                           |           |
-|Selectivity                   |KxA        |Reactivity of an ion relative to chloride                                         |[Source](https://pubs.acs.org/doi/10.1021/acs.est.1c00769)       |
-|Valence                            |           |The number of electrons that a given element or chemical can lose.                |           |
-|Film Transfer Coefficient      |kL         |Mass transfer coefficient in the boundary of the beads                            |           |
-|Surface Diffusion Coefficient  |Ds         |Diffusion coefficient of the chemical in the media                                |           |
+|Selectivity                   |KxA        |Reactivity of an ion relative to chloride   [Read More](https://pubs.acs.org/doi/10.1021/acs.est.1c00769) |                     
+|Valence                            |           |The number of electrons that a given element or chemical can lose.                |
+|Film Transfer Coefficient      |kL         |Mass transfer coefficient in the boundary of the beads                            |
+|Surface Diffusion Coefficient  |Ds         |Diffusion coefficient of the chemical in the media                                |
 
 
 
@@ -98,15 +98,17 @@ The ions tab is present in order to organize the chemicals that are present in t
 The initial concentration represents the ratio of a mass to a given volume in this case is mg/L. The time of the final concentration determines the run duration of the analysis. As the model stands now, there is no data in the model to represent the concentration after the final concentration time. There have been discussions to plot data past the final concentration time but these will just be estimations.
 
 
-### Output Concentration
-The output concentration is given in units of mass divided by volume, however, this number is also adjusted 
-### Output Time
-The output time on the parameters tab represents the time units in the 
+### Output
+The output concentration is given in units of mass divided by volume or by a ratio of the concentration of time t and the initial concentration.
+The time can be changed to various units including bed volumes, which is the length of the bed divided by velocity. Both the concentration outputs and the time outputs can be converted before or after the analysis is ran, unlike the rest of the inputs.
 
-### Exporting Data
-
-
-The Ion Exchange Model is meant to take the input of the users water treatment specifications as well as their ions they want to remove from the water and their concentrations before the ions enter the treatment process.
+The data can be exported by clicking the save button. This saves the data points to an excel file where the chemicals inputted into the analysis are the header and the columns are the corresponding concentration points with the first column being the corresponding time.
 
 ## References
-###[1]
+ACS EST Water 2023, 3, 2, 576–587
+Publication Date:January 19, 2023
+https://doi.org/10.1021/acsestwater.2c00572
+
+Environ. Sci. Technol. 2021, 55, 8, 5001–5011
+Publication Date:March 22, 2021
+https://doi.org/10.1021/acs.est.1c00769
