@@ -4,7 +4,7 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 
 1. [Excel Formatting](#excel)
 2. [Quick Start](#quick-start)
-3. [Reference](#reference)
+3. [Appendix](#appendix)
 
 
 ## Excel 
@@ -47,7 +47,7 @@ The input for the excel file must be formatted like the one shown in figure 1 if
 
 
 
-## Reference 
+## Appendix
 
 ### Parameters
 
