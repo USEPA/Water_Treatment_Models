@@ -74,7 +74,7 @@ $$ Q={Q_f \over 1-\epsilon} \label{eq5}\tag{1} $$
 
 Typical units for Q and Q<sub>f</sub> in the literature are meq/mL, meq/L, or eq/mL. Alternatively, the ion exchange capacity of a resin is sometimes defined on a dry weight basis (Q<sub>m</sub>). The dry weight capacity can be related to Q either by apparent resin density ($\rho$<sub>a</sub>)[RHOP in a Python version of HSDMIX], which is the dry mass of a pellet divided by the pellet's volume when fully hydrated, or through the apparent resin density of the bed ($\rho$<sup>*</sup>), which is the mass of dry resin per filter volume. The relationships between Q<sub>m</sub> and Q are given by equation 2.
 
-$$ Q = {\rho^* Q_m \over 1-\epsilon} = {\rho_a Q_m}$$
+$$ Q = {\rho^* Q_m \over 1-\epsilon} = {\rho_a Q_m} \label{eq10}\tag{2}$$
 
 
 Because resin volume and density can change with ionic composition of the resin, Q, Q<sub>f</sub>, and Q<sub>m</sub> may be different for resin in different ionic forms (for instance, hydroxide vs chloride forms of anion exchange resins). There is also some variability in the literature on what is considered "dry" (completely dry, or air dry) for Q<sub>m</sub>. The user is advised to carefully check data sources for resin capacity carefully on these matters. 
