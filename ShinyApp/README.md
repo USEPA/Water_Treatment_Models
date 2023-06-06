@@ -54,18 +54,18 @@ The input for the excel file must be formatted like the one shown in figure 1 if
 The parameters tab is used to describe the physical constraints of the resin characteristics and column specifications. Some of these measurements, like Resin Capacity, can be nontrivial to measure so we have tried to supply a source where the user can find the information if they do not have it already.
 
 
-|  Input        				|Variable  | Description    | Source |
-|---            				|---       |---            |---        |
-|Resin Capacity 				|     Q    | Resin capacity is a measurement of the total capacity of PFAS that can be absorbed by a volume of resin. This capacity is expressed in quantity per unit volume. The value needs to be determined experimentally by titration, usually given by the manufacturing company.      | [Source](https://pubs.acs.org/doi/10.1021/acsestwater.2c00572)
-|Bead Radius    				|     rb   | Bead radius is the measurement of the distance of the bead resin from the center to the surface.              |        |
-|Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually PFAS chemicals. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent.              |        |
-|Length         				|     L    |Effective length of the column.               |        |
-|Velocity  					|     v    | The linear velocity that represents the distance an average water particle travels over a given period of time.     |    |
-|Diameter   				|     d    |  The longest distance between one point to the other of the exit.             |        |
-|Flow Rate					|	fr   | The flow rate represents the distance one unit volume travels through the cylinder over a given period of time. |        |
-|Radial Collocation Points		|	nr   |Mathetmical Object used to stablilize numeric fluctuations in a differential equation.               |        |
-|Axial Collocation Points		|	nz   |               |        |
-|Volumetric and Linear Velocity	|        |There are two options for chosing the input velocity: Volumetric (Flow rate) or Linear. Both options are available in this tool. If volumetric velocity is chosen, then length, diameter, and flow rate must all be supplied before the analysis is ran. If linear velocity is chosen then the user only needs length and velocity. This is because the tool by default takes linear velocity and when a volumetric velocity is given then the flow rate must be converted to linear velocity.               |        |
+|  Input        				|Variable  | Description    |
+|---            				|---       |---            |
+|Resin Capacity 				|     Q    | Resin capacity is a measurement of the total capacity of PFAS that can be absorbed by a volume of resin. This capacity is expressed in quantity per unit volume. The value needs to be determined experimentally by titration, usually given by the manufacturing company.  [Read More](https://pubs.acs.org/doi/10.1021/acsestwater.2c00572)    |
+|Bead Radius    				|     rb   | Bead radius is the measurement of the distance of the bead resin from the center to the surface.              |        
+|Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually PFAS chemicals. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent.              |        
+|Length         				|     L    |Effective length of the column.               |        
+|Velocity  					|     v    | The linear velocity that represents the distance an average water particle travels over a given period of time.     |    
+|Diameter   				|     d    |  The longest distance between one point to the other of the exit.             |        
+|Flow Rate					|	fr   | The flow rate represents the distance one unit volume travels through the cylinder over a given period of time. |        
+|Radial Collocation Points		|	nr   |Mathetmical Object used to stablilize numeric fluctuations in a differential equation.               |        
+|Axial Collocation Points		|	nz   | Mathetmical Object used to stablilize numeric fluctuations in a differential equation.                |        
+|Volumetric and Linear Velocity	|        |There are two options for chosing the input velocity: Volumetric (Flow rate) or Linear. Both options are available in this tool. If volumetric velocity is chosen, then length, diameter, and flow rate must all be supplied before the analysis is ran. If linear velocity is chosen then the user only needs length and velocity. This is because the tool by default takes linear velocity and when a volumetric velocity is given then the flow rate must be converted to linear velocity.               |        
 
 #### Notes of Resin Capacity (Q)
 The total ion exchange capacity of the resin (Q) is one of the critical input parameters in the HSDMIX Shiny application. This quanitity is defined as the concentration of available exchange sites per unit volume inside a resin bead. This basiss is used in the unerlying model equations. However, several other conventions for defining this quanitity are used in practice. The filter capacity (Q<sub>f</sub>) is commonly provided by resin manufacturers and corresponds to the concentration of fixed sites per volume of the resin bed (that is, the filter). The values of Q and Q<sub>f</sub> are related by bed porosity ($\epsilon$) [EBED in HSDMIX] through equation 1.
