@@ -63,8 +63,8 @@ The parameters tab is used to describe the physical constraints of the resin cha
 |Velocity  					|     v    | The linear velocity that represents the distance an average water particle travels over a given period of time.     |    
 |Diameter   				|     d    |  The longest distance between one point to the other of the exit.             |        
 |Flow Rate					|	fr   | The flow rate represents the distance one unit volume travels through the cylinder over a given period of time. |        
-|Radial Collocation Points		|	nr   |Mathetmical Object used to stablilize numeric fluctuations in a differential equation.               |        
-|Axial Collocation Points		|	nz   | Mathetmical Object used to stablilize numeric fluctuations in a differential equation.                |        
+|Radial Collocation Points		|	nr   | Number of grid points used to model transport inside the resin beads.                |        
+|Axial Collocation Points		|	nz   | Number of grid points used to model transport through the column.                |        
 |Volumetric and Linear Velocity	|        |There are two options for chosing the input velocity: Volumetric (Flow rate) or Linear. Both options are available in this tool. If volumetric velocity is chosen, then length, diameter, and flow rate must all be supplied before the analysis is ran. If linear velocity is chosen then the user only needs length and velocity. This is because the tool by default takes linear velocity and when a volumetric velocity is given then the flow rate must be converted to linear velocity.               |        
 
 #### Notes of Resin Capacity (Q)
@@ -78,6 +78,10 @@ $$ Q = {\rho^* Q_m \over 1-\epsilon} = {\rho_a Q_m} \label{eq1000}\tag{2}$$
 
 
 Because resin volume and density can change with ionic composition of the resin, Q, Q<sub>f</sub>, and Q<sub>m</sub> may be different for resin in different ionic forms (for instance, hydroxide vs chloride forms of anion exchange resins). There is also some variability in the literature on what is considered "dry" (completely dry, or air dry) for Q<sub>m</sub>. The user is advised to carefully check data sources for resin capacity carefully on these matters. 
+
+
+### Selection of Collocation Points (nr and nz)
+The parameters nr and nz control the size of the grid used to numerically solve the underlying differential equations during the simulation. Increasing nr and nz may increase the accuracy of simulations but doing so also makes them take longer to run. No analytical expression has been found for determining optimal grid dimensions for this class of problems, so selecting nr and nz may take some experimentation. Generally, the sharper the ion exchange zone is relative to the column length, the higher nz will need to be and the sharper the diffusion gradient in the resin beads becomes, the higher nr will need to be. In practice, it is rare for nr to be the controlling parameter for grid size, with nr=7 being accurate enough for most cases without unduly increasing computational cost. The parameter nz is more likely to need attention. Setting nz too low will often produce spurious oscillations in the breakthrough curves. The illustration below shows simulations with (a) and without (b) these spurious oscillations.
 
 ### Ions
 The ions tab is present in order to organize the chemicals that are present in the analysis. This tab can be updated in either excel or in the Ion Exchange app. The ions are added by row with the columns in order being name, molecular weight, KxA, valence, film transfer coefficient, and surface diffusion coefficient. Chloride, Sulfate, Bicarbonate, and Nitrate should always be in the ions tab.
