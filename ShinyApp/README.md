@@ -70,11 +70,11 @@ The parameters tab is used to describe the physical constraints of the resin cha
 #### Notes of Resin Capacity (Q)
 The total ion exchange capacity of the resin (Q) is one of the critical input parameters in the HSDMIX Shiny application. This quanitity is defined as the concentration of available exchange sites per unit volume inside a resin bead. This basiss is used in the unerlying model equations. However, several other conventions for defining this quanitity are used in practice. The filter capacity (Q<sub>f</sub>) is commonly provided by resin manufacturers and corresponds to the concentration of fixed sites per volume of the resin bed (that is, the filter). The values of Q and Q<sub>f</sub> are related by bed porosity ($\epsilon$) [EBED in HSDMIX] through equation 1.
 
-$$ Q={Q_f \over 1-\epsilon} \label{eq504}\tag{1} $$
+$$ Q={Q_f \over 1-\epsilon} \label{eq505}\tag{1} $$
 
 Typical units for Q and Q<sub>f</sub> in the literature are meq/mL, meq/L, or eq/mL. Alternatively, the ion exchange capacity of a resin is sometimes defined on a dry weight basis (Q<sub>m</sub>). The dry weight capacity can be related to Q either by apparent resin density ($\rho$<sub>a</sub>)[RHOP in a Python version of HSDMIX], which is the dry mass of a pellet divided by the pellet's volume when fully hydrated, or through the apparent resin density of the bed ($\rho$<sup>*</sup>), which is the mass of dry resin per filter volume. The relationships between Q<sub>m</sub> and Q are given by equation 2.
 
-$$ Q = {\rho^* Q_m \over 1-\epsilon} = {\rho_a Q_m} \label{eq104}\tag{2}$$
+$$ Q = {\rho^* Q_m \over 1-\epsilon} = {\rho_a Q_m} \label{eq105}\tag{2}$$
 
 
 Because resin volume and density can change with ionic composition of the resin, Q, Q<sub>f</sub>, and Q<sub>m</sub> may be different for resin in different ionic forms (for instance, hydroxide vs chloride forms of anion exchange resins). There is also some variability in the literature on what is considered "dry" (completely dry, or air dry) for Q<sub>m</sub>. The user is advised to carefully check data sources for resin capacity carefully on these matters. 
@@ -93,7 +93,7 @@ The underlying model equations in this code use column length (bed depth), L, to
 
 Occasionally design specification may include bed dimensions and empty bed contact time (EBCT) but omit flow information. In this case, the user can obtain a superficial flow velocity from the following formula:
 
-$$ v={L \over [EBCT} \label{eq603}\tag{3} $$
+$$ v={L \over [EBCT]} \label{eq605}\tag{3} $$
 
 The column size and flow rate may also be defined in terms of L, bed diameter (d), and volumetric flow rate (fr) by selecting the “volumetric” radio button.
 A note on selection of flow convention: The entry field for the two conventions are independent. The values shown in disabled fields (gray backgrounds) are not updated to correspond to values entered using the other convention. Thus, switching between the radio buttons usually results in switching between two different systems.
