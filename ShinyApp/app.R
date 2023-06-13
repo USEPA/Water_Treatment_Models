@@ -11,7 +11,7 @@ library(shinyWidgets)
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
-#HSDMIX#
+                                #HSDMIX#
 #HSDMIX_Solve is the engine that runs the Ion Exchange Model. The user inputs
 #a parameter data frame (params), an ion data frame (ions), concentration
 #data frame (Cin), and an input time which takes the form of a selectInput later
@@ -24,42 +24,45 @@ library(shinyWidgets)
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
-#unit conversions
+                          #unit conversions
 #------------------------------------------------------------------------------#
 ## length
-m2cm<-100                    #meters to centimeters
-mm2cm<-0.1                   #millimeters to centimeters
-cm2cm<-1                     #centimeters to centimeters (for consistency)
-in2cm<-2.54                  #inches to centimeters
-ft2cm<-12 * in2cm            #centimeters to feet
+m2cm<-100                               #meters to centimeters
+mm2cm<-0.1                              #millimeters to centimeters
+cm2cm<-1                                #centimeters to centimeters (for consistency)
+in2cm<-2.54                             #inches to centimeters
+ft2cm<-12 * in2cm                       #centimeters to feet
 ## time
 sec2sec<-1
 min2sec<-60
-S_PER_HR <- 60 * 60 # seconds per hour  #used by HSDMIX function
+S_PER_HR <- 60 * 60                     # seconds per hour  #used by HSDMIX function
 hour2sec<-60 * min2sec
 day2sec<-24 * hour2sec
-month2sec<-30 * day2sec      #assumes 30 day month
+month2sec<-30 * day2sec                 #assumes 30 day month
 year2sec<-365.25 * day2sec
 ## velocity
-mpmin2cmps<-m2cm/min2sec     #meters per minute to centimeters per second
-ftpmin2cmps<-ft2cm/min2sec   #feet per minute to centimeters per second
-mph2cmps<-m2cm/hour2sec      #meters per hour to centimeters per second
+mpmin2cmps<-m2cm/min2sec                #meters per minute to centimeters per second
+ftpmin2cmps<-ft2cm/min2sec              #feet per minute to centimeters per second
+mph2cmps<-m2cm/hour2sec                 #meters per hour to centimeters per second
 mmin2cms<-m2cm/min2sec
 ftmin2cms<-ft2cm/min2sec
 gal2ft3<-0.133680555556
-gpmpft2cmps<-gal2ft3 * ft2cm / min2sec    #gallons per minute per foot squared
-ft2ps2cm2ps<-(ft2cm)^2           #feet squared per second to centimeters squared per second
-m2ps2cm2ps<-(m2cm)^2             #meters per second squared to centimeters per second squared
-in2ps2cm2ps<-(in2cm)^2          #inches per second squared to centimeters per second squared
-ft2pm2cm2ps<-(ft2cm)^2 / (min2sec)          #feet per minute squared to centimeters per second squared
+gpmpft2cmps<-gal2ft3 * ft2cm / min2sec  #gallons per minute per foot squared
+ft2ps2cm2ps<-(ft2cm)^2                  #feet squared per second to centimeters squared per second
+m2ps2cm2ps<-(m2cm)^2                    #meters per second squared to centimeters per second squared
+in2ps2cm2ps<-(in2cm)^2                  #inches per second squared to centimeters per second squared
+ft2pm2cm2ps<-(ft2cm)^2 / (min2sec)      #feet per minute squared to centimeters per second squared
 m2min2cm2s<-(m2cm^2) / (min2sec) 
 ## volume
 gal2ml<-3785.411784
-mgd2mlps<-1e6 * gal2ml/day2sec                   #mgd to ml/sec
+mgd2mlps<-1e6 * gal2ml/day2sec          #mgd to ml/sec
 l2ml <- 1000.
 
 #~~~~~~~~~~~~~~~~~~~ end unit conversions
 
+#------------------------------------------------------------------------------#
+                          #conversion dictionaries
+#------------------------------------------------------------------------------#
 ##set up dictionaries   ### IF new values are added to drop-downs, must also be added here
 length_conv <- c("m"=m2cm, "cm"=cm2cm, "mm"=mm2cm, "in"=in2cm, "ft"=ft2cm)
 velocity_conv <- c("cm/s"=cm2cm, "m/s"=m2cm, "m/min"=mpmin2cmps, "m/h"=mph2cmps,
@@ -80,7 +83,9 @@ ds_conv <- c("ft^2/s"=ft2ps2cm2ps, "m^2/s"=m2ps2cm2ps, "cm^2/s"=cm2cm,
 mass_conv <- c("mg"=1, "ug"=1e-3, "ng"=1e-6, "mg/L"=1, "ug/L"=1e-3, "ng/L"=1e-6)
 
 
-
+#------------------------------------------------------------------------------#
+                                #HSDMIX Function
+#------------------------------------------------------------------------------#
 
 # Inputs ----
 nt_report = 201 # number of reporting steps
@@ -463,12 +468,16 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
 
+#------------------------------------------------------------------------------#
+                              #FUNCTION LIBRARY
+#------------------------------------------------------------------------------#
+
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
-#process_files
+                              #process_files
 # process_files is a function that reads in the input file, then splits each 
-# page into 3 csv files and saves them seperatley. This may seem unnecessary at
+# page into 3 csv files and saves them separate. This may seem unnecessary at
 # first, but the reason we do this is because the package DataEditR can only 
 # read csv files and not xlsx files. We wanted to have a data frame that is as 
 # easily editable as an excel page, and this is the only function that exists to
@@ -490,6 +499,10 @@ process_files <- function (file) {
 }
 
 
+#------------------------------------------------------------------------------#
+                              #Bed Volume
+#------------------------------------------------------------------------------#
+
 get_bv_in_sec <- function(input) {
   #get number of seconds per bv
   if (input$veloselect == 'Linear') {
@@ -502,6 +515,12 @@ get_bv_in_sec <- function(input) {
   return(input$Lv*length_conv[input$LengthUnits]/Vv)
   
 }
+
+#------------------------------------------------------------------------------#
+                                  #HSDMIX Prep
+#This function makes sure that the appropriate data frames are created
+#and that they have the converted values 
+#------------------------------------------------------------------------------#
 
 HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
   ## prepare paramdataframe for use by HSDMIX_solve
@@ -589,8 +608,6 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
   #### test print input
   # print(input)
   
-  
-  
   timeconverter <- time_conv[input$timeunits2]  ### TODO: Is this really necessary, or doing what we think it is doing? 
   
   if (error == 0) {
@@ -599,6 +616,12 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
     return (error)
   }
 }
+
+
+#------------------------------------------------------------------------------#
+                          #cc0 Conversion function
+#------------------------------------------------------------------------------#
+
 
 cc0_conv <- function (iondata, concdata) {
   error <- 0
@@ -753,180 +776,171 @@ ui <- fluidPage(
         border-color: #030033;
     }
     
-    .dropdown-menu > li > a:hover,
-    .dropdown-menu > li > a:focus {
-      color: #262626;
-        text-decoration: none;
-      background-color: #66CCFF; /*change color of links in drop down here*/
-    }
     
-    .nav > li > a:hover,
-    .nav > li > a:focus {
-      text-decoration: none;
-      background-color: silver; /*Change rollover cell color here*/
-    }
     
     .navbar-default .navbar-nav > li > a {
       color: white; /*Change active text color here*/
     }'))),
   
+  tags$style(HTML("
+    .tabbable > .nav > li > a                  {background-color: #D3D3D3;  color:black}
+  ")),
+  
   navbarPage("",
              
              tabPanel("Input", 
-              sidebarLayout(
-                sidebarPanel(fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
-                             textOutput("reject"),
-                             textOutput("OutputConcentration"),
-                             #selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
-                             #selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
-                             sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
-                             sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
-                             br(),
-                             actionButton("run_button", "Run Analysis", icon=icon("play")),
-                             #downloadButton("save_button2", "Save Data"),
-                             textOutput("ionadded"),
-                             textOutput("concentrationadded"),
-                             textOutput("analysisran")),#sidebarPanel,
-                
-                  mainPanel(
-                    tabsetPanel(
-                    tabPanel("Params",
-                             fluidRow(
-                               
-                               column(3,
-                                      br(), br(), br(),
-                                      br(), br(), 
-                                      textOutput("RC")),
-                               column(2, #offset=1,
-                                      br(),
-                                      textOutput("Q"),
-                                      br(),  br(),
-                                      textOutput("rb"),
-                                      br(),  br(),
-                                      textOutput("EBED")),
-                               column(2,
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Qv",
-                                        label="",
-                                        value = 1400, 
-                                        decimalPlaces = 2,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."),
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "rbv",
-                                        label="",
-                                        value = 0.03375, 
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."),
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "EBEDv",
-                                        label="",
-                                        value = 0.35, 
-                                        currencySymbolPlacement = "p",
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."
-                                      )),
-                               column(3,
-                                      selectInput("qunits", "", c("meq/L")),
-                                      div(style ="
+                      sidebarLayout(
+                        sidebarPanel(fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
+                                     textOutput("reject"),
+                                     textOutput("OutputConcentration"),
+                                     #selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
+                                     #selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
+                                     sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
+                                     sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
+                                     br(),
+                                     actionButton("run_button", "Run Analysis", icon=icon("play")),
+                                     #downloadButton("save_button2", "Save Data"),
+                                     textOutput("ionadded"),
+                                     textOutput("concentrationadded"),
+                                     textOutput("analysisran")),#sidebarPanel,
+                        
+                        mainPanel(
+                          tabsetPanel(
+                            tabPanel("Column Parameters",
+                                     
+                                     br(),
+                                     
+                                     fluidRow(
+                                       column(3,),
+                                       column(2, textOutput("Q")),
+                                       column(2,shinyWidgets::autonumericInput(
+                                         inputId = "Qv",
+                                         label="",
+                                         value = 1400, 
+                                         decimalPlaces = 2,
+                                         digitGroupSeparator = ",",
+                                         decimalCharacter = ".")),
+                                        column(3, selectInput("qunits", "", c("meq/L")))), 
+                                              
+                                      fluidRow(
+                                        column(3, textOutput("RC")),
+                                        column(2, textOutput("rb")),
+                                        column(2, shinyWidgets::autonumericInput(
+                                          inputId = "rbv",
+                                          label="",
+                                          value = 0.03375, 
+                                          decimalPlaces = 3,
+                                          digitGroupSeparator = ",",
+                                          decimalCharacter = ".")),
+                                        column(3, selectInput("rbunits", "", c("cm", "m", "mm", "in", "ft")))
+                                      ),
+                                     
+                                     fluidRow(
+                                       column(3, ),
+                                       column(2, textOutput("EBED")),
+                                       column(2, shinyWidgets::autonumericInput(
+                                         inputId = "EBEDv",
+                                         label="",
+                                         value = 0.35, 
+                                         currencySymbolPlacement = "p",
+                                         decimalPlaces = 3,
+                                         digitGroupSeparator = ",",
+                                         decimalCharacter = "."
+                                       ))
+                                              
+                                     ),
+                                       
+                                       
+                                     hr(),
+                                     #Parameters Row 2#
+                                     
+                                     fluidRow(
+                                       column(3,
+                                              br(), br(), br(),
+                                              textOutput("CS"),
+                                              br(),
+                                              radioButtons("veloselect", "", c("Linear", "Volumetric"))),
+                                       column(2, #offset=1,
+                                              br(), 
+                                              textOutput("Length"),
+                                              br(), br(), 
+                                              textOutput("Velocity"),
+                                              br(), br(), 
+                                              textOutput("Diameter"),
+                                              br(), br(),
+                                              textOutput("Flowrate")),
+                                       column(2,
+                                              
+                                              shinyWidgets::autonumericInput(
+                                                inputId = "Lv",
+                                                label="",
+                                                value = 14.765, 
+                                                decimalPlaces = 3,
+                                                digitGroupSeparator = ",",
+                                                decimalCharacter = "."),
+                                              
+                                              shinyWidgets::autonumericInput(
+                                                inputId = "Vv",
+                                                label="",
+                                                value = 0.123, 
+                                                decimalPlaces = 3,
+                                                digitGroupSeparator = ",",
+                                                decimalCharacter = "."),
+                                              
+                                              
+                                              shinyWidgets::autonumericInput(
+                                                inputId = "Dv",
+                                                label="",
+                                                value = 4, 
+                                                decimalPlaces = 3,
+                                                digitGroupSeparator = ",",
+                                                decimalCharacter = "."),
+                                              
+                                              shinyWidgets::autonumericInput(
+                                                inputId = "Fv",
+                                                label="",
+                                                value = 1.546, 
+                                                decimalPlaces = 3,
+                                                digitGroupSeparator = ",",
+                                                decimalCharacter = ".")),
+                                       
+                                       column(3,
+                                              selectInput("LengthUnits", "", c("cm", "m", "mm", "in", "ft")),
+                                              div(style="margin-top:-0.5em",
+                                                  selectInput("VelocityUnits", "", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2"))),
+                                              
+                                              div(style ="
                                               margin-top:-0.5em", 
-                                          selectInput("rbunits", "", c("cm", "m", "mm", "in", "ft"))
-                                      ))),
-                             hr(),
-                             #Parameters Row 2#
-                             
-                             fluidRow(
-                               column(3,
-                                      br(), br(), br(),
-                                      textOutput("CS"),
-                                      br(),
-                                      radioButtons("veloselect", "", c("Linear", "Volumetric"))),
-                               column(2, #offset=1,
-                                      br(), 
-                                      textOutput("Length"),
-                                      br(), br(), 
-                                      textOutput("Velocity"),
-                                      br(), br(), 
-                                      textOutput("Diameter"),
-                                      br(), br(),
-                                      textOutput("Flowrate")),
-                               column(2,
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Lv",
-                                        label="",
-                                        value = 14.765, 
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."),
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Vv",
-                                        label="",
-                                        value = 0.123, 
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."),
-                                      
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Dv",
-                                        label="",
-                                        value = 4, 
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."),
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Fv",
-                                        label="",
-                                        value = 1.546, 
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = ".")),
-                               
-                               column(3,
-                                      selectInput("LengthUnits", "", c("cm", "m", "mm", "in", "ft")),
-                                      div(style="margin-top:-0.5em",
-                                          selectInput("VelocityUnits", "", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2"))),
-                                      
-                                      div(style ="
-                                              margin-top:-0.5em", 
-                                          selectInput("DiameterUnits","",c("cm", "m", "in", "ft")),
-                                          selectInput("FlowrateUnits","",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))))),
-                             hr(),
-                             #Parameters Row 4#
-                             
-                             fluidRow(
-                               column(3,
-                                      br(),
-                                      textOutput("conctime")),
-                               column(3, offset=4,
-                                      div(style ="
+                                                  selectInput("DiameterUnits","",c("cm", "m", "in", "ft")),
+                                                  selectInput("FlowrateUnits","",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))))),
+                                     hr(),
+                                     #Parameters Row 4#
+                                     
+                                     fluidRow(
+                                       column(3,
+                                              br(),
+                                              textOutput("conctime")),
+                                       column(3, offset=4,
+                                              div(style ="
                                               margin-top:-0.5em",
-                                          selectInput("timeunits2", "", c("hr", "day")),
-                                          br(), br()))),
-                             
-                             
-                             ),
-                    tabPanel("Ions",
-                             h4("Ion List"),
-                             dataEditUI("edit-1"),
-                             br(), br(),
-                             h4("Concentration Points"),
-                             dataEditUI("edit-2"),
-                             br(), br()
-                    ))
-               
-                   
-               )#mainPanel
-              ),#sidebarLayout
-              
+                                                  selectInput("timeunits2", "", c("hr", "day")),
+                                                  br(), br()))),
+                                     
+                                     
+                            ),
+                            tabPanel("Ions",
+                                     h4("Ion List"),
+                                     dataEditUI("edit-1"),
+                                     br(), br(),
+                                     h4("Concentration Points"),
+                                     dataEditUI("edit-2"),
+                                     br(), br()
+                            ))
+                          
+                          
+                        )#mainPanel
+                      ),#sidebarLayout
+                      
              ),#navbarPage
              tabPanel("Output",
                       
@@ -960,7 +974,7 @@ ui <- fluidPage(
                       textOutput("how2use7"),
                       textOutput("how2use8"),
                       textOutput("how2use9"))
-)
+  )
 )
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -1351,7 +1365,7 @@ server <- function(input, output, session) {
                                            legend=list(orientation='h', y=1),
                                            xaxis=list(title=input$timeunits),
                                            yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', exponentformat='e'))})
- 
+  
   
   output$Plot<-renderPlotly(
     fig2())
@@ -1373,7 +1387,7 @@ server <- function(input, output, session) {
   )
   
 }
-  
+
 
 
 shinyApp(ui, server)
