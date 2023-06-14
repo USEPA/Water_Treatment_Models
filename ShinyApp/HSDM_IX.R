@@ -829,7 +829,7 @@ ui <- fluidPage(
                                           inputId = "rbv",
                                           label="",
                                           value = 0.03375, 
-                                          decimalPlaces = 3,
+                                          decimalPlaces = 5,
                                           digitGroupSeparator = ",",
                                           decimalCharacter = ".")),
                                         column(3, selectInput("rbunits", "", c("cm", "m", "mm", "in", "ft")))
