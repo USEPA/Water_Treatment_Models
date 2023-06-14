@@ -12,7 +12,7 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
 2. Excel (reccomended)
-3. Files: HSDMI_IX.R, config.xlsx
+3. Files: HSDMI_IX.R, config.xlsx, example_input_small.xlsx (reccomended), example_input_medium.xlsx (reccomended)
 
 ## Excel-based Input File
 TThe input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI.
