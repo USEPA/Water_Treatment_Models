@@ -13,7 +13,7 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 1. R/R Studio (At least version 2022.7)
 2. Excel (recommended)
 3. Files: HSDMI_IX.R, config.xlsx
-4.Optional: example_input_small.xlsx(5 ions, concentrations specified in ng/L), 
+4. Optional: example_input_small.xlsx(5 ions, concentrations specified in ng/L), 
 example_input_medium.xlsx (9 ions, concentrations specified in ng/L)
 
 ## Excel-based Input File
