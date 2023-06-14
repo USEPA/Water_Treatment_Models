@@ -2,11 +2,17 @@
 
 The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design. To read a further in-depth analysis of the theory behind this model please reference [Anion Exchange Resin and Inorganic Anion Parameter Determination for Model Validation and Evaluation of Unintended Consequences during PFAS Treatment](https://pubs.acs.org/doi/10.1021/acsestwater.2c00572)<sup>[1](#1)</sup>.
 
-1. [Excel Formatting](#excel-based-input-file)
-2. [Quick Start](#quick-start)
-3. [Appendix](#appendix)
-4. [Notes to the User](#notes-to-the-user)
-5. [Development Team](#development-team)
+1. [Requirements](#requirements)
+2. [Excel Formatting](#excel-based-input-file)
+3. [Quick Start](#quick-start)
+4. [Appendix](#appendix)
+5. [Notes to the User](#notes-to-the-user)
+6. [Development Team](#development-team)
+
+## Requirements 
+1. R/R Studio (At least version 2022.7)
+2. Excel (reccomended)
+3. Files: HSDMI_IX.R, config.xlsx
 
 ## Excel-based Input File
 TThe input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI.
