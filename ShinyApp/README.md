@@ -11,8 +11,10 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
-2. Excel (reccomended)
-3. Files: HSDMI_IX.R, config.xlsx, example_input_small.xlsx (reccomended), example_input_medium.xlsx (reccomended)
+2. Excel (recommended)
+3. Files: HSDMI_IX.R, config.xlsx
+4.Optional: example_input_small.xlsx(5 ions, concentrations specified in ng/L), 
+example_input_medium.xlsx (9 ions, concentrations specified in ng/L)
 
 ## Excel-based Input File
 TThe input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI.
@@ -137,7 +139,7 @@ Occasionally design specification may include bed dimensions and empty bed conta
 
 ![eq3](DocumentPics/eq3.png)
 
-The column size and flow rate may also be defined in terms of L, bed diameter (d), and volumetric flow rate (fr) by selecting the “volumetric” radio button.
+The column size and flow rate may also be defined in terms of L, bed diameter (d), and volumetric flow rate (flrt) by selecting the “volumetric” radio button.
 A note on selection of flow convention: The entry field for the two conventions are independent. The values shown in disabled fields (gray backgrounds) are not updated to correspond to values entered using the other convention. Thus, switching between the radio buttons usually results in switching between two different systems.
 
 
