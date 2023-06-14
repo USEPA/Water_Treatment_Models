@@ -40,7 +40,7 @@ TThe input for the Excel-based input file must be formatted like the one shown i
 ![Adjust](DocumentPics/Slide3.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-3.	Click the run button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
+3.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
 
 ![Run](DocumentPics/Slide5.PNG)
 
