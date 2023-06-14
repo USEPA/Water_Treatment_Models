@@ -4,9 +4,9 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 
 1. [Excel Formatting](#excel)
 2. [Quick Start](#quick-start)
-3. [Notes to the User](#notes-to-the-user)
-4. [Appendix](#appendix)
-
+3. [Appendix](#appendix)
+4. [Notes to the User](#notes-to-the-user)
+5. [Development Team](#development-team)
 
 ## Excel 
 The input for the excel file must be formatted like the one shown in figure 1 if the user wants to import data. The sheets must be named params, ions, and cin, in that order. The app looks for those file names so if they do not exist then the app cannot be run with excel. The app is loaded with default data if the user does not want to use an xlsx file, however, all the data manipulation must be done within the app.
@@ -97,7 +97,7 @@ The Output tab provides a graphical output of results after a simulation is comp
 
 ![output](DocumentPics/output.png)
 
-The grpahs will dynamically update to reflect the current selection. If c/c0 is selected, the output is scaled relative to c0 (the initial concentrations), which is the first row of the "Concentration Points" table. "Bed volumes x1000" presents time in thousands of bed volumes treated, where bed volume is the empty bed volume of the media in the system( relating to bed length if velocity is specified, or bed length and diameter if flow rate is specified).
+The graphs will dynamically update to reflect the current selection. If c/c0 is selected, the output is scaled relative to c0 (the initial concentrations), which is the first row of the "Concentration Points" table. "Bed volumes x1000" presents time in thousands of bed volumes treated, where bed volume is the empty bed volume of the media in the system (relating to bed length if velocity is specified, or bed length and diameter if flow rate is specified).
 
 The data can be exported by clicking the save button. This saves the data points to an excel file where the chemicals inputted into the analysis are the header and the columns are the corresponding concentration points with the first column being the corresponding time.
 
@@ -106,11 +106,11 @@ The data can be exported by clicking the save button. This saves the data points
 #### Resin Capacity (Q)
 The total ion exchange capacity of the resin (Q) is one of the critical input parameters in the HSDMIX Shiny application. This quanitity is defined as the concentration of available exchange sites per unit volume inside a resin bead. This basiss is used in the unerlying model equations. However, several other conventions for defining this quanitity are used in practice. The filter capacity (Q<sub>f</sub>) is commonly provided by resin manufacturers and corresponds to the concentration of fixed sites per volume of the resin bed (that is, the filter). The values of Q and Q<sub>f</sub> are related by bed porosity ($\epsilon$) [EBED in HSDMIX] through equation 1.
 
-$$ Q={Q_f \over 1-\epsilon} \label{eq510}\tag{1} $$
+![eq1](DocumentPics/eq1.png)
 
 Typical units for Q and Q<sub>f</sub> in the literature are meq/mL, meq/L, or eq/mL. Alternatively, the ion exchange capacity of a resin is sometimes defined on a dry weight basis (Q<sub>m</sub>). The dry weight capacity can be related to Q either by apparent resin density ($\rho$<sub>a</sub>)[RHOP in a Python version of HSDMIX], which is the dry mass of a pellet divided by the pellet's volume when fully hydrated, or through the apparent resin density of the bed ($\rho$<sup>*</sup>), which is the mass of dry resin per filter volume. The relationships between Q<sub>m</sub> and Q are given by equation 2.
 
-$$ Q = {\rho^* Q_m \over 1-\epsilon} = {\rho_a Q_m} \label{eq110}\tag{2}$$
+![eq2](DocumentPics/eq2.png)
 
 
 Because resin volume and density can change with ionic composition of the resin, Q, Q<sub>f</sub>, and Q<sub>m</sub> may be different for resin in different ionic forms (for instance, hydroxide vs chloride forms of anion exchange resins). There is also some variability in the literature on what is considered "dry" (completely dry, or air dry) for Q<sub>m</sub>. The user is advised to carefully check data sources for resin capacity carefully on these matters. 
@@ -129,7 +129,7 @@ The underlying model equations in this code use column length (bed depth), L, to
 
 Occasionally design specification may include bed dimensions and empty bed contact time (EBCT) but omit flow information. In this case, the user can obtain a superficial flow velocity from the following formula:
 
-$$ v={L \over [EBCT]} \label{eq610}\tag{3} $$
+![eq3](DocumentPics/eq3.png)
 
 The column size and flow rate may also be defined in terms of L, bed diameter (d), and volumetric flow rate (fr) by selecting the “volumetric” radio button.
 A note on selection of flow convention: The entry field for the two conventions are independent. The values shown in disabled fields (gray backgrounds) are not updated to correspond to values entered using the other convention. Thus, switching between the radio buttons usually results in switching between two different systems.
@@ -143,3 +143,8 @@ https://doi.org/10.1021/acsestwater.2c00572
 Environ. Sci. Technol. 2021, 55, 8, 5001–5011
 Publication Date:March 22, 2021
 https://doi.org/10.1021/acs.est.1c00769
+
+## Developer Team
+David Colantonio
+Levi Haupert
+Jonathan Burkhardt
