@@ -38,13 +38,15 @@ import pandas as pd
 import warnings
 warnings.simplefilter("ignore")
 import numpy as np
-import pylab as plt
+import matplotlib.pyplot as plt
 from scipy import stats
 from scipy.optimize import curve_fit
 from scipy.interpolate import interp1d
 import multiprocessing as mp
 
 import PSDM
+from PSDM_functions import find_minimum_df
+import time as ti
 
 def specific_throughput(column_specs, filter_pfas, k_data, c0, ct,
                         compound_data,
@@ -100,6 +102,9 @@ def specific_throughput(column_specs, filter_pfas, k_data, c0, ct,
     orig_ebct = column_specs['L'] * np.pi * (column_specs['diam']**2)/\
                 (4. * column_specs['flrt'])
     orig_flrt = column_specs['flrt'] * 1
+    orig_L = column_specs['L'] * 1.
+    orig_diam = column_specs['diam'] * 1.
+    orig_wt = column_specs['wt'] * 1.
     
     types = [column_specs['carbon'], column_specs['influentID']]
     multi_idx = pd.MultiIndex.from_tuples([(typ, comp)
@@ -118,7 +123,19 @@ def specific_throughput(column_specs, filter_pfas, k_data, c0, ct,
         for ebct in ebct_range:
             ratio = orig_ebct / ebct
             #rescale flow rate of system to desired EBCT value
-            column_specs['flrt'] = ratio * orig_flrt
+            if ebct <= orig_ebct:
+                column_specs['flrt'] = ratio * orig_flrt
+                column_specs['diam'] = orig_diam * 1.
+                column_specs['L'] = orig_L * 1.
+                column_specs['wt'] = orig_wt
+            else:
+                #Resize bed, not adjust flowrate, should allows shorter durations
+                column_specs['flrt'] = orig_flrt * 1.
+                r_ratio = ratio**(1/3.)
+                column_specs['diam'] = orig_diam * r_ratio
+                column_specs['L'] = orig_L * r_ratio
+                column_specs['wt'] = orig_wt * ratio # not modified ratio
+                
             
             #need to rework this to support this step...
             column = PSDM.PSDM(column_specs, compound_data, raw_data,\
@@ -127,8 +144,8 @@ def specific_throughput(column_specs, filter_pfas, k_data, c0, ct,
                             xn_range=[k_data[comp]['1/n']],
                             test_range=[k_data[comp]['K']],
                             optimize=False)
-                
             
+            print(column.ebct)
             _, _, _, _, results = column.run_psdm_kfit(comp)
             
             treat_days = results[results < ct].dropna().index[-1]
@@ -654,7 +671,7 @@ def analyze_all(PSDM_obj):
             plt.contourf(ssqs.columns.values, ssqs.index.values,\
                          ssqs.values)
             
-            min_val = PSDM_obj.find_minimum_df(ssqs)
+            min_val = find_minimum_df(ssqs)
   
             best_val_xn = min_val.columns
             best_val_k = min_val.index
@@ -669,10 +686,10 @@ def analyze_all(PSDM_obj):
         dates = PSDM_obj.data_df.index
     
         plt.plot(dates, PSDM_obj.data_df[PSDM_obj.influent][comp], 
-                 marker='x', label='Influent')
+                 marker='.', ls=':', color='gray', label='Influent')
         plt.plot(dates, PSDM_obj.data_df[PSDM_obj.carbon][comp], 
-                 marker='o', label='Effluent')
-        plt.plot(md.index, md.values, label='PSDM')
+                 marker='+', ls='None', color='black', label='Effluent')
+        plt.plot(md.index, md.values, color='black', label='PSDM')
         plt.legend()
         plt.title(comp+' - '+PSDM_obj.carbon+'\n'+\
                   'K='+repr(round(k,3))+'   1/n='+\

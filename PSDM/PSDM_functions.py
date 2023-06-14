@@ -31,7 +31,7 @@ agreement.
 import warnings
 warnings.simplefilter("ignore")
 
-import pylab as plt
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -268,8 +268,6 @@ def process_input_file(filename, data_sheet='data',\
 
 def process_column_data(filename):
     '''
-    
-
     Parameters
     ----------
     filename : string, example = 'file.xlsx'
@@ -296,8 +294,6 @@ def process_column_data(filename):
 
 def process_input_data(filename, sheet_name='Sheet1'):
     '''
-    
-
     Parameters
     ----------
     filename : string, example = 'file.xlsx'
@@ -464,12 +460,12 @@ def process_raw_data_new(filename, rept_lim=0):
 # 
 # PFAS Specific Data presented in Burkhardt et al. 2020, submitted to 
 # AWWA Water Science - set to halogenated alkanes until published
-foul_params = {'water':{'Organic Free':[1., 0., 0., 0.],
-                        'Rhine': [0.35, -6.15e-8, 0.65, -8.93e-5],
-                        'Portage': [0.510, -9.21e-7, 0.490, -2.80e-5],
-                        'Karlsruhe': [0.65, -6.71e-7, 0.35, -1.00e-4],
-                        'Wausau': [0.83, -9.12e-7, 0.17, -2.65e-4],
-                        'Houghton': [0.66, -1.55e-7, 0.34, -7.29e-5]}, 
+foul_params = {'water':{'Organic Free':[1.,          0.,    0.,       0.],
+                              'Rhine': [0.35,  -6.15e-8,  0.65, -8.93e-5],
+                            'Portage': [0.510, -9.21e-7, 0.490, -2.80e-5], 
+                          'Karlsruhe': [0.65,  -6.71e-7,  0.35, -1.00e-4], 
+                             'Wausau': [0.83,  -9.12e-7,  0.17, -2.65e-4], 
+                           'Houghton': [0.66, - 1.55e-7,  0.34, -7.29e-5]}, 
                'chemical':{'halogenated alkanes': [1.2, -0.2],
                            'halogenated alkanes QSPR': [1.22, -0.12],
                            'halogenated alkenes': [1.0 , 0.0],
@@ -480,8 +476,6 @@ foul_params = {'water':{'Organic Free':[1., 0., 0., 0.],
                            'phenols': [0.65, 0.35],
                            'PNAs': [0.32, 0.68],
                            'pesticides': [0., 0.05],
-                           ##### PFAS parameters described in Burkhardt et al., 2022, Journal of Environmental Engineering
-                           ##### volume 148, no. 3, page 04021086:  https://doi.org/10.1061/(ASCE)EE.1943-7870.0001964
                            'PFAS': {'PFBA': [0.82, 0.12],
                                     'PFPeA': [0.67, 0.19],
                                     'PFHxA': [0.55, 0.28],
@@ -504,13 +498,13 @@ foul_params = {'water':{'Organic Free':[1., 0., 0., 0.],
                                     ## Extra, extrapoloated/estimated from above
                                     'PFPrS': [0.63, 0.14], # linear extrapolation for sulfonated C3
                                     'PMPA': [0.63, 0.17],  # copied from PFO2HxA, similar #C #F ether
+                                    'PFPeS': [0.49, 0.35], ## linear interpolation for sulfonated C5
                                     # special added for QSPR Paper
                                     'TCE': [1.0, 0.],
-                                    #'PFOS_sp': [1.22, -0.12],
-                                    #'PFOA_sp': [1.22, -0.12],
+                                    'PFOS_sp': [1.22, -0.12],
+                                    'PFOA_sp': [1.22, -0.12],
                                     #average, do not use generally
                                     'Ave': [0.45, 0.41]} 
-
                            }}
 #Update PFHpS
 
@@ -1026,4 +1020,17 @@ def generate_grid(grid_num_xn, grid_num_k,\
     # grid_k = (max_k - min_k)/(grid_num_k - 1)    
 
     return xn_range_new, k_range_new
+
+
+
+
+
+
+
+
+
+
+
+
+
 

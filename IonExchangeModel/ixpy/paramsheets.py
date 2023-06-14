@@ -73,7 +73,7 @@ def conv_units(u_in, u_out, u_list, u_coef, label, caller):
     if u_in in u_list:
         u_in_pos = u_list.index(u_in)
     else:
-
+ 
         print('WARNING: ' + caller + ' is not in proper units!')
         print('Acceptable units for ' + label + ' are: ', *u_list, sep='\n')
         
@@ -99,7 +99,7 @@ def conv_units(u_in, u_out, u_list, u_coef, label, caller):
     base_vector = np.array(u_coef)
     base_data = np.array([base_vector]*len(base_vector))
     l_factor = base_data/base_vector[:,None]
-    factor = l_factor[u_in_pos,u_out_pos]    
+    factor = l_factor[u_in_pos,u_out_pos]
     
     return factor, u_in, u_out
 
@@ -205,7 +205,7 @@ def conv_dens(u_in, u_out, label, caller):
     return cv, u_in, u_out
 
 def conv_area(u_in, u_out, label, caller):
-    units = ['m2', 'cm2', 'mm2', 'ft2', 'in2']
+    units = ['m2', 'cm2', 'mm2', 'in2', 'ft2']
     coefs = [1., 10000., 1000000., 1550.0031, 10.7639]
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     
@@ -218,7 +218,6 @@ def conv_area_per_time(u_in, u_out, label, caller):
     time = []
     for var in vars_lst:
         if '/' in var:
-#            print(var.split('/'))
             area.append(var.split('/')[0])
             time.append(var.split('/')[1])
         elif 'gpm' in var:
@@ -465,8 +464,8 @@ def conv_params_data(data):
         
         v_row = pd.DataFrame([[flrt_cv, 'cm/s']], columns = ['value', 'units'], \
                              index = ['v'])
-        
-        params_out = params_out.append(v_row)
+            
+        params_out = pd.concat([params_out, v_row], axis=0)
     else:
         params_out = params_out
         if 'flrt' in params_out.index:
@@ -478,9 +477,8 @@ def conv_params_data(data):
     
     q_row = pd.DataFrame([[Q, 'meq/L']], columns = ['value', 'units'], \
                              index = ['Q'])
-    
-    params_out = params_out.append(q_row)    
-    
+
+    params_out = pd.concat([params_out, q_row], axis=0)
        
     for cp in correct_idx.keys():
         params_out.rename(index={cp:correct_idx[cp]}, inplace=True)
