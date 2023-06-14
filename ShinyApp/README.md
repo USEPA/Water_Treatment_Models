@@ -70,11 +70,11 @@ The parameters tab is used to describe the physical constraints of the resin cha
 |Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent. A well packed bed with spherical resin beads will typically have an EBED of approximatley 0.35.             |        
 |Length         				|     L    |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor. |        
 |Velocity  					|     v    | The linear velocity, or superficial velocity, represents the distance an average water particle travels over a given period of time. HSDM-IX only considers an average of steady-state condition, not variable flow.     |    
-|Diameter   				|     d    |  The diameter of a cylindrical column.             |        
-|Flow Rate					|	flrt   | The average flow rate through the column. HSDM-IX only considers and average or steady-state condition, not variable flow. |       
+|Diameter (GUI only) 				|     d    |  The diameter of a cylindrical column.             |        
+|Flow Rate (GUI only)					|	flrt   | The average flow rate through the column. HSDM-IX only considers and average or steady-state condition, not variable flow. |       
 |Radial Collocation Points		|	nr   | Number of grid points in the radial direction used to model transport inside the resin beads (Default nr=7). Can be used to adjust numerical convergence.               |        
 |Axial Collocation Points		|	nz   | Number of grid points in the axial direction used to model transport through the column (Default nz=13). Can be used to adjust numerical convergence.                |        
-|Time                         | Time |  The units for time in the corresponding "Cin" sheet in the Excel-based files or "Concentration Points" table under Input>Ion's tab. 
+|Time                         | time |  The units for time in the corresponding "Cin" sheet in the Excel-based files or "Concentration Points" table under Input>Ion's tab. 
 
 ### Ions Tab
 
