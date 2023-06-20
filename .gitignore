@@ -15,3 +15,4 @@ IonExchangeModel/ion_exchange_models.egg-info/*
 IonExchangeModel/build/*
 
 PSDM/Toluene-Tetrachloroethylene-Trichloroethylene_multi.png
+*.csv

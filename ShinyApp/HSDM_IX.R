@@ -483,7 +483,6 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 # easily editable as an excel page, and this is the only function that exists to
 # do that
 #------------------------------------------------------------------------------#
-
 process_files <- function (file) {
   
   params<-read_xlsx(file, sheet="params")
@@ -502,7 +501,6 @@ process_files <- function (file) {
 #------------------------------------------------------------------------------#
                               #Bed Volume
 #------------------------------------------------------------------------------#
-
 get_bv_in_sec <- function(input) {
   #get number of seconds per bv
   if (input$veloselect == 'Linear') {
@@ -521,7 +519,6 @@ get_bv_in_sec <- function(input) {
 #This function makes sure that the appropriate data frames are created
 #and that they have the converted values 
 #------------------------------------------------------------------------------#
-
 HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
   ## prepare paramdataframe for use by HSDMIX_solve
   if (input$veloselect == 'Linear') {
@@ -621,8 +618,6 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
 #------------------------------------------------------------------------------#
                           #cc0 Conversion function
 #------------------------------------------------------------------------------#
-
-
 cc0_conv <- function (iondata, concdata) {
   error <- 0
   for (item in 1:nrow(iondata)) {
@@ -960,20 +955,19 @@ ui <- fluidPage(
                           plotlyOutput("ExtraChemicals")))),
              
              tabPanel("About",
-                      textOutput("about"),
-                      br(),
+                      ("The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design."),
+                      br(), br(),
                       tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Click here to read more about the Ion Exchange Model"),
                       br(), br(),
-                      textOutput("how2use"),
-                      textOutput("how2use2"),
-                      textOutput("how2use3"),
-                      textOutput("how2use4"),
-                      br(),
-                      textOutput("how2use5"),
-                      textOutput("how2use6"),
-                      textOutput("how2use7"),
-                      textOutput("how2use8"),
-                      textOutput("how2use9"))
+                      strong("There are two ways to start this model:"), br(),
+                      ("1) Use an Excel file to describe parameters of water treatment unit operation (examples provided). One can upload such file by clicking 'Browse' in the top left corner of the Input page."),br(),
+                      ("2) Start with the data that is provided in the user interface and manipulate the data from there. Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added."),br(),
+                      br(),("Enter information into Column Parameters tab, then add concentration and other ion information in the Ions tab. These can be adjusted within the GUI or saved in an .xlsx file to reuse in the future. Click 'Run Analysis' to begin the simulation. Simulation time can take a few seconds to minutes (20 + seconds) depending on how many ions are simulated."),
+                      br(),br(),
+                      strong("Developed By"),br(),
+                      ("David Colantonio"),br(),
+                      ("Levi Haupert"),br(),
+                      ("Jonathan Burkhardt"),)
   )
 )
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -1031,22 +1025,6 @@ server <- function(input, output, session) {
   output$IonList<-renderText("Ion List")
   output$ConcentrationList<-renderText("Concentration Points")
   
-  output$about<-renderText("The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design.")
-  
-  
-  output$how2use<-renderText("There are two ways to start this model:")
-  
-  output$how2use2<-renderText("1) Use an Excel file to describe parameters of water treatment unit operation (examples provided). One can upload such file by clicking 'Browse' in the top left corner of the Input page.")
-  
-  output$how2use3<-renderText("2) Start with the data that is provided in the user interface and manipulate the data from there. Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
-  
-  output$how2use4<-renderText(" Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
-  
-  output$how2use5<-renderText("Developed By")
-  
-  output$how2use6<-renderText("David Colantonio")
-  output$how2use7<-renderText("Levi Haupert")
-  output$how2use8<-renderText("Jonathan Burkhardt")
   #------------------------------------------------------------------------------#
   #INPUT FILE HANDLING#
   #------------------------------------------------------------------------------#
