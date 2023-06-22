@@ -119,8 +119,50 @@ class HSDMIX:
         
         self.Cin_temp = self.Cin_t.copy(deep=False)
        
-        self.time_mult = self.params['time']        
-        
+        self.time_mult = self.params['time']
+
+        if 'BICARBONATE' not in self.Cin_temp.columns:
+            
+            if 'ALKALINITY' in self.Cin_temp.columns and 'PH' in self.Cin_temp.columns:
+#                initialize a column that is the same size as other columns
+                self.Cin_temp['BICARBONATE'] = self.Cin_temp['ALKALINITY'] * 1.
+                self.ions.loc['BICARBONATE'] = self.ions.loc['ALKALINITY']
+                self.ions.at['BICARBONATE','mw'] = bicarbMW
+                self.ions.at['BICARBONATE','valence'] = 1
+                self.ions.at['BICARBONATE','units'] = self.ions.loc['ALKALINITY','units']
+
+                pH = self.Cin_temp['PH']
+
+                # =====================================================
+                # From T.E.Larson and A.M.Buswell "Calcioum Carbonate 
+                # Saturation Index and Alkalinity Interpretations," 
+                # Am. Water Works Assoc., 34: 1664 (1942)                
+                # Carbonate equilibrium constants at 15 degrees Celcius
+                # =====================================================
+                k1 = 10**(-6.42)
+                k2 = 10**(-10.43)
+
+                h_plus = 10**(-pH)
+
+                calcium_factor, _, _ = conv_conc(self.ions.loc['ALKALINITY', 'units'], 'meq',\
+                                                 '','', \
+                                                    MW = self.ions.loc['ALKALINITY', 'mw'],\
+                                                    val = self.ions.loc['ALKALINITY', 'valence'])
+                bicarb_factor, _, _ = conv_conc(self.ions.loc['ALKALINITY', 'units'], 'meq',\
+                                                 '','', \
+                                                    MW = bicarbMW,\
+                                                    val = 1)
+
+                calcium_carb_alpha = (k1*h_plus)/(h_plus**2 + k1*h_plus + k1*k2)
+
+                self.Cin_temp['BICARBONATE'] = calcium_carb_alpha*self.Cin_temp['ALKALINITY']*calcium_factor/bicarb_factor
+
+                self.Cin_temp = self.Cin_temp.drop('ALKALINITY', axis=1)
+                self.ions = self.ions.drop('ALKALINITY')
+                self.Cin_temp = self.Cin_temp.drop('PH', axis=1)
+            else:
+                print('Warning: No BICARBONATE or ALKALINITY concentration defined.')
+
         self.Cin_dict = self.ions.to_dict('index')
         
         self.u_Cin2 = {}
@@ -134,6 +176,7 @@ class HSDMIX:
             self.MW2[c] = self.Cin_dict[c]['mw']
             self.u_Cout2[c] = 'meq'
 
+
         self.C_out2, self.u_Cin2, self.u_C_out2 = conv_database(self.Cin_temp, \
                                                                self.u_Cin2, \
                                                                self.u_Cout2, \
@@ -142,27 +185,6 @@ class HSDMIX:
                                                                self.val2)
         self.Cin_t=self.C_out2
             
-        if 'BICARBONATE' not in self.C_out2.columns:
-            
-            if 'ALKALINITY' in self.C_out2.columns:
-#                initialize a column that is the same size as other columns
-                self.C_out2['BICARBONATE'] = self.C_out2['ALKALINITY'] * 1.
-                self.ions.loc['BICARBONATE'] = self.ions.loc['ALKALINITY']
-                self.ions.at['BICARBONATE','mw'] = bicarbMW
-                self.ions.at['BICARBONATE','units'] = 'mg'
-                
-                pH_exp = self.C_out2['PH'] - 10. #convenience
-                self.C_out2['BICARBONATE'] = (self.C_out2['ALKALINITY'] - 5. * 10 **pH_exp)/\
-                                            (1. + 0.94 * 10**pH_exp)
-            else:
-                print('Warning: No BICARBONATE or ALKALINITY concentration defined.')
-        
-        #clean up un needed columns        
-        if 'ALKALINITY' in self.C_out2.columns:
-            self.C_out2 = self.C_out2.drop('ALKALINITY', axis=1)
-            self.ions = self.ions.drop('ALKALINITY')
-        if 'PH' in self.C_out2.columns:
-            self.C_out2 = self.C_out2.drop('PH', axis=1)
         
         self.names = self.ions.index.values
         
