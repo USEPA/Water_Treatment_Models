@@ -8,10 +8,11 @@ library(shinyjs)
 library(tidyr)
 library(DataEditR)
 library(shinyWidgets)
+library(colorBlindness)
 
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
-                                #HSDMIX#
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+
 #HSDMIX_Solve is the engine that runs the Ion Exchange Model. The user inputs
 #a parameter data frame (params), an ion data frame (ions), concentration
 #data frame (Cin), and an input time which takes the form of a selectInput later
@@ -81,6 +82,12 @@ ds_conv <- c("ft^2/s"=ft2ps2cm2ps, "m^2/s"=m2ps2cm2ps, "cm^2/s"=cm2cm,
              "in^2/s"=in2ps2cm2ps)
 
 mass_conv <- c("mg"=1, "ug"=1e-3, "ng"=1e-6, "mg/L"=1, "ug/L"=1e-3, "ng/L"=1e-6)
+
+lengthvector<-c("cm", "m", "mm", "in", "ft")
+velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")
+timevector <- c("hr","day")
+flowratevector<-c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")
+diametervector<-c("cm", "m", "mm", "in", "ft")
 
 
 #------------------------------------------------------------------------------#
@@ -483,6 +490,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 # easily editable as an excel page, and this is the only function that exists to
 # do that
 #------------------------------------------------------------------------------#
+
 process_files <- function (file) {
   
   params<-read_xlsx(file, sheet="params")
@@ -501,6 +509,7 @@ process_files <- function (file) {
 #------------------------------------------------------------------------------#
                               #Bed Volume
 #------------------------------------------------------------------------------#
+
 get_bv_in_sec <- function(input) {
   #get number of seconds per bv
   if (input$veloselect == 'Linear') {
@@ -519,6 +528,7 @@ get_bv_in_sec <- function(input) {
 #This function makes sure that the appropriate data frames are created
 #and that they have the converted values 
 #------------------------------------------------------------------------------#
+
 HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
   ## prepare paramdataframe for use by HSDMIX_solve
   if (input$veloselect == 'Linear') {
@@ -618,6 +628,8 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
 #------------------------------------------------------------------------------#
                           #cc0 Conversion function
 #------------------------------------------------------------------------------#
+
+
 cc0_conv <- function (iondata, concdata) {
   error <- 0
   for (item in 1:nrow(iondata)) {
@@ -895,7 +907,7 @@ ui <- fluidPage(
                                                 inputId = "Fv",
                                                 label="",
                                                 value = 1.546, 
-                                                decimalPlaces = 3,
+                                                decimalPlaces = 5,
                                                 digitGroupSeparator = ",",
                                                 decimalCharacter = ".")),
                                        
@@ -948,26 +960,27 @@ ui <- fluidPage(
                         ),
                         
                         mainPanel(
-                          tags$hr(),
+                          
                           shinycssloaders::withSpinner(
                             plotlyOutput("Plot")),
                           br(),
                           plotlyOutput("ExtraChemicals")))),
              
              tabPanel("About",
-                      ("The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design."),
-                      br(), br(),
+                      textOutput("about"),
+                      br(),
                       tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Click here to read more about the Ion Exchange Model"),
                       br(), br(),
-                      strong("There are two ways to start this model:"), br(),
-                      ("1) Use an Excel file to describe parameters of water treatment unit operation (examples provided). One can upload such file by clicking 'Browse' in the top left corner of the Input page."),br(),
-                      ("2) Start with the data that is provided in the user interface and manipulate the data from there. Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added."),br(),
-                      br(),("Enter information into Column Parameters tab, then add concentration and other ion information in the Ions tab. These can be adjusted within the GUI or saved in an .xlsx file to reuse in the future. Click 'Run Analysis' to begin the simulation. Simulation time can take a few seconds to minutes (20 + seconds) depending on how many ions are simulated."),
-                      br(),br(),
-                      strong("Developed By"),br(),
-                      ("David Colantonio"),br(),
-                      ("Levi Haupert"),br(),
-                      ("Jonathan Burkhardt"),)
+                      textOutput("how2use"),
+                      textOutput("how2use2"),
+                      textOutput("how2use3"),
+                      textOutput("how2use4"),
+                      br(),
+                      textOutput("how2use5"),
+                      textOutput("how2use6"),
+                      textOutput("how2use7"),
+                      textOutput("how2use8"),
+                      textOutput("how2use9"))
   )
 )
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -1025,6 +1038,17 @@ server <- function(input, output, session) {
   output$IonList<-renderText("Ion List")
   output$ConcentrationList<-renderText("Concentration Points")
   
+  output$about<-renderText("The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design.")
+  
+  
+  output$how2use<-renderText("There are two ways to start this model:")
+  output$how2use2<-renderText("1) Use an Excel file to describe parameters of water treatment unit operation (examples provided). One can upload such file by clicking 'Browse' in the top left corner of the Input page.")
+  output$how2use3<-renderText("2) Start with the data that is provided in the user interface and manipulate the data from there. Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
+  output$how2use4<-renderText(" Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
+  output$how2use5<-renderText("Developed By")
+  output$how2use6<-renderText("David Colantonio")
+  output$how2use7<-renderText("Levi Haupert")
+  output$how2use8<-renderText("Jonathan Burkhardt")
   #------------------------------------------------------------------------------#
   #INPUT FILE HANDLING#
   #------------------------------------------------------------------------------#
@@ -1061,58 +1085,90 @@ server <- function(input, output, session) {
   #Be saved between refreshes and edited
   paramsheet<-reactiveVal(read.csv("paramsheet.csv"))
   
-  #Create a default dataframe that gets defined so an error isn't thrown and
-  #Maybe there is a chance someone does not want to use an xlsx file
-  paramdataframe<-reactiveVal()
-  paramvals<-reactiveValues()
   
-  #Creating the default values for the data frame
-  ### do we need this? 
-  observe({
-    paramvals$Qv<-input$Qv
-    paramvals$EBEDv<-input$EBEDv
-    paramvals$Lv<-input$Lv
-    paramvals$Vv<-input$Vv
-    paramvals$rbv<-input$rbv
-    paramvals$kLv<-input$kLv
-    paramvals$Dsv<-input$Dsv
-    paramvals$nrv<-input$nrv
-    paramvals$nzv<-input$nzv
-    paramvals$time<-input$time}) ## TODO: is this correct? for reading in TIME unit
+  ##Flow rate V. Linear Velocity
+  ##Some water treatment users may want to use a linear velocity and some may want to use a flow rate
+  ##Given that we can have one option, both options, or neither
   
-  #This Data frame is set up by default of all the default parameter values
   
+  test_df<-data.frame(C=c('v','flrt','diam'))
+  flags<-reactive({test_df$C %in% paramsheet()$name}) ##flags are in order [1] velocity [2] flowrate and [3] diameter
+  
+  velocity<-reactiveVal()
+  velocityvector2<-reactiveVal()
+  velocityvector3<-reactiveVal()
+  
+  flowrate<-reactiveVal()
+  flowrate2<-reactiveVal()
+  flowrate3<-reactiveVal()
+  
+  diameter<-reactiveVal()
+  diameter2<-reactiveVal()
+  diameter3<-reactiveVal()
+  
+  
+  observe({if (flags()[1]){
+    # velocity read in
+    velocity(filter(paramsheet(), name=='v')$value)
+    updateNumericInput(session, "Vv", value=velocity())
+                                                                                                                               
+    velocityvector2(c(filter(paramsheet(), name=='v')$units, velocityvector))
+    velocityvector3<-unique(velocityvector2())
+    
+    updateSelectInput(session, "VelocityUnits", choices=velocityvector3())
+
+    ##add toggle of velocity selector
+    updateRadioButtons(session, "veloselect", selected="Linear")
+
+  }
+    else if(flags()[2] & flags()[3]){
+      
+      flowrate(filter(paramsheet(), name=='flrt')$value)
+      diameter(filter(paramsheet(), name=='diam')$value)
+     
+     updateNumericInput(session, "Fv", value=flowrate())
+     updateNumericInput(session, "Dv", value=diameter())
+     
+     
+     flowrate2(c(filter(paramsheet(), name=='flrt')$units, flowratevector))
+     flowrate3(unique(flowrate2()))
+     
+     diameter2(c(filter(paramsheet(), name=='diam')$units, diametervector))
+     diameter3(unique(diameter2()))
+     
+     updateSelectInput(session, "FlowrateUnits", choices=flowrate3())
+     updateSelectInput(session, "DiameterUnits", choices=diameter3())                                     
+     
+     updateRadioButtons(session, "veloselect", selected="Volumetric")
+    }
+    else{
+     print("Warning: No flow data provided, defaults used")
+    }
+
+    })
+  
+    
   #Take the data from the file that the user uploaded and overwrite the default frame
   capacity<-reactive({filter(paramsheet(), name=="Q")$value})
-  observe({updateNumericInput(session, "Qv", value=format(capacity(), digits=4, scientific=FALSE))})
-  
   eebed<-reactive({filter(paramsheet(), name=="EBED")$value})
-  observe({updateNumericInput(session, "EBEDv", value=format(eebed(), digit=4, scientific=FALSE))})
-  
   length2<-reactive({filter(paramsheet(), name=="L")$value})
-  observe({updateNumericInput(session, "Lv", value=length2())})
-  
-  velocity<-reactive({filter(paramsheet(), name=="v")$value})
-  observe({updateNumericInput(session, "Vv", value=velocity())})
-  
   beadradius<-reactive({filter(paramsheet(), name=="rb")$value})
-  observe({updateNumericInput(session, "rbv", value=prettyNum(beadradius(), digits=4, scientific=FALSE))})
-  
   film<-reactive({filter(paramsheet(), name=="kL")$value})
-  observe({updateNumericInput(session, "kLv", value=film())})
-  
   diffuse<-reactive({filter(paramsheet(), name=="Ds")$value})
-  observe({updateNumericInput(session, "Dsv", value=diffuse())})
-  
   radial<-reactive({filter(paramsheet(), name=="nr")$value})
-  observe({updateNumericInput(session, "nrv", value=radial())})
-  
   axial<-reactive({filter(paramsheet(), name=="nz")$value})
-  observe({updateNumericInput(session, "nzv", value=axial())})
-  
   time<-reactive({filter(paramsheet(), name=="time")$value})
-  ## TODO: likely wrong
   
+  observe({
+    updateNumericInput(session, "Qv", value=format(capacity(), digits=4, scientific=FALSE))
+    updateNumericInput(session, "EBEDv", value=format(eebed(), digit=4, scientific=FALSE))
+    updateNumericInput(session, "Lv", value=length2())
+    updateNumericInput(session, "rbv", value=prettyNum(beadradius(), digits=4, scientific=FALSE))
+    updateNumericInput(session, "kLv", value=film())
+    updateNumericInput(session, "Dsv", value=diffuse())
+    updateNumericInput(session, "nrv", value=radial())
+    updateNumericInput(session, "nzv", value=axial())
+  })
   
   
   
@@ -1129,28 +1185,21 @@ server <- function(input, output, session) {
   
   ## TODO: Time and units aren't getting pulled in from file.
   
-  lengthvector<-c("cm", "m", "mm", "in", "ft")
-  velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")
-  timevector <- c("hr","day")
   
-  
-  lengthvector2<-reactive({c(paramsheet()$units[3], lengthvector)})
+  lengthvector2<-reactive({c(filter(paramsheet(), name=="L")$units, lengthvector)})
   lengthvector3<-reactive({unique(lengthvector2())})
   
-  velocityvector2<-reactive({c(paramsheet()$units[4], velocityvector)})
-  velocityvector3<-reactive({unique(velocityvector2())})
-  
-  rbvector<-reactive({c(paramsheet()$units[5], lengthvector)})
+  rbvector<-reactive({c(filter(paramsheet(), name=='rb')$units, lengthvector)})
   rbvector2<-reactive({unique(rbvector())})
   
-  timevector2<-reactive(c(paramsheet()$units[10], timevector))
+  timevector2<-reactive(c(filter(paramsheet(), name=='time')$units, timevector))
   timevector3<-reactive({unique(timevector2())})
   
-  observe({updateSelectInput(session, "rbunits", choices=rbvector2())})
-  observe({updateSelectInput(session, "LengthUnits", choices=lengthvector3())})
-  observe({updateSelectInput(session, "VelocityUnits", choices=velocityvector3())})
-  observe({updateSelectInput(session, "timeunits2", choices=timevector3())})
-  #observe({updateSelectInput(session, "flowrateunits", value=filter(paramdat(), name=="Q")$units)})
+  observe({
+    updateSelectInput(session, "rbunits", choices=rbvector2())
+    updateSelectInput(session, "LengthUnits", choices=lengthvector3())
+    updateSelectInput(session, "timeunits2", choices=timevector3())
+    })
   
   observe({
     toggleState("Vv", condition=input$veloselect!="Volumetric")
@@ -1245,7 +1294,7 @@ server <- function(input, output, session) {
   bonusdataframe<-data.frame(hours=c(), conc=c())
   
   allconcsconvert<-eventReactive(input$run_button, {for (x in 1:nrow(data_edit())){
-    
+   
     dx_frame<-data.frame(
       hours=out()[[1]], conc=out()[[2]][, liquid_id(), x, outlet_id()], name=data_edit()[x,1]
     )
@@ -1332,13 +1381,13 @@ server <- function(input, output, session) {
     
   })
   
-  fig<-reactive({plot_ly(processed_data(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name)})
+  fig<-reactive({plot_ly(processed_data(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name, colors=SteppedSequential5Steps)})
   fig2<-reactive({fig()%>%layout(title="Concentration over Time",
                                  legend=list(orientation='h', y=1),
                                  xaxis=list(title=input$timeunits),
                                  yaxis=list(title=paste0("Concentration (",input$OCunits,")")))})
   
-  bonusfig<-reactive({plot_ly(processed_data2(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name)})
+  bonusfig<-reactive({plot_ly(processed_data2(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name, colors=SteppedSequential5Steps)})
   bonusfig2<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                            legend=list(orientation='h', y=1),
                                            xaxis=list(title=input$timeunits),
