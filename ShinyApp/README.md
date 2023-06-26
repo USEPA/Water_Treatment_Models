@@ -88,7 +88,7 @@ The Ions tab contains information about the ions to be simulated. The Ions tab s
 |  Input        	                |Column Name   | Description                                                                      |
 |---            				    |---        |---                                                                               |
 |Molecular Weight               |mw         |Molecular weight of ionic species. Gram per mol.                                          |           |
-|Selectivity                   |KxA        |Reactivity of an ion relative to chloride   [Read More](https://pubs.acs.org/doi/10.1021/acs.est.1c00769) |                     
+|Selectivity                   |KxA        |Reactivity of an ion relative to chloride.   [Read More](https://pubs.acs.org/doi/10.1021/acs.est.1c00769) |                     
 |Valence                            | valence          |The number of electrons that a given element or chemical can lose.                |
 |Film Transfer Coefficient      |kL         |Film transfer diffusion coefficient. Mass transfer coefficient in the boundary of the beads                            |
 |kL_units|   kL_units | Units for kL (acceptable inputs: cm/s or m/s)|
