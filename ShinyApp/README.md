@@ -72,7 +72,7 @@ The parameters tab is used to describe the physical constraints of the resin cha
 |Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent. A well packed bed with spherical resin beads will typically have an EBED of approximatley 0.35.             |        
 |Length         				|     L    |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor. |        
 |Velocity  					|     v    | The linear velocity, or superficial velocity, represents the distance an average water particle travels over a given period of time. HSDM-IX only considers an average of steady-state condition, not variable flow.     |    
-|Diameter 				|     d    |  The diameter of a cylindrical column.             |        
+|Diameter 				|     diam    |  The diameter of a cylindrical column.             |        
 |Flow Rate 					|	flrt   | The average flow rate through the column. HSDM-IX only considers and average or steady-state condition, not variable flow. |       
 |Radial Collocation Points		|	nr   | Number of grid points in the radial direction used to model transport inside the resin beads (Default nr=7). Can be used to adjust numerical convergence.               |        
 |Axial Collocation Points		|	nz   | Number of grid points in the axial direction used to model transport through the column (Default nz=13). Can be used to adjust numerical convergence.                |        
@@ -146,6 +146,7 @@ Occasionally design specification may include bed dimensions and empty bed conta
 The column size and flow rate may also be defined in terms of L, bed diameter (d), and volumetric flow rate (flrt) by selecting the “volumetric” radio button.
 A note on selection of flow convention: The entry field for the two conventions are independent. The values shown in disabled fields (gray backgrounds) are not updated to correspond to values entered using the other convention. Thus, switching between the radio buttons usually results in switching between two different systems.
 
+**Note:** If flow rate is provided, diameter is required
 
 ## References
 ACS EST Water 2023, 3, 2, 576–587
