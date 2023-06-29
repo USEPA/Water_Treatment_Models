@@ -431,19 +431,21 @@ def conv_params_data(data):
     u_out = {'time':'s', 'rhop':'g/ml', 'rb':'cm', 'kl':'cm/s', \
              'ds':'cm2/s', 'v':'cm/s', 'qm':'meq/kg', 'l':'cm', \
              'flrt':'cm3/s', 'diam':'cm', 'qf':'meq/L', 'ebed':None, \
-             'nz':None, 'nr':None, 'epor':None, 'dp':'cm2/s'}
+             'nz':None, 'nr':None, 'epor':None, 'dp':'cm2/s','ph':None}
     
     correct_idx = {'rhop':'RHOP', 'qm':'Qm', 'ebed':'EBED', 'l':'L', 'kl':'kL',\
-                   'ds':'Ds', 'qf':'Qf', 'dp':'Dp', 'epor':'EPOR'}
+                   'ds':'Ds', 'qf':'Qf', 'dp':'Dp', 'epor':'EPOR','ph':'pH'}
     
     u_fn = {'time':conv_time, 'rhop':conv_dens, 'rb':conv_length, 'kl':conv_vel, \
              'ds':conv_area_per_time, 'v':conv_vel, 'qm':conv_capacity_mass, \
              'flrt':conv_vol_per_time, 'l':conv_length, 'diam':conv_length, \
              'qf':conv_capacity_vol, 'ebed':conv_the_same, 'nz':conv_the_same, \
-             'nr':conv_the_same, 'epor':conv_the_same, 'dp':conv_area_per_time}
+             'nr':conv_the_same, 'epor':conv_the_same, 'dp':conv_area_per_time, \
+                'ph':conv_the_same}
     
     
     for p in params_Dct.keys():
+        p = p.lower()
         u_in[p] = params_Dct[p]['units']
         u_out[p] = u_out[p]
         u_fn[p] = u_fn[p]
