@@ -72,8 +72,8 @@ The parameters tab is used to describe the physical constraints of the resin cha
 |Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent. A well packed bed with spherical resin beads will typically have an EBED of approximatley 0.35.             |        
 |Length         				|     L    |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor. |        
 |Velocity  					|     v    | The linear velocity, or superficial velocity, represents the distance an average water particle travels over a given period of time. HSDM-IX only considers an average of steady-state condition, not variable flow.     |    
-|Diameter (GUI only) 				|     d    |  The diameter of a cylindrical column.             |        
-|Flow Rate (GUI only)					|	flrt   | The average flow rate through the column. HSDM-IX only considers and average or steady-state condition, not variable flow. |       
+|Diameter 				|     diam    |  The diameter of a cylindrical column.             |        
+|Flow Rate 					|	flrt   | The average flow rate through the column. HSDM-IX only considers and average or steady-state condition, not variable flow. |       
 |Radial Collocation Points		|	nr   | Number of grid points in the radial direction used to model transport inside the resin beads (Default nr=7). Can be used to adjust numerical convergence.               |        
 |Axial Collocation Points		|	nz   | Number of grid points in the axial direction used to model transport through the column (Default nz=13). Can be used to adjust numerical convergence.                |        
 |Time                         | time |  The units for time in the corresponding "Cin" sheet in the Excel-based files or "Concentration Points" table under Input>Ion's tab. 
@@ -88,7 +88,7 @@ The Ions tab contains information about the ions to be simulated. The Ions tab s
 |  Input        	                |Column Name   | Description                                                                      |
 |---            				    |---        |---                                                                               |
 |Molecular Weight               |mw         |Molecular weight of ionic species. Gram per mol.                                          |           |
-|Selectivity                   |KxA        |Reactivity of an ion relative to chloride   [Read More](https://pubs.acs.org/doi/10.1021/acs.est.1c00769) |                     
+|Selectivity                   |KxA        |Reactivity of an ion relative to chloride.   [Read More](https://pubs.acs.org/doi/10.1021/acs.est.1c00769) |                     
 |Valence                            | valence          |The number of electrons that a given element or chemical can lose.                |
 |Film Transfer Coefficient      |kL         |Film transfer diffusion coefficient. Mass transfer coefficient in the boundary of the beads                            |
 |kL_units|   kL_units | Units for kL (acceptable inputs: cm/s or m/s)|
@@ -108,6 +108,10 @@ The Output tab provides a graphical output of results after a simulation is comp
 The graphs will dynamically update to reflect the current selection. If c/c0 is selected, the output is scaled relative to c0 (the initial concentrations), which is the first row of the "Concentration Points" table. "Bed volumes x1000" presents time in thousands of bed volumes treated, where bed volume is the empty bed volume of the media in the system (relating to bed length if velocity is specified, or bed length and diameter if flow rate is specified).
 
 The data can be exported by clicking the save button. This saves the data points to an excel file where the chemicals inputted into the analysis are the header and the columns are the corresponding concentration points with the first column being the corresponding time.
+
+To export the graph, the user can hover over the graph with their cursor which will display the graph settings in the top right. Clicking the camera icon will open up a file explorer where the user can save the graphic.
+
+![savegraph](DocumentPics/saveplot.png)
 
 ## Notes to the User
 
@@ -131,7 +135,7 @@ The parameters nr and nz control the size of the grid used to numerically solve 
 
 If increasing nz does not smooth out the erroneous oscillations, there may be other problems with the simulation. In this case, the user is advised to double check the inputs for errors. If there are no errors in the inputs, it is possible the ion exchange zones in the requested simulations are simply too sharp for this numerical approximation to handle. Faced with this problem, the user may wish to consider reducing the empty bed contact time of the simulation or seek out an alternate method of solution such as an equilibrium-based column model.
 
-#### Specifying Column Size and Flow Rate (GUI only)
+#### Specifying Column Size and Flow Rate
 
 The underlying model equations in this code use column length (bed depth), L, to define filter size and superficial (linear) flow velocity, v, to define flow rate of simulated systems. If both parameters are readily available to the user, they can be input directly selecting the “linear” radio button on the left side of the column specification section. In practice, flow in adsorption systems is often specified as a hydraulic loading rate (or “surface loading rate”) given in units of volumetric flow rate divided by area (for instance, with units of gpm/ft2 or gallons per minute per square foot). This specification is ultimately equivalent to specifying a superficial flow velocity and can also be entered directly for v provided appropriate units are selected from the corresponding drop-down menu. 
 
@@ -142,6 +146,7 @@ Occasionally design specification may include bed dimensions and empty bed conta
 The column size and flow rate may also be defined in terms of L, bed diameter (d), and volumetric flow rate (flrt) by selecting the “volumetric” radio button.
 A note on selection of flow convention: The entry field for the two conventions are independent. The values shown in disabled fields (gray backgrounds) are not updated to correspond to values entered using the other convention. Thus, switching between the radio buttons usually results in switching between two different systems.
 
+**Note:** If flow rate is provided, diameter is required
 
 ## References
 ACS EST Water 2023, 3, 2, 576–587
