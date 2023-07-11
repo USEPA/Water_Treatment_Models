@@ -155,12 +155,9 @@ Bicarbonate is the chemical used in this model to measure alkalinity. Some users
 
 
 
-![alk1](DocumentPics/alk1.PNG "TEST")
+![alk1](DocumentPics/alk1.PNG)
    
-<figure>
-    <img src="alk2.PNG" alt="This is an alt">
-    <figcaption>This is a caption</figcaption>
-</figure>
+[alk2](DocumentPics/alk2.PNG)
 
 ## References
 ACS EST Water 2023, 3, 2, 576–587
