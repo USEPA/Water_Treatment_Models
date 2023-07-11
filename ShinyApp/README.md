@@ -153,11 +153,9 @@ A note on selection of flow convention: The entry field for the two conventions 
 
 Bicarbonate is the chemical used in this model to measure alkalinity. Some users may find that they are interested in the alkalinity of their water and want to observe how it is affected over time. To do this, we can treat the Bicarbonate in the ions tab as alkalinity (this ion can be renamed manually in the xlsx file or within the app). The corresponding Bicarbonate concentration level will need to be calculated from the measured alkalinity. There is a Bicarbonate concentration calculator within the app that takes a pH level and returns the corresponding Bicarbonate concentration level. To breifly summarize, if the user has alkalinity and wants to use that in their model, use Bicarbonate in the ions tab and replace "BICARBONATE" with "ALKALINITY" then use the alkalinity calculator to find and replace the correpsonding pH with mass per volume.
 
-
-
 ![alk1](DocumentPics/alk1.PNG)
-   
-[alk2](DocumentPics/alk2.PNG)
+
+![alk2](DocumentPics/alk2.PNG)
 
 ## References
 ACS EST Water 2023, 3, 2, 576–587
