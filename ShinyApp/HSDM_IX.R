@@ -963,7 +963,7 @@ ui <- fluidPage(
                                       
                                            div(style ="
                                               margin-top:2em",
-                                           h5("Bicarbonate Concentration")),
+                                           h5("Bicarbonate Concentration (meq)")),
                                            div(style ="
                                               margin-top:-1em",
                                            textOutput("bicarbcin"))),
@@ -1347,7 +1347,7 @@ server <- function(input, output, session) {
   #alkvalue<-reactiveVal()
   
   bicarbconverted<-reactiveVal()
-  bicarbmw<-12
+  bicarbmeq2mgl<-50.045001
   
   h_plus<-reactiveVal()
   observe({h_plus(10^-input$pH)})
@@ -1359,7 +1359,7 @@ server <- function(input, output, session) {
       bicarbconverted(calcium_carb_alpha()*input$alkvalue)
     }
     else{
-      bicarbconverted(calcium_carb_alpha()*input$alkvalue*bicarbmw)
+      bicarbconverted(calcium_carb_alpha()*input$alkvalue/bicarbmeq2mgl) #mw/valence -> mw
     }
   })
   
