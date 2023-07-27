@@ -968,6 +968,14 @@ ui <- fluidPage(
                                            div(style ="
                                               margin-top:-1em",
                                            textOutput("bicarbcin"))),
+                                     column(4,
+                                            div(style ="
+                                              margin-top:2em",
+                                            h5("Bicarbonate Concentration (mg/L)")),
+                                            div(style ="
+                                              margin-top:-1em",
+                                            textOutput("bicarbcinmgl"))),
+                                     br()
                                     
                                      )),
                                      
@@ -1367,6 +1375,7 @@ server <- function(input, output, session) {
   
   
   output$bicarbcin<-renderText(bicarbconverted())
+  output$bicarbcinmgl<-renderText(bicarbconverted()*bicarbmeq2mgl)
   
   
 
@@ -1501,7 +1510,7 @@ server <- function(input, output, session) {
                       units=c(input$qunits, NA, input$LengthUnits, input$VelocityUnits, input$rbunits, NA, "cm2/s", NA, NA, input$timeunits2)
                       )})
 
-  observe({print(paramdf())})
+  #observe({print(paramdf())})
   
   output$save_button <- downloadHandler(
     filename = function() {
@@ -1510,8 +1519,8 @@ server <- function(input, output, session) {
     content = function(file) {
       write.xlsx(paramdf(), file, sheetName="params",append=TRUE, row.names=FALSE)
       write.xlsx(iondat(), file, sheetName="ions",append=TRUE, row.names=FALSE)
-      write.xlsx(cindat(), file, sheetName="cin", append=TRUE, row.names=FALSE)
-      write.xlsx(allchemicals2(), file, sheetName="mgl", append=TRUE, row.names=FALSE)
+      write.xlsx(cindat(), file, sheetName="Cin", append=TRUE, row.names=FALSE)
+      write.xlsx(allchemicals2(), file, sheetName="results per mgl", append=TRUE, row.names=FALSE)
     }
   )
   
