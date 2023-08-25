@@ -9,6 +9,7 @@ library(tidyr)
 library(DataEditR)
 library(shinyWidgets)
 library(colorBlindness)
+library(xlsx)
 
 #------------------------------------------------------------------------------#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -1394,7 +1395,7 @@ server <- function(input, output, session) {
   output$save_button<-downloadHandler(
     filename=function(){"IEX_Data.xlsx"},
     content=function(file){
-      write.xlsx(paramdataframe(), filename, sheetName="params")
+      write.xlsx(paramsheet(), filename, sheetName="params")
       write.xlsx(iondat(), sheetName="ions", filename, append=TRUE)
       write.xlsx(cindat(), sheetName="cin", filename, append=TRUE)
       write.xlsx(allchemicals2(), sheetName="output", filename, append=TRUE)
