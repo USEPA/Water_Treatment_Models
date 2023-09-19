@@ -496,16 +496,128 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 
 process_files <- function (file) {
   
+  effluent<-data.frame(hours=c(0), conc=c(0), name=c(0))
+  
   params<-read_xlsx(file, sheet="params")
   ions<-read_xlsx(file, sheet="ions")
   cin<-read_xlsx(file, sheet="Cin")
-  
   
   write.csv(params, "paramsheet.csv", row.names=FALSE)
   write.csv(ions, "ionsheet.csv", row.names=FALSE)
   write.csv(cin, "cinsheet.csv", row.names=FALSE)
   
+  tryCatch({
+
+    eff<-read_xlsx(file, sheet='results per mgl')
+    write.csv(eff, "effluent.csv", row.names=FALSE)
+
+    },
+
+    warning=function(war){
+      #pass
+    },
+    error=function(err){
+      #print("No effluent data available")
+      write.csv(effluent, "effluent.csv", row.names=FALSE)
+      
+
+  })
+
+  #return(effcounterdat)
+
+}
+
+
+# process_effluent<-function(file){
+# 
+#   out<-tryCatch({
+#     effluent<-read_xlsx(file, sheet="results per mgl")
+#     effluent_counterion<-subset(file, select=c(hours, CHLORIDE, SULFATE, BICARBONATE, NITRATE))
+#     effluent_ion<-subset(file, select=-c(CHLORIDE, SULFATE, BICARBONATE, NITRATE))
+# 
+#     write.csv(effluent_counterion, "effluent_counterion.csv", row.names=FALSE)
+#     write.csv(effluent_ion, "effluent_ion.csv", row.names=FALSE)
+# 
+#     effluentdata_counterion<-read.csv("effluent_counterion.csv")                                      
+#     effluentdata_ion<-read.csv("effluent_ion.csv")                           
+# 
+#     timevec<-effluent[,1]
+# 
+#     effcounterdatpre<-gather(effluentdata_counterion)
+#     #effiondatpre<-gather(effluent_ion[,2:ncol(effluent_ion)])
+# 
+#     #
+#     # effcounterdat<-cbind(timevec, effcounterdatpre)
+#     # effiondat<-cbind(timevec, effiondatpre)
+#     #
+#     # effluent_flag<-1
+#     # #print(effluent_flag)
+#     #
+#     # efflist<-list(effcounterdat, effiondat)
+# 
+#     #print(efflist)
+# 
+#     #effluent_flag<-1
+# 
+#     return(effcounterdatpre)
+# 
+# 
+#   },
+#   error=function(err){
+#     #print("No effluent data available")
+#     #effdat2<-read.csv("effluent.csv")
+#     #observe({print(effdat2)})
+#     #Create empty dataframe to save
+#     #effcounterdat2<-data.frame(hours=c(0))
+#     #flag<-1
+#     #print(effcounterdat2)
+#     #effiondat2<-data.frame(hours=c(0), key=c(0), value=c(0))
+#     #efflist<-list(effcounterdat2, effiondat2)
+#     return(file)
+#   })
+# 
+#   return(out)
+# 
+# }
+
+create_plotly<-function(frame1, frame2){
+
   
+  fig<-tryCatch({
+    
+    fig1<-plot_ly(frame1, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
+    add_trace(data=frame2, x=~hours, y=~conc, mode='markers')
+    
+    print(fig1)
+    
+    
+    #  add_trace(y=frame1[,3], type='scatter', mode='lines')
+    # 
+    # fig1<-for(n in 2:ncol(frame1)){
+    #   df_n<-data.frame(conc=frame1[[n]], hours=frame1[[1]], name=colnames(frame1)[n])
+    #   fig1<-add_trace(fig, y=~conc, x=~hours, data=df_n, type='scatter', mode='markers', color=~name)
+    #   print(fig1)
+    #   print(df_n)
+    #   }
+    
+    
+    
+    # fig<-plot_ly(data=effdat2)
+    # 
+    # for(n in 2:ncol(effdat2)){
+    #   df_n<-data.frame(y=effdat2[[n]], hours=effdat2[[1]], name=colnames(effdat2)[n])
+    #   fig<-add_trace(fig, y=~y, x=~hours, data=df_n, type='scatter', mode='markers', color=~name)
+    #   #print(df_n)
+    # }
+    
+    return(fig1)
+    
+  },
+  error=function(err){
+    plot_ly(data=frame1, x=~hours, y=frame1[,2], type='scatter', mode='lines')
+  })
+  
+  return(fig)
 }
 
 
@@ -689,6 +801,7 @@ cc0_conv <- function (iondata, concdata) {
 
 wd <- getwd()
 process_files(paste0("config.xlsx"))
+#process_effluent(paste0("config.xlsx"))
 
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -968,7 +1081,7 @@ ui <- fluidPage(
                                            div(style ="
                                               margin-top:-1em",
                                            textOutput("bicarbcin"))),
-                                     column(4,
+                                     column(4, offset=1,
                                             div(style ="
                                               margin-top:2em",
                                             h5("Bicarbonate Concentration (mg/L)")),
@@ -1033,7 +1146,6 @@ ui <- fluidPage(
 
 
 server <- function(input, output, session) {
-  
   
   
   #------------------------------------------------------------------------------#
@@ -1121,7 +1233,7 @@ server <- function(input, output, session) {
   })
   
   
-  
+ 
   #------------------------------------------------------------------------------#
   #PARAMS DATA HANDLING#
   #------------------------------------------------------------------------------#  
@@ -1255,25 +1367,7 @@ server <- function(input, output, session) {
   
   velocityvar<-reactiveVal()
   
-  #------------------------------------------------------------------------------#
-  #ALKALINITY TO BICARBONATE#
-  #------------------------------------------------------------------------------#
-  
-  # iondat()$mw/iondat()$valence
-  # 
-  # bicarbfactor<-12
-  # alkalinityfactor<-reactive({iondat()['ALKALINITY','mw']/iondat()['ALKALINITY', 'valence']})
-  # 
-  # h_plus<-reactiveVal()
-  # observe({h_plus(10^-input$pH)})
-  # calcium_carb_alpha<-reactive({k1*h_plus()/(h_plus()**2 + k1*h_plus()+k1*k2)})
-  # adjusted_bicarb<-reactive({calcium_carb_alpha()*cinsheet()['ALKALINITY']*(bicarbfactor/alkalinityfactor())})
-  # 
-  # bicarbion<-data.frame(name=c("BICARBONATE"), mw=c(0.37), valence=c(1), kL=c(0.0021), kL_units=c("cm/s"), Ds=c(0.0000002), Ds_units=c("cm^2/s"), conc_units=c("meq"))
-  # bicarbcin<-data.frame()
-  # 
-  # observe({print(h_plus())})
-  # observe({print(calcium_carb_alpha())})
+ 
   #------------------------------------------------------------------------------#
   #IONS DATA HANDLING#
   #------------------------------------------------------------------------------#  
@@ -1286,6 +1380,87 @@ server <- function(input, output, session) {
   cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
   dataOutputServer("output-2", data = cindat)
   
+  effdat2<-read.csv("effluent.csv")
+  
+  if(ncol(effdat2)<=3){
+    holdvalue<-0
+  } else{
+    holdvalue<-1
+  }
+  #print(holdvalue)
+  
+  #observe({print(effdat2)})
+  
+  # effluent_counterion<-subset(effdat2, select=c(hours, CHLORIDE, SULFATE, BICARBONATE, NITRATE))
+  # effluent_ion<-subset(file, select=-c(CHLORIDE, SULFATE, BICARBONATE, NITRATE))
+  # 
+  # write.csv(effluent_counterion, "effluent_counterion.csv", row.names=FALSE)
+  # write.csv(effluent_ion, "effluent_ion.csv", row.names=FALSE)
+  # 
+  # effluentdata_counterion<-read.csv("effluent_counterion.csv")
+  # effluentdata_ion<-read.csv("effluent_ion.csv")
+  # 
+  timevec<-data.frame(hours=c(effdat2[,1]))
+  
+  #effcounterdatpre<-gather(effluentdata_counterion[,2:ncol(effluentdata_counterion)])
+  
+  effdat3<-gather(effdat2[,2:ncol(effdat2)])
+  #observe({print(effdat3())})
+  
+  
+  #observe({print(effdat3)})
+  
+  effdatcounter<-cbind(timevec, effdat3)
+  colnames(effdatcounter)<-c("hours", "name", "conc")
+  #print(effdatcounter)
+  #observe({print(effdatcounter)})
+  
+  if(holdvalue==0){
+    effdata<-effdat2
+  } else{
+    effdata<-effdatcounter
+  }
+  
+  #print(effdata)
+  #effluent_counterion<-subset(file, select=c(hours, CHLORIDE, SULFATE, BICARBONATE, NITRATE))
+  #     effluent_ion<-subset(file, select=-c(CHLORIDE, SULFATE, BICARBONATE, NITRATE))
+  #     
+  #     write.csv(effluent_counterion, "effluent_counterion.csv", row.names=FALSE)
+  #     write.csv(effluent_ion, "effluent_ion.csv", row.names=FALSE)
+  #      
+  #     effluentdata_counterion<-read.csv("effluent_counterion.csv")
+  #     effluentdata_ion<-read.csv("effluent_ion.csv")
+  # 
+  #     timevec<-effluent[,1]
+  # 
+  #     effcounterdatpre<-gather(effluentdata_counterion[,2:ncol(effluentdata_counterion)])
+  #     effiondatpre<-gather(effluent_ion[,2:ncol(effluent_ion)])
+  #     
+  #     # 
+  #     # effcounterdat<-cbind(timevec, effcounterdatpre)
+  #     # effiondat<-cbind(timevec, effiondatpre)
+  #     # 
+  #     # effluent_flag<-1
+  #     # #print(effluent_flag)
+  #     # 
+  #     # efflist<-list(effcounterdat, effiondat)
+  
+  # tryCatch({
+  #   effluentdata_counterion<-read.csv("effluent_counterion.csv")
+  #   effluentdata_ion<-read.csv("effluent_ion.csv")
+  #   print(effluentdata_ion)
+  #   print(effluentdata_counterion)
+  # },
+  # warning=function(war){
+  #   #pass
+  # },
+  # error=function(err){
+  #   #pass
+  # }
+  # 
+  # )
+  
+
  
   #------------------------------------------------------------------------------#
   #CALLING THE HSDMIX FUNCTION#
@@ -1319,16 +1494,29 @@ server <- function(input, output, session) {
     allconcdf
   })
   
+  #observe({print(allchemicals)})
+  
   massvector<-reactive({c(iondat()$mw/iondat()$valence)})
   allchemicalscorrected<-reactive({mapply('*', allchemicals(), massvector())})
   allchemicalscorrected2<-reactive({data.frame(allchemicalscorrected())})
+  allchem<-reactive({cbind(timeframe(), allchemicalscorrected2())})
+  
   allchemicalscorrected3<-reactive({tidyr::gather(allchemicalscorrected2())})
+
+  
   allchemicalscorrected4<-reactive({data.frame(name=allchemicalscorrected3()[,1],
                                                conc=allchemicalscorrected3()[,2])})
   allchems<-reactive({cbind(timeframe(), allchemicalscorrected4())})
   
   allchemicals2<-reactive({cbind(timeframe(), allchemicals())})
  
+  empty_df<-data.frame(hours=c(0), CHLORIDE=c(0))
+  
+  chemholder<-reactiveVal(empty_df)
+  #observe({print(chemholder())})
+  observe({chemholder(allchem())})
+  
+#  observe({print(allchemicalscorrected2())})
   
   #------------------------------------------------------------------------------#
   #                   END IEX CONCENTRATION OUTPUTDATAFRAME#
@@ -1345,6 +1533,7 @@ server <- function(input, output, session) {
   cc0vector<-reactive({cc0_conv(iondat(), cindat())})
   allchemicalscc0<-reactive({mapply('/', allchemicals(), cc0vector())})
   allchemicalscc02<-reactive(data.frame(allchemicalscc0()))
+  
   allchemicalscc03<-reactive({tidyr::gather(allchemicalscc02())})
   allchemicalscc04<-reactive({data.frame(name=allchemicalscc03()[,1],
                                          conc=allchemicalscc03()[,2])})
@@ -1405,6 +1594,30 @@ server <- function(input, output, session) {
   #------------------------------------------------------------------------------#
   #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
   
+  # eff_dat<-reactive({
+  #   file<-input$file1
+  #   process_effluent(file$datapath)
+  # })
+  #
+  efffile<-read.csv("effluent.csv")
+  #eff_dat<-process_effluent(efffile)
+  
+  #observe(print(eff_dat))
+  
+  # eff_dat_counter<-reactive({eff_dat()[[1]]})
+  # eff_dat_ion<-reactive({eff_dat()[2]})
+  # 
+  # #observe({print(eff_dat_counter())})
+  # 
+  # eff_dat_counter_value<-reactive({eff_dat_counter()['value']})
+  #observe({print(eff_dat_counter_value())})
+  
+  # eff_dat<-reactive({
+  #   process_effluent(effdat2)
+  # })
+  # 
+  # observe({print(eff_dat())})
+  
   #------------------------------------------------------------------------------#
   #CONVERTING OUTPUT DATAFRAMES#
   #------------------------------------------------------------------------------#
@@ -1413,11 +1626,75 @@ server <- function(input, output, session) {
   outputcounterions<-reactiveValues(counterion=0)
   outputions<-reactiveValues(ion=0)
   
+  outputcounterions$conc<-0
+  outputcounterions$time<-0
+  
+  outputeffcount<-reactiveValues(counterion=0)
+  outputeffions<-reactiveValues(ion=0)
+  
+  counteriondata3<-reactiveVal()
+  # observe({counteriondata3()$dat<-data.frame(hours=c(0), key=c(0), value=c(0))})
+  # observe({print(counteriondata3()$dat)})
+  
   # 804 == 4 * nt_report
   counterIon_loc = 4 * nt_report
   addIon_loc = counterIon_loc + 1
-  counteriondata<-reactive({allchems()[0:counterIon_loc,]})
+  #counteriondata<-reactive({rbind(allchems()[0:counterIon_loc,], eff_dat_counter())})
+  #counteriondata<-reactive({data.frame(hours=c(0), key=c(0), value=c(0))})
+  iondata<-reactive({0})
+  
+  counteriondata<-reactiveVal(data.frame(hours=c(0), name=c(0), conc=c(0)))
+  #observe({counteriondata(data.frame(hours=c(0), conc=c(0), name=c(0)))})
+  observe({counteriondata(allchems()[0:counterIon_loc,])})
+  #counteriondata2<-pivot_wider(counteriondata(), names_from=name, values_from=conc, )
+  #counteriondata2<-data.frame(hours=timeframe(), )
+  
+  #observe({print(counteriondata())})
+ 
+  
+  # observe({
+  #   for(n in 1:4){
+  #     #df_n<-data.frame(hours=c(timeframe()), conc=counteriondata()[[n]], name=colnames(iondata())[n])
+  #     df<-data.frame(hours=c(timeframe()))
+  #     df_n<-list(counteriondata()[(201*(n-1))+1:201*n,2])
+  #     print(201*(n-1)+1)
+  #     print(201*n)
+  #     print(df_n)
+  #   }
+  # })
+  
+  #observe({print(nrow(counteriondata()))})
+  # observe({print(counteriondata())})
+  # observe({print(effdat2)})
+    
+  # chunk<-201
+  # nu<-reactive({nrow(counteriondata())})
+  # r<-reactive({rep(1:ceiling(nu()/chunk), each=chunk)[1:nu()]})
+  # d<-reactive({split(counteriondata(), r())})
+  # #observe({print(d()[1])})
+  # d1<-reactive({d()[1]})
+  # d13<-reactive({d1()[3]})
+  # observe({print(d13())})
+  
+  # observe({
+  #   for(n in 1:length(d())){
+  #     print(d()[n][,3])
+  #   }
+  # })
+  
+  #all_loc<-reactive({ncol(iondat())})
+  # observe({print(counteriondata())})
+  # observe({print(effdat2)})
+  
+  #counteriondata<-reactive({allchems()[0:counterIon_loc,]})
   iondata<-reactive({allchems()[addIon_loc:nrow(allchems()),]})
+  
+  #counteriondata2<-reactive({rbind(counteriondata(),eff_dat_counter())})
+  
+  # observe({print(eff_dat_counter())})
+  # observe({print(counteriondata())})
+  # observe({print(counteriondata2())})
+  #observe({print(counteriondata())})
   
   counteriondatacc0<-reactive({allchemicalscc04()[0:counterIon_loc,]})
   iondatacc0<-reactive({allchemicalscc04()[addIon_loc:nrow(allchems()),]})
@@ -1454,6 +1731,8 @@ server <- function(input, output, session) {
     
   })
   
+  
+  
   ### graph data
   processed_data <- reactive({
     
@@ -1464,6 +1743,15 @@ server <- function(input, output, session) {
     
   })
   
+  allcounters<-reactive({rbind(processed_data(), effdata)})
+  #observe({print(allcounters())})
+  
+  #observe({print(counteriondata())})
+  #observe({print(outputcounterions$conc)})
+  #observe({print(outputcounterions$time)})
+  #observe({print(processed_data())})
+  
+  
   processed_data2 <- reactive({
     
     plot_data2 <- iondata()
@@ -1473,11 +1761,137 @@ server <- function(input, output, session) {
     
   })
   
-  fig<-reactive({plot_ly(processed_data(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name, colors=SteppedSequential5Steps)})
-  fig2<-reactive({fig()%>%layout(title="Concentration over Time",
-                                 legend=list(orientation='h', y=1),
-                                 xaxis=list(title=input$timeunits),
-                                 yaxis=list(title=paste0("Concentration (",input$OCunits,")")))})
+  fig<-reactive({create_plotly(processed_data(),effdata)})
+  observe({print(processed_data())})
+  observe({print(effdata)})
+  observe({print(create_plotly(processed_data(),effdata))})
+  #observe({print(fig())})
+  
+  # observe({
+  #   fig<-plot_ly(data=allchemicalscorrected2, x=~hours, y=~chloride, type='scatter', mode='lines')%>%
+  #     add_trace(data=data2, x=~x, y=~y, type='scatter', mode='lines')
+  # })
+  # 
+
+  #   fig<-reactive({plot_ly(data=chemholder())})
+  # 
+  # observe({
+  #   for(n in 2:ncol(chemholder())){
+  #     df_n<-data.frame(y=chemholder()[[n]], hours=chemholder()[[1]], name=colnames(chemholder())[n])
+  #     fig<-add_trace(fig, y=~y, x=~hours, data=df_n, type='scatter', mode='markers', color=~name)
+  #     #print(df_n)
+  #   }
+  # })
+  
+  
+  # eff_dat<-eventReactive(input$file1, {
+  #   file<-input$file1
+  #   process_effluent(file$datapath)
+  # })
+  # 
+  # eff_dat_counter<-reactive({eff_dat()[1]})
+  # eff_dat_ion<-reactive({eff_dat()[2]})
+  
+  #observe({print(eff_dat())})
+  # countermode<-reactive({c(rep("lines", (nrow(iondat())-1)*nt_report))})
+  # countermodeeff<-c(rep("markers", nrow(effdata)))
+  # 
+  # countermodes<-reactive({c(countermode(), countermodeeff)})
+  # #observe({print(countermodes())})
+  # 
+  # countermodetest<-c(rep("lines", 5))
+  # #print(countermodetest[3])
+  # observe({print(length(countermode()))})
+  # observe({print(countermodeeff)})
+  # observe({print(allcounters())})
+
+  
+  
+  #####fig<-reactive({plot_ly(allcounters(), x=~hours, y=~conc,type='scatter', mode=countermodeeff, color=~name, colors=SteppedSequential5Steps)
+    
+    # fig%>%layout(title="Concentration over Time",
+    #                legend=list(orientation='h', y=1),
+    #                xaxis=list(title=input$timeunits),
+    #                yaxis=list(title=paste0("Concentration (",input$OCunits,")")))
+    #                                       })
+  #reactive({fig()%>%add_trace(effdata, x=~hours, y=~conc, type='scatter',mode='markers',color=~name)})
+  
+  # observe({fig()%>%layout(title="Concentration over Time",
+  #                                                          legend=list(orientation='h', y=1),
+  #                                                          xaxis=list(title=input$timeunits),
+  #                                                          yaxis=list(title=paste0("Concentration (",input$OCunits,")")))})
+  
+  
+
+  # fig2<-reactive({fig()%>%layout(title="Concentration over Time",
+  #                                legend=list(orientation='h', y=1),
+  #                                xaxis=list(title=input$timeunits),
+  #                                yaxis=list(title=paste0("Concentration (",input$OCunits,")")))})
+  # # 
+  # xval<-c(effdata['hours'])
+  # yval<-c(effdata['conc'])
+  # print(xval)
+  # print(yval)
+  
+  #fig3<-reactive({fig2()%>%add_trace(effdata, x=~hours, y=~conc, type='scatter',mode='lines')})
+
+ #fig<-reactive({plot_ly()})
+  
+  #observe({fig2() %>% add_trace(y=~eff_dat_counter()[3], name=~effluent, mode="lines")})
+  
+  #fig<-reactiveVal()
+  
+  #observe({fig(plot_ly(processed_data(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name, colors=SteppedSequential5Steps))})
+  #observe({fig(fig()%>%add_trace(y=~eff_dat_counter[3], name="effluent data", mode="lines"))})
+  
+  # observe({fig() %>% layout(title="Concentration over Time",
+  #                                                           legend=list(orientation='h', y=1),
+  #                                                           xaxis=list(title=input$timeunits),
+  #                                                           yaxis=list(title=paste0("Concentration (",input$OCunits,")")))})
+  
+  
+  #plotdat<-reactive({data.frame(processed_data(), eff_dat_counter())})
+  #observe({print(eff_dat_counter())})
+  
+  #fig<-effdata%>%plot_ly(x=~hours, y=~conc,type='scatter', color=~name, colors=SteppedSequential5Steps)
+  
+  # observe({fig<-fig%>%layout(title="Concentration over Time", showlegend=TRUE,
+  #                   legend=list(orientation='h', y=1),
+  #                   xaxis=list(title=input$timeunits),
+  #                   yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', exponentformat='e'))})
+  
+  # observe({fig<-fig%>%add_trace(fig, type='scatter',mode='lines', y=~processed_data()$conc, color=~name)})
+  # observe({print(processed_data()$conc)})
+  
+  
+  # fig<-plot_ly(effdat2, x=~hours)
+  # 
+  # for(chemical in 2:ncol(effdat2)){
+  #   fig<-fig%>%add_trace(y=~effdat2[,chemical], name=colnames(effdat2)[chemical])
+  # }
+  
+  
+  ###KEEEEP###
+  # fig<-plot_ly(data=effdat2)
+  # 
+  # for(n in 2:ncol(effdat2)){
+  #   df_n<-data.frame(y=effdat2[[n]], hours=effdat2[[1]], name=colnames(effdat2)[n])
+  #   fig<-add_trace(fig, y=~y, x=~hours, data=df_n, type='scatter', mode='markers', color=~name)
+  #   #print(df_n)
+  # }
+  ###KEEEEP###
+  
+  # allcounter<-reactive({rbind(processed_data(), effdat2)})
+  # 
+  # fig<-reactive({plot_ly(data=allcounter())})
+  # observe({
+  #   for(n in 2:ncol(allcounter())){
+  #     
+  #   }
+  # })
+  
+  #fig<-fig%>%add_trace(y=~effdat2[,2])
+  #observe({print(effdat2[,2])})
   
   bonusfig<-reactive({plot_ly(processed_data2(), x=~hours, y=~conc,type='scatter', mode="lines", color=~name, colors=SteppedSequential5Steps)})
   bonusfig2<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
@@ -1487,7 +1901,7 @@ server <- function(input, output, session) {
   
   
   output$Plot<-renderPlotly(
-    fig2())
+    fig())
   
   output$ExtraChemicals <- renderPlotly(
     bonusfig2())
