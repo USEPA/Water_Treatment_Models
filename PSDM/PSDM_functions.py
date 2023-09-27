@@ -499,6 +499,7 @@ foul_params = {'water':{'Organic Free':[1.,          0.,    0.,       0.],
                                     'PFPrS': [0.63, 0.14], # linear extrapolation for sulfonated C3
                                     'PMPA': [0.63, 0.17],  # copied from PFO2HxA, similar #C #F ether
                                     'PFPeS': [0.49, 0.35], ## linear interpolation for sulfonated C5
+                                    'PFPrA': [0.88, 0.03], ## linear interpolation for PFCAs C3
                                     # special added for QSPR Paper
                                     'TCE': [1.0, 0.],
                                     'PFOS_sp': [1.22, -0.12],
