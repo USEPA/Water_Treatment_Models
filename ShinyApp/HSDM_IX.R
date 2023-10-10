@@ -523,47 +523,73 @@ process_files <- function (file) {
 
   })
   
-  ions_config<-read_xlsx("config.xlsx", sheet='ions')
-  cin_config<-read_xlsx("config.xlsx", sheet='Cin')
+  ions_config<-data.frame(name=c("CHLORIDE", "SULFATE", "BICARBONATE", "NITRATE"),
+                          mw=c(NA, NA, NA, NA),
+                          KxA=c(NA, NA, NA, NA),
+                          valence=c(NA, NA, NA, NA),
+                          kL=c(NA, NA, NA, NA),
+                          kL_units=c(NA, NA, NA, NA),
+                          Ds=c(NA, NA, NA, NA),
+                          Ds_units=c(NA, NA, NA, NA),
+                          conc_units=c(NA, NA, NA, NA))
+                                           
+  cin_config<-data.frame(CHLORIDE=c(NA, NA),
+                         SULFATE=c(NA, NA),
+                         BICARBONATE=c(NA, NA),
+                         NITRATE=c(NA, NA))
 
   flagger<-c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE")
   
   flags<-flagger %in% ions$name
   
-  emptydataset<-data.frame()
   
-  ionholder<-list()
-  
-  #If chemical is in uploaded data use that, if not, use a NA vector
-  # for(element in 1:length(flags)){
-  #   if(element==TRUE){
-  #     ionholder[[element]]<-ions[element,]
-  #   }
-  #   else{
-  #     
-  #   }
-  # }
 
+#print(ions)
+  
 }
 
 
 
-create_plotly<-function(frame1, frame2){
+create_plotly<-function(frame1, frame2, frame3){
 
   
   
   counterionframe<-subset(frame1, name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE")) 
   counterioneff<-subset(frame2, name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE"))
   
+ 
+  counterioninfluent<-frame3
+  colnames(counterioninfluent)<-paste(colnames(counterioninfluent), "influent", sep="_")
+  
+  new_df<-tidyr::gather(counterioninfluent[,2:ncol(counterioninfluent)])
+  time_df<-counterioninfluent[,1]
+  
+  counterioninfluent2<-subset(new_df, key %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE"))
+  counterioninfluent3<-cbind(time_df, new_df)
+  
+  colnames(counterioninfluent3)<-c("hours", "name", "conc")
+  
+  
+  #print(counterioninfluent3)
+  
+  
+  
+  
   for(name in 1:nrow(counterioneff)){
     counterioneff[name,2]<-paste(counterioneff[name,2], "effluent", sep="_")
   }
+  
+  
+ #colnames(counterioninfluent)<-paste(colnames(counterioninfluent), "influent", sep="_")
+ #print(counterioninfluent)
 
   
   fig<-tryCatch({
     
     fig1<-plot_ly( counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
-    add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')
+    add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
+    add_trace(data=counterioninfluent3, x=~hours, y=~conc, mode='lines+markers')
+    
   
     return(fig1)
     
@@ -590,7 +616,7 @@ create_plotly2<-function(frame1, frame2){
     ioneff[name,2]<-paste(ioneff[name,2], "effluent", sep="_")
   }
   
-  print(ionframe)
+  #print(ionframe)
   #print(ioneff)
   
   fig<-tryCatch({
@@ -1048,7 +1074,9 @@ ui <- fluidPage(
                                      br(), br(),
                                      h4("Concentration Points"),
                                      dataEditUI("edit-2"),
-                                     br(), br()
+                                     br(), br(),
+                                     h4("Effluent Data"),
+                                     dataEditUI("edit-3")
                             ),
                             
                             tabPanel("Alkalinity",
@@ -1097,6 +1125,11 @@ ui <- fluidPage(
                         sidebarPanel(
                           selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
                           selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
+                          
+                          checkboxInput("computeddata", "Computed Data", TRUE),
+                          checkboxInput("effluentdata", "Effluent Data", FALSE),
+                          checkboxInput("influentdata", "Influent Data", FALSE),
+                          
                           #actionButton("run_button", "Run Analysis", icon=icon("play")),
                           downloadButton("save_button", "Save Data")
                         ),
@@ -1369,6 +1402,9 @@ server <- function(input, output, session) {
   cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
   dataOutputServer("output-2", data = cindat)
   
+  effluentdat<-dataEditServer("edit-3", data="effluent.csv")
+  dataOutputServer("output-1", data=effluentdat)
+  
   #efffile<-read.csv("effluent.csv")
   effdat2<-read.csv("effluent.csv")
   
@@ -1568,21 +1604,34 @@ server <- function(input, output, session) {
   outputeffcount<-reactiveValues(counterion=0)
   outputeffions<-reactiveValues(ion=0)
   
-  # 804 == 4 * nt_report
-  counterIon_loc = 4 * nt_report
-  addIon_loc = counterIon_loc + 1
+  ion_list<-c("CHLORIDE", "SULFATE", "BICARBONATE", "NITRATE")
+  
+  ion_flag<-reactive({ion_list %in% colnames(cindat())})
+  number_of_ions<-reactive({length(ion_flag()[ion_flag()==TRUE])})
+  #tester2<-reactive({tester()[duplicated(tester())]})
+  observe({print(number_of_ions())})
+  
+  #ion_flag2<-reactive({subset()})
+  #ion_flag<-reactive({ion_list %in% iondat()['name']})
  
-  iondata<-reactive({0})
+  #observe({print(iondat()['name'])})
+  
+  # 804 == 4 * nt_report
+  counterIon_loc<-reactive({ number_of_ions() * nt_report })
+  addIon_loc<-reactive({ counterIon_loc() + 1 })
+ 
+  #iondata<-reactive({0})
   
   counteriondata<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
  
-  observe({counteriondata(allchems()[0:counterIon_loc,])})
+  observe({counteriondata(allchems()[0:counterIon_loc(),])})
 
-  iondata<-reactive({allchems()[addIon_loc:nrow(allchems()),]})
+  iondata<-reactive({allchems()[addIon_loc():nrow(allchems()),]})
+  # observe({print(allchems())})
+  # observe({print(allchems()[addIon_loc:nrow(allchems()),])})
   
-  
-  counteriondatacc0<-reactive({allchemicalscc04()[0:counterIon_loc,]})
-  iondatacc0<-reactive({allchemicalscc04()[addIon_loc:nrow(allchems()),]})
+  counteriondatacc0<-reactive({allchemicalscc04()[0:counterIon_loc(),]})
+  iondatacc0<-reactive({allchemicalscc04()[addIon_loc():nrow(allchems()),]})
   
   outputcounterions$name<-reactive({counteriondata()$name})
   outputions$name<-reactive({iondata()$name})
@@ -1646,38 +1695,92 @@ server <- function(input, output, session) {
   
   
   ### graph data
-  processed_data <- reactive({
-    
-    plot_data <- counteriondata()
-    plot_data$conc <- outputcounterions$conc
-    plot_data$hours <- outputcounterions$time
-    plot_data
-    
+  
+  processed_data<-reactive({
+    if(input$computeddata==TRUE){
+      plot_data <- counteriondata()
+      plot_data$conc <- outputcounterions$conc
+      plot_data$hours <- outputcounterions$time
+      plot_data
+    }
+    else{
+      plot_data <- data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+      plot_data
+    }
   })
+  
+  # processed_data2<-reactive({
+  #   if(input$computeddata==TRUE){
+  #     plot_data2 <- iondata()
+  #     plot_data2$conc <- outputions$conc
+  #     plot_data2$hours <- outputions$time
+  #     plot_data2
+  #   }
+  #   else{
+  #     plot_data2 <- data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+  #     plot_data2
+  #   }
+  # })
+  
+  #observe({print(iondata())})
+  
+  effluent_processed<-reactive({
+    if(input$effluentdata==TRUE){
+      plot_data3<-effdata
+      plot_data3$conc<-outputeffluent$conc
+      plot_data3$hours<- outputeffluent$time
+      plot_data3
+    }
+    else{
+      plot_data3 <- data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+      plot_data3
+    }
+  })
+  
+  influent_processed<-reactive({
+    if(input$influentdata==TRUE){
+      plot_data4<-cindat()
+    }
+    else{
+      plot_data4 <- data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+      plot_data4
+    }
+  })
+  
+  # processed_data <- reactive({
+  #   
+  #   plot_data <- counteriondata()
+  #   plot_data$conc <- outputcounterions$conc
+  #   plot_data$hours <- outputcounterions$time
+  #   plot_data
+  #   
+  # })
   
  # allcounters<-reactive({rbind(processed_data(), effdata)})
   
   
   processed_data2 <- reactive({
-    
+
     plot_data2 <- iondata()
     plot_data2$conc <- outputions$conc
     plot_data2$hours <- outputions$time
     plot_data2
-    
+
   })
   
-  effluent_processed<-reactive({
-    plot_data3<-effdata
-    plot_data3$conc<-outputeffluent$conc
-    plot_data3$hours<- outputeffluent$time
-    plot_data3
-  })
+  #observe({print(processed_data2())})
+  # 
+  # effluent_processed<-reactive({
+  #   plot_data3<-effdata
+  #   plot_data3$conc<-outputeffluent$conc
+  #   plot_data3$hours<- outputeffluent$time
+  #   plot_data3
+  # })
   
  
  
   
-  fig<-reactive({create_plotly(processed_data(), effluent_processed())})
+  fig<-reactive({create_plotly(processed_data(), effluent_processed(), influent_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                  legend=list(orientation='h', y=1),
                                  xaxis=list(title=input$timeunits),
