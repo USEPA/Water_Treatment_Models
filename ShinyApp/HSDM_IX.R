@@ -1620,7 +1620,7 @@ server <- function(input, output, session) {
                                      conc=effluentcc03()[,2])})
   
   # 
-  influentcc0<-reactive({mapply('/', cindat(), cc0vector())})
+  influentcc0<-reactive({mapply('/', cindat()[,2:ncol(cindat())], cc0vector())})
   influentcc02<-reactive({data.frame(influentcc0())})
   influentcc03<-reactive({tidyr::gather(influentcc02())})
   influentcc04<-reactive({data.frame(name=influentcc03()[,1],
@@ -1818,6 +1818,8 @@ server <- function(input, output, session) {
     }
   })
   
+  # observe({print(effluentcc04())})
+  # observe({print(influentcc04())})
 
   #observe({print(outputinfluent$conc)})
   
