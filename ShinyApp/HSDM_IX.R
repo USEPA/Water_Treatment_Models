@@ -520,7 +520,7 @@ process_files <- function (file) {
       #pass
     },
     error=function(err){
-      #print("No effluent data available")
+
       write.csv(effluent, "effluent.csv", row.names=FALSE)
       
 
@@ -542,58 +542,62 @@ create_plotly<-function(frame1, frame2, frame3){
 
   
   #Create a subset of data that 
-  counterionframe<-subset(frame1, name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE")) 
-  counterioneff<-subset(frame2, name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE"))
-  
- 
+  counterionframe<-subset(frame1, name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE"))
+  counterioneff<-subset(frame2, name %in% c("CHLORIDE_effluent", "SULFATE_effluent", "NITRATE_effluent", "BICARBONATE_effluent"))
   counterioninfluent<-frame3
-  #colnames(counterioninfluent)<-paste(colnames(counterioninfluent), "influent", sep="_")
-  
-  #new_df<-tidyr::gather(counterioninfluent[,2:ncol(counterioninfluent)])
-  #time_df<-counterioninfluent[,1]
-  
-  #counterioninfluent2<-subset(new_df, key %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE"))
-  #counterioninfluent3<-cbind(time_df, new_df)
-  
-  #colnames(counterioninfluent3)<-c("hours", "name", "conc")
   
   
-  for(name in 1:nrow(counterioneff)){
-    counterioneff[name,2]<-paste(counterioneff[name,2], "effluent", sep="_")
-  }
+  
+  #print(counterioneff)
+  # print(counterionframe)
+  # print(counterioninfluent)
+  # print(counterionframe)
+  
+  #rename effluent data to avoid confusion
+  # for(name in 1:nrow(counterioneff)){
+  #   counterioneff[name,2]<-paste(counterioneff[name,2], "effluent", sep="_")
+  # }
   
   
- #colnames(counterioninfluent)<-paste(colnames(counterioninfluent), "influent", sep="_")
- #print(counterioninfluent)
 
-  
+
+  #Build the plots with the processed data
+  #If there is no effluent data then it does not get plotted
   fig<-tryCatch({
-    
-    fig1<-plot_ly( counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
+
+    fig1<-plot_ly(counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
     add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
     add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
-    
-  
+
+
     return(fig1)
-    
+
   },
   error=function(err){
-    fig1<-plot_ly(data=frame1, x=~hours, y=frame1[,2], type='scatter', mode='lines')
+    fig1<-plot_ly(data=frame1, x=~hours, y=frame1[,2], type='scatter', mode='lines')#%>%
+      #add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
     return(fig1)
   })
-  
+
   return(fig)
 }
 
+# 
+# fig1<-plot_ly(counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
+#   add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
+#   add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
+
+#fig1}
 
 
 
+#Same thing as create_plotly but just for the ions
 create_plotly2<-function(frame1, frame2, frame3){
   
 
   
   ionframe<-subset(frame1, !(name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE")))
-  ioneff<-subset(frame2, !(name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE")))
+  ioneff<-subset(frame2, !(name %in% c("CHLORIDE_effluent", "SULFATE_effluent", "NITRATE_effluent", "BICARBONATE_effluent")))
   
   ioninfluent<-frame3
   # colnames(ioninfluent)<-paste(colnames(ioninfluent), "influent", sep="_")
@@ -605,15 +609,12 @@ create_plotly2<-function(frame1, frame2, frame3){
   # counterioninfluent3<-cbind(time_df, new_df)
   # 
   # colnames(counterioninfluent3)<-c("hours", "name", "conc")
-  #print(counterioninfluent3)
+
   
   for(name in 1:nrow(ioneff)){
     ioneff[name,2]<-paste(ioneff[name,2], "effluent", sep="_")
   }
-  
-  #print(ionframe)
-  #print(ioneff)
-  
+
   fig<-tryCatch({
     
     fig1<-plot_ly(ionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
@@ -652,7 +653,8 @@ get_bv_in_sec <- function(input) {
 
 
 
-
+#The Cin data that gets plotted may or may not be in the right units
+#So this function corrects that based on a column in the ions tab 
 cin_correct<-function(ions, cins){
   
   conc_holder<-list()
@@ -664,15 +666,11 @@ cin_correct<-function(ions, cins){
     else if(ions[unit, 'conc_units']=='mg/L'){
       conc_holder[[unit]]<-1
     }
+    else if(ions[unit, 'conc_units']=='ng/L'){
+      conc_holder[[unit]]<-1000
+    }
   }
   
-  # cc0vector<-reactive({cc0_conv(iondat(), cindat())})
-  # allchemicalscc0<-reactive({mapply('/', allchemicals(), cc0vector())})
-  # allchemicalscc02<-reactive(data.frame(allchemicalscc0()))
-  # 
-  # allchemicalscc03<-reactive({tidyr::gather(allchemicalscc02())})
-  # allchemicalscc04<-reactive({data.frame(name=allchemicalscc03()[,1],
-  #                                        conc=allchemicalscc03()[,2])})
   
   corrected_conc<-mapply('*', cins[,2:ncol(cins)], conc_holder)
   time<-cins['time']
@@ -682,6 +680,31 @@ cin_correct<-function(ions, cins){
   corrected_cinframe
   
   
+}
+
+eff_correct<-function(ions, effluent){
+  conc_holder<-list()
+  
+  
+  for(unit in 1:nrow(ions)){
+    if(ions[unit, 'conc_units']=='meq'){
+      conc_holder[[unit]]<-ions[unit, 'mw']/ions[unit, 'valence']
+    }
+    else if(ions[unit, 'conc_units']=='mg/L'){
+      conc_holder[[unit]]<-1
+    }
+    else if(ions[unit, 'conc_units']=='ng/L'){
+      conc_holder[[unit]]<-1000
+    }
+  }
+  
+  
+  corrected_conc<-mapply('*', effluent[,2:ncol(effluent)], conc_holder)
+  time<-effluent['time']
+
+  corrected_effluentframe<-cbind(time, corrected_conc)
+  corrected_effluentframe
+  # 
 }
 
 #------------------------------------------------------------------------------#
@@ -750,10 +773,10 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
       
       #should multiply a column by conversion factor
       compound <- iondata[item, "name"]  # convenience variable 
-      # print(mass_mult )
+
       corr_cin[, compound] <- concdata[, compound] * mass_mult
       
-      # print(paste0(iondata[item,"name"], " ", mass_mult))
+ 
       
       ### TODO: Need to check the mass transfer unit conversions
       ## convert kL to cm/s
@@ -765,16 +788,6 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
     }
   }
   
-  ### test print Cin
-  # print(concdata)
-  # print(corr_cin)
-  
-  ### test print iondata
-  # print(iondata)
-  # print(corr_ions)
-  
-  #### test print input
-  # print(input)
   
   timeconverter <- time_conv[input$timeunits2]  ### TODO: Is this really necessary, or doing what we think it is doing? 
   
@@ -1393,8 +1406,6 @@ server <- function(input, output, session) {
   #vector to start
   #with the users input.
   
-  ## TODO: Time and units aren't getting pulled in from file.
-  
   
   lengthvector2<-reactive({c(filter(paramsheet(), name=="L")$units, lengthvector)})
   lengthvector3<-reactive({unique(lengthvector2())})
@@ -1448,9 +1459,7 @@ server <- function(input, output, session) {
     alldat
   })
   
-  #cindat3<-reactive({cbind(cindat()[,1], cindat2())})
-  
-  #observe({print(cindat2())})
+
   
   cindat_convert<-reactive({tidyr::gather(cindat2()[2:ncol(cindat())])})
   
@@ -1466,52 +1475,65 @@ server <- function(input, output, session) {
     cintab
   })
   
-  # cindat_converter_counter<-reactive({
-  #   dat<-cindat_converter()
-  #   newdat<-subset(dat, name=="SULFATE_influent" | name=="CHLORIDE_influent" 
-  #                  | name=="NITRATE_influent" | name=="BICARBONATE_influent")
-  #   newdat
-  # })
-  # 
-  # cindat_converter_ion<-reactive({
-  #   dat<-cindat_converter()
-  #   newdat<-subset(dat, name!="SULFATE_influent" & name!="CHLORIDE_influent"
-  #                  & name!="NITRATE_influent" & name!="BICARBONATE_influent")
-  #   newdat
-  # })
-  
-  #observe({print(cindat_converter_ion())})
  
-  #observe({print(cindat_converter())})
-  
-  #colnames(cindat_convert_df())<-c("hours", "name", "conc")
-  
-  #observe({print(time_df())})
-  #observe({print(cindat_convert())})
-  #observe({print(cindat_converter())})
-  
-  #efffile<-read.csv("effluent.csv")
+  # converted_cindat<-reactive({tidyr::spread(cindat_converter(), name, conc)})
+
+# cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
+# dataOutputServer("output-2", data = cindat)
+#   
+
+  #effdat10<-reactive({effluentdat()})
   effdat2<-read.csv("effluent.csv")
   
-  if(ncol(effdat2)<=3){
-    holdvalue<-0
-  } else{
-    holdvalue<-1
-  }
- 
-  timevec<-data.frame(hours=c(effdat2[,1]))
+  # effluentcorrected<-reactive({eff_correct(iondat(), effluentdat())})
+  # observe({print(effluentcorrected())})
 
-  effdat3<-gather(effdat2[,2:ncol(effdat2)])
+  effdata<-reactive({
+    if(nrow(effluentdat())>1){
+      
+      #mydata<-effluentdat()
+      mydata<-eff_correct(iondat(),effluentdat())
+      colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")
+      
+      timevec<-data.frame(hours=c(mydata[,1]))
+      concframe<-gather(mydata[,2:ncol(mydata)])
+      effframe<-cbind(timevec, concframe)
+      
+      colnames(effframe)<-c("hours", "name", "conc")
+      
+      effframe
+      
+    }
+    else{
+      effframe<-data.frame(hours=NA, name=NA, conc=NA)
+    }
+  })
   
-  effdatcounter<-cbind(timevec, effdat3)
-  colnames(effdatcounter)<-c("hours", "name", "conc")
- 
+  #observe({print(nrow(effluentdat()))})
+  #observe({print(effdata())})
   
-  if(holdvalue==0){
-    effdata<-effdat2
-  } else{
-    effdata<-effdatcounter
-  }
+  #print(effdat2)
+  
+  
+  # if(ncol(effdat2)<=3){
+  #   holdvalue<-0
+  # } else{
+  #   holdvalue<-1
+  # }
+  # 
+  # timevec<-data.frame(hours=c(effdat2[,1]))
+  # 
+  # effdat3<-gather(effdat2[,2:ncol(effdat2)])
+  # 
+  # effdatcounter<-cbind(timevec, effdat3)
+  # colnames(effdatcounter)<-c("hours", "name", "conc")
+  # 
+  # 
+  # if(holdvalue==0){
+  #   effdata<-effdat2
+  # } else{
+  #   effdata<-effdatcounter
+  # }
   
  
   #------------------------------------------------------------------------------#
@@ -1546,7 +1568,8 @@ server <- function(input, output, session) {
     allconcdf
   })
   
-  #observe({print(allchemicals)})
+ 
+
   
   massvector<-reactive({c(iondat()$mw/iondat()$valence)})
   allchemicalscorrected<-reactive({mapply('*', allchemicals(), massvector())})
@@ -1565,32 +1588,10 @@ server <- function(input, output, session) {
   empty_df<-data.frame(hours=c(0), CHLORIDE=c(0))
   
   chemholder<-reactiveVal(empty_df)
-  #observe({print(chemholder())})
   observe({chemholder(allchem())})
   
   
 
-  # converted_cindat<-reactive({
-  #   for(i in 1:length(iondat()['conc_units'])){
-  #     print(i)
-  #   }
-  #   
-  # })
-  
-  # observe({  
-  # for(i in 1:length(iondat['conc_units'])){
-  #   if(i=='meq'){
-  #     cindat_convertlist[[i]]<-iondat()['mw']/iondat()['valence'] * cindat()[,i+1]
-  #   }
-  #   else if(i=='mg/L'){
-  #     cindat_convertlist[[i]]<-cindat()[,i+1]
-  #   }
-  # }
-  # 
-  #   })
-  #observe({print(cindat_convertlist)})
-  #observe({print(cin_units(iondat(), cindat()))})
-#  observe({print(allchemicalscorrected2())})
   
   #------------------------------------------------------------------------------#
   #                   END IEX CONCENTRATION OUTPUTDATAFRAME#
@@ -1626,13 +1627,7 @@ server <- function(input, output, session) {
   influentcc04<-reactive({data.frame(name=influentcc03()[,1],
                                      conc=influentcc03()[,2])})
   
-  # observe({print(effluentcc02())})
-  # observe({print(effluentcc03())})
-  #observe({print(effluentcc04())})
-  
-  # observe({print(effdat2)})
-  # observe({print(effluentcc0())})
-  #cc0effluentvector<-reactive()
+
   
   #------------------------------------------------------------------------------#
   #END IEX CONCENTRATION OUTPUTDATAFRAME#
@@ -1703,8 +1698,6 @@ server <- function(input, output, session) {
   #outputcountereffluent<-reactiveValues()
   outputeffluent<-reactiveValues()
   
-  # outputeffluent$conc<-effdata[,3]
-  # outputeffluent$time<-effdata[,1]
   
   outputeffluentcounter<-reactiveValues()
   outputeffluention<-reactiveValues()
@@ -1712,8 +1705,6 @@ server <- function(input, output, session) {
   outputinfluent<-reactiveValues()
 
   
-  #observe({print(outputeffluent$conc)})
-  #observe({print(outputeffluent$time)})
   
   outputcounterions$conc<-0
   outputcounterions$time<-0
@@ -1725,13 +1716,7 @@ server <- function(input, output, session) {
   
   ion_flag<-reactive({ion_list %in% colnames(cindat())})
   number_of_ions<-reactive({length(ion_flag()[ion_flag()==TRUE])})
-  #tester2<-reactive({tester()[duplicated(tester())]})
-  #observe({print(number_of_ions())})
-  
-  #ion_flag2<-reactive({subset()})
-  #ion_flag<-reactive({ion_list %in% iondat()['name']})
- 
-  #observe({print(iondat()['name'])})
+
   
   # 804 == 4 * nt_report
   counterIon_loc<-reactive({ number_of_ions() * nt_report })
@@ -1744,15 +1729,32 @@ server <- function(input, output, session) {
   observe({counteriondata(allchems()[0:counterIon_loc(),])})
 
   iondata<-reactive({allchems()[addIon_loc():nrow(allchems()),]})
-  # observe({print(allchems())})
-  # observe({print(allchems()[addIon_loc:nrow(allchems()),])})
+
   
   counteriondatacc0<-reactive({allchemicalscc04()[0:counterIon_loc(),]})
   iondatacc0<-reactive({allchemicalscc04()[addIon_loc():nrow(allchems()),]})
   
   outputcounterions$name<-reactive({counteriondata()$name})
   outputions$name<-reactive({iondata()$name})
+  
+  
 
+  
+  effluent_data_time<-reactiveVal()
+  effluent_data_conc<-reactiveVal()
+  observe({effluent_data_time(effdata()['hours'])})
+  observe({effluent_data_conc(effdata()['conc'])})
+  #observe({print(effluent_data_time())})
+  #observe({print(effdata())})
+  #effluent_data$hours<-reactive({effdata()['hours']})
+  #effluent_data$conc<-reactive({effdata()['conc']})
+  #effluent_data$name<-reactive({effdata()['name']})
+  #observe({effluent_data(effdata())})
+  
+  effluent_data<-reactiveVal()
+  observe({effluent_data(effdata())})
+  #observe({print(effluent_data())})
+  
   
   observe({
     #req(allchemicals2())
@@ -1776,20 +1778,18 @@ server <- function(input, output, session) {
   observe({
     if(input$timeunits == "Bed Volumes (x1000)"){
       bv_conv <- get_bv_in_sec(input)
-      outputeffluent$time<-effdata$hours/ (bv_conv / hour2sec) / 1e3
+      outputeffluent$time<- effdata()['hours']/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-cindat_converter()$hours  / (bv_conv / hour2sec) / 1e3
     }
     else{
-      outputeffluent$time<-effdata$hours/ (time_conv[input$timeunits] / hour2sec)
+      outputeffluent$time<- effdata()['hours']/ (time_conv[input$timeunits] / hour2sec)
       outputinfluent$hours<-cindat_converter()$hours/ (time_conv[input$timeunits] / hour2sec)
     }
   })
   
   
-  
-  #observe({print(outputinfluent$hours)})
-  
   #observe({print(outputeffluent$time)})
+
   
   observe({
     req(allchemicals2())
@@ -1798,33 +1798,28 @@ server <- function(input, output, session) {
       ## just replicates the returned data
       outputcounterions$conc <-  counteriondatacc0()$conc
       outputions$conc <- iondatacc0()$conc
-      #outputeffluent$conc <- effdata
+      #outputeffluent$conc <- effluentcc04()$conc
     } else {
       outputcounterions$conc <- counteriondata()$conc / mass_conv[input$OCunits]
       outputions$conc <- iondata()$conc / mass_conv[input$OCunits]
-      #outputeffluent$conc<-effdata/mass_conv[input$OCunits]
+      #outputeffluent$conc<- effdata()['conc']/mass_conv[input$OCunits]
     }
     
   })
   
   observe({
     if(input$OCunits=="c/c0"){
-      outputeffluent$conc<-effluentcc04()$conc
+      outputeffluent$conc<- effluentcc04()$conc
       outputinfluent$conc<-influentcc04()$conc#influentcc04()$conc
     }
     else{
-      outputeffluent$conc<-effdata$conc / mass_conv[input$OCunits]
+      outputeffluent$conc<- effdata()$conc/mass_conv[input$OCunits]
       outputinfluent$conc<-cindat_converter()$conc/mass_conv[input$OCunits]
     }
   })
   
-  # observe({print(effluentcc04())})
-  # observe({print(influentcc04())})
+  #observe({print(outputeffluent$conc)})
 
-  #observe({print(outputinfluent$conc)})
-  
- # observe({print(effluentcc04()$conc)})
-  
   
   ### graph data
   
@@ -1854,11 +1849,11 @@ server <- function(input, output, session) {
     }
   })
   
-  #observe({print(iondata())})
+
   
   effluent_processed<-reactive({
     if(input$effluentdata==TRUE){
-      plot_data3<-effdata
+      plot_data3<-effdata()
       plot_data3$conc<-outputeffluent$conc
       plot_data3$hours<- outputeffluent$time
       plot_data3
@@ -1869,6 +1864,10 @@ server <- function(input, output, session) {
     }
   })
   
+  #observe({print(effluent_processed())})
+  
+  #observe({print(effluent_processed())})
+  #observe({print(effdata())})
   
   
   influent_processed<-reactive({
@@ -1897,46 +1896,8 @@ server <- function(input, output, session) {
                    & name!="NITRATE_influent" & name!="BICARBONATE_influent")
     newdat
   })
-  
-  
-  
-  observe({print(influent_processed())})
-  
-  #observe({print(influent_processed())})
-  #observe({print(cindat_converter())})
-  
-  # processed_data <- reactive({
-  #   
-  #   plot_data <- counteriondata()
-  #   plot_data$conc <- outputcounterions$conc
-  #   plot_data$hours <- outputcounterions$time
-  #   plot_data
-  #   
-  # })
-  
- # allcounters<-reactive({rbind(processed_data(), effdata)})
-  
-  # 
-  # processed_data2 <- reactive({
-  # 
-  #   plot_data2 <- iondata()
-  #   plot_data2$conc <- outputions$conc
-  #   plot_data2$hours <- outputions$time
-  #   plot_data2
-  # 
-  # })
-  # 
-  #observe({print(processed_data2())})
-  # 
-  # effluent_processed<-reactive({
-  #   plot_data3<-effdata
-  #   plot_data3$conc<-outputeffluent$conc
-  #   plot_data3$hours<- outputeffluent$time
-  #   plot_data3
-  # })
-  
  
- 
+  
   
   fig<-reactive({create_plotly(processed_data(), effluent_processed(), cindat_converter_counter())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
@@ -1950,12 +1911,7 @@ server <- function(input, output, session) {
                                              xaxis=list(title=input$timeunits),
                                              yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', exponentformat='e'))})
   
-  
-  #bonusfig<-reactive({create_plotly2(processed_data2(), effluet_processed())})
-  
-  #observe({print(effluent_processed())})
 
-  
  
   output$Plot<-renderPlotly(
     counterionfigure())
@@ -1964,24 +1920,13 @@ server <- function(input, output, session) {
     ionfigure())
 
   
-  ### TODO: Can we make this file name dynamic? otherwise we'll just overwrite the previous file.
-  # output$save_button<-downloadHandler(
-  #   filename=function(){"IEX_Data.xlsx"},
-  #   content=function(file){
-  #     #write.xlsx(paramdataframe(), filename, sheetName="params")
-  #     write.xlsx(iondat(), sheetName="ions","IEX_Data.xlsx", append=TRUE)
-  #     write.xlsx(cindat(), sheetName="cin", "IEX_Data.xlsx", append=TRUE)
-  #     write.xlsx(allchemicals2(), sheetName="output", "IEX_Data.xlsx", append=TRUE)
-  #   }
-  #   
-  # )
 
   paramdf<-reactive({data.frame(name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
                       value=c(input$Qv, input$EBEDv, input$Lv, input$Vv, input$rbv, NA, NA, input$nrv, input$nzv, input$timeunits2),
                       units=c(input$qunits, NA, input$LengthUnits, input$VelocityUnits, input$rbunits, NA, "cm2/s", NA, NA, input$timeunits2)
                       )})
 
-  #observe({print(paramdf())})
+
   
   output$save_button <- downloadHandler(
     filename = function() {
