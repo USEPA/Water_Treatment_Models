@@ -507,6 +507,8 @@ process_files <- function (file) {
   write.csv(cin, "cinsheet.csv", row.names=FALSE)
   
   #Checks for effluent data, if unavailable use empty dataset
+  #It is very likely that the user will not have the data available and 
+  #Has no intention of plotting it, which makes tryCatch useful ehre
   
   tryCatch({
 
@@ -543,26 +545,13 @@ create_plotly<-function(frame1, frame2, frame3){
   counterioneff<-subset(frame2, name %in% c("CHLORIDE_effluent", "SULFATE_effluent", "NITRATE_effluent", "BICARBONATE_effluent"))
   counterioninfluent<-frame3
   
-
-  #Build the plots with the processed data
-  #If there is no effluent data then it does not get plotted
-  fig<-tryCatch({
-
-    fig1<-plot_ly(counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
-    add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
-    add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
-
-
-    return(fig1)
-
-  },
-  error=function(err){
-    fig1<-plot_ly(data=frame1, x=~hours, y=frame1[,2], type='scatter', mode='lines')#%>%
-      #add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
-    return(fig1)
-  })
-
-  return(fig)
+  #Using the curated data, plot
+  counterionfig<-plot_ly(counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
+       add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
+       add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
+  
+  return(counterionfig)
+  
 }
 
 
@@ -570,27 +559,16 @@ create_plotly<-function(frame1, frame2, frame3){
 #Same thing as create_plotly but just for the ions
 create_plotly2<-function(frame1, frame2, frame3){
   
-
-  
   ionframe<-subset(frame1, !(name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE")))
   ioneff<-subset(frame2, !(name %in% c("CHLORIDE_effluent", "SULFATE_effluent", "NITRATE_effluent", "BICARBONATE_effluent")))
   ioninfluent<-frame3
-  
 
-  fig<-tryCatch({
-    
-    fig1<-plot_ly(ionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
-      add_trace(data=ioneff, x=~hours, y=~conc, mode='markers')%>%
-      add_trace(data=ioninfluent, x=~hours, y=~conc, mode='lines+markers')
-    
-    return(fig1)
-    
-  },
-  error=function(err){
-    fig1<-plot_ly(data=frame1, x=~hours, y=frame1[,2], type='scatter', mode='lines')
-  })
+  ionfig<-plot_ly(ionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
+    add_trace(data=ioneff, x=~hours, y=~conc, mode='markers')%>%
+    add_trace(data=ioninfluent, x=~hours, y=~conc, mode='lines+markers')
   
-  return(fig)
+  return(ionfig)
+  
 }
 
 
@@ -628,7 +606,7 @@ cin_correct<-function(ions, cins){
     ## convert mass units
     mass_mult <- 1.
     mass_units <- ions[item, "conc_units"]  # convenience variable
-    if (mass_units != 'meq' && mass_units != 'meq/L') {
+    if (mass_units != 'meq') {
       mass_mult <- mass_conv[mass_units] / (ions[item, "mw"]) * ions[item, "valence"]  ## TODO: check this math
     }
     
@@ -639,70 +617,13 @@ cin_correct<-function(ions, cins){
   }
   
   
-  # conc_holder<-list()
-  # 
-  # for(unit in 1:nrow(ions)){
-  #   print(ions[unit, 'conc_units'])
-  #   print(mass_conv[ions[unit, 'conc_unit']])
-  #   if(ions[unit, 'conc_units']=='meq'){
-  #     conc_holder[[unit]]<-1#ions[unit, 'mw']/ions[unit, 'valence']
-  #   }
-  #   else{
-  #     conc_holder[[unit]]<-mass_conv[ions[unit]$conc_unit] / (ions[unit, "mw"]) * ions[unit, "valence"] 
-  #   }
-  #   # else if(ions[unit, 'conc_units']=='mg/L'|ions[unit, 'conc_units']=='mg'){
-  #   #   conc_holder[[unit]]<-ions[unit, 'mw']/ions[unit, 'valence']
-  #   # }
-  #   # else if(ions[unit, 'conc_units']=='ng/L'|ions[unit, 'conc_units']=='ng'){
-  #   #   conc_holder[[unit]]<-ions[unit, 'mw']/ions[unit, 'valence']*1000
-  #   # }
-  # }
-  # 
-  # print("concs")
-  # print(cins)
-  # print("conc_holder")
-  # print(conc_holder)
-  # corrected_conc<-mapply('*', cins[,2:ncol(cins)], conc_holder)
-  # time<-cins['time']
-  # 
-  # corrected_cinframe<-cbind(time, corrected_conc)
-  
-  print("corrected concs")
-  print(corr_cin)
-  
   return(corr_cin)
   
   
   
 }
 
-# eff_correct<-function(ions, effluent){
-#   conc_holder<-list()
-#   
-#   
-#   for(unit in 1:nrow(ions)){
-#     if(ions[unit, 'conc_units']=='meq'){
-#       conc_holder[[unit]]<-1 #ions[unit, 'mw']/ions[unit, 'valence']
-#     }
-#     else{
-#       conc_holder[[unit]]<-mass_conv[unit] / (ions[unit, "mw"]) * ions[unit, "valence"] 
-#     }
-#     # else if(ions[unit, 'conc_units']=='mg/L'){
-#     #   conc_holder[[unit]]<-1
-#     # }
-#     # else if(ions[unit, 'conc_units']=='ng/L'){
-#     #   conc_holder[[unit]]<-1000
-#     # }
-#   }
-#   
-#   
-#   corrected_conc<-mapply('*', effluent[,2:ncol(effluent)], conc_holder)
-#   time<-effluent['time']
-# 
-#   corrected_effluentframe<-cbind(time, corrected_conc)
-#   corrected_effluentframe
-#   # 
-# }
+
 
 #------------------------------------------------------------------------------#
                                   #HSDMIX Prep
@@ -761,19 +682,6 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
   if (error == 0) {
     corr_cin <- cin_correct(iondata, concdata)
     for (item in 1:nrow(iondata)) {
-      ## convert mass units
-      
-      # mass_mult <- 1.
-      # mass_units <- iondata[item, "conc_units"]  # convenience variable
-      # if (mass_units != 'meq' && mass_units != 'meq/L') {
-      #   mass_mult <- mass_conv[mass_units] / (iondata[item, "mw"]) * iondata[item, "valence"]  ## TODO: check this math
-      # }
-      # 
-      # #should multiply a column by conversion factor
-      # compound <- iondata[item, "name"]  # convenience variable 
-      # 
-      # corr_cin[, compound] <- concdata[, compound] * mass_mult
-      
 
       ### TODO: Need to check the mass transfer unit conversions
       ## convert kL to cm/s
@@ -865,10 +773,36 @@ mass_converter_mgl <- function (iondata, concs) {
     corr_cin[, compound] <- concs[, compound] * mass_mult
   }
   
-  print(corr_cin)
+  #print(corr_cin)
   return(corr_cin)
   
 }
+
+effdata<-reactive({ 
+  
+  if(nrow(effluentdat())>1){                                      #If effluent data is not empty
+    
+    mydata<-inputeffluentdatamgl()                                #convert to mgl
+    colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")#Distinguish the names from the simulated data
+    
+    timevec<-data.frame(hours=c(mydata[,1]))
+    concframe<-gather(mydata[,2:ncol(mydata)])                    #Gather into shape that is easy to convert and plot
+    effframe<-cbind(timevec, concframe)
+    
+    colnames(effframe)<-c("hours", "name", "conc")
+    
+    return(effframe)
+    
+  }
+  
+  else{
+    
+    effframe<-data.frame(hours=NA, name=NA, conc=NA)
+    
+    return(effframe)
+    
+  }
+})
 
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -910,6 +844,7 @@ ui <- fluidPage(
     tags$link(rel="stylesheet", media="all", href="https://www.epa.gov/themes/epa_theme/css/styles.css?r6lsex")),
   
   # Site Header
+  #This HTML code is a speical theme that makes it look like an EPA app
   
   HTML(
     '
@@ -990,30 +925,46 @@ ui <- fluidPage(
     .tabbable > .nav > li > a                  {background-color: #D3D3D3;  color:black}
   ")),
   
+  
+  
+  
   navbarPage("",
              
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+#------------------------------------------------------------------------------#
+                            #INPUT SECTION#
+#------------------------------------------------------------------------------#            
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#     
+
              tabPanel("Input", 
                       sidebarLayout(
-                        sidebarPanel(fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
-                                     textOutput("reject"),
-                                     textOutput("OutputConcentration"),
-                                     #selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
-                                     #selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
-                                     sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
-                                     sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
-                                     br(),
-                                     actionButton("run_button", "Run Analysis", icon=icon("play")),
-                                     #downloadButton("save_button2", "Save Data"),
-                                     textOutput("ionadded"),
-                                     textOutput("concentrationadded"),
-                                     textOutput("analysisran")),#sidebarPanel,
+                        sidebarPanel(
+                          fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
+                          textOutput("reject"),
+                          textOutput("OutputConcentration"),
+                          sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
+                          sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
+                                     
+                          br(),
+                                     
+                          actionButton("run_button", "Run Analysis", icon=icon("play")),
+                          textOutput("ionadded"),
+                          textOutput("concentrationadded"),
+                          textOutput("analysisran")
+                          ),
+                        
+                        
                         
                         mainPanel(
                           tabsetPanel(
+#------------------------------------------------------------------------------#
+                            #COLUMN PARAMETERS#
+#------------------------------------------------------------------------------#                                 
                             tabPanel("Column Parameters",
                                      
                                      br(),
                                      
+#--------------------------Resin Characteristics-------------------------------#                                     
                                      fluidRow(
                                        column(3,),
                                        column(2, textOutput("Q")),
@@ -1053,16 +1004,17 @@ ui <- fluidPage(
                                        ))
                                               
                                      ),
-                                       
+#------------------------------------------------------------------------------#                                       
                                        
                                      hr(),
                                      #Parameters Row 2#
-                                     
+#--------------------------Column Specifications-------------------------------#                                     
                                      fluidRow(
                                        column(3,
                                               br(), br(), br(),
                                               textOutput("CS"),
                                               br(),
+                                              #This radio button toggles between Linear and volumetric flowrate
                                               radioButtons("veloselect", "", c("Linear", "Volumetric"))),
                                        column(2, #offset=1,
                                               br(), 
@@ -1117,7 +1069,9 @@ ui <- fluidPage(
                                               margin-top:-0.5em", 
                                                   selectInput("DiameterUnits","",c("cm", "m", "in", "ft")),
                                                   selectInput("FlowrateUnits","",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))))),
-                                     hr(),
+#------------------------------------------------------------------------------#                                     
+
+                                      hr(),
                                      #Parameters Row 4#
                                      
                                      fluidRow(
@@ -1130,6 +1084,13 @@ ui <- fluidPage(
                                                   selectInput("timeunits2", "", c("hr", "day")),
                                                   br(), br()))),
                                      
+#------------------------------------------------------------------------------#
+                         #END COLUMN PARAMETERS#
+#------------------------------------------------------------------------------#                                       
+                                     
+#------------------------------------------------------------------------------#
+                              #IONS TAB#
+#------------------------------------------------------------------------------#                                     
                                      
                             ),
                             tabPanel("Ions",
@@ -1143,6 +1104,14 @@ ui <- fluidPage(
                                      h4("Effluent Data"),
                                      dataEditUI("edit-3")
                             ),
+
+#------------------------------------------------------------------------------#
+                              #END IONS TAB#
+#------------------------------------------------------------------------------#
+
+#------------------------------------------------------------------------------#
+                            #ALKALINITY TAB#
+#------------------------------------------------------------------------------#
                             
                             tabPanel("Alkalinity",
                                      br(),
@@ -1153,8 +1122,6 @@ ui <- fluidPage(
                                        column(4,
                                      numericInput("alkvalue", "Alkalinity Value", 5),
                                      numericInput("pH", "pH", 7)),
-                                     #numericInput("bicarbmw", "Bicarbonate Molecular Weight", 12),
-                                     #numericInput("bicarbvalence", "Bicarbonate Valence", 1)),
                                      column(4, offset=1,
                                            selectInput("alkunits", "Concentration Units", c("meq", "mg/L")),
                                       
@@ -1173,17 +1140,29 @@ ui <- fluidPage(
                                             textOutput("bicarbcinmgl"))),
                                      br()
                                     
-                                     )),
-                                     
-                                    
-                            
-                            )
-                          
-                          
-                        )#mainPanel
-                      ),#sidebarLayout
+                                     )#fluid row
+                                    ),#tab panel
+#------------------------------------------------------------------------------#
+                        #END ALKALINITY TAB#
+#------------------------------------------------------------------------------#
+                                   )
+                                  )#mainPanel
+                                 ),#sidebarLayout
                       
-             ),#navbarPage
+                                ),#navbarPage
+
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+#------------------------------------------------------------------------------#
+                            #END INPUT SECTION#
+#------------------------------------------------------------------------------#            
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*# 
+
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+#------------------------------------------------------------------------------#
+                              #OUTPUT SECTION#
+#------------------------------------------------------------------------------#            
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#   
+
              tabPanel("Output",
                       
                       sidebarLayout(
@@ -1195,17 +1174,28 @@ ui <- fluidPage(
                           checkboxInput("effluentdata", "Effluent Data", FALSE),
                           checkboxInput("influentdata", "Influent Data", FALSE),
                           
-                          #actionButton("run_button", "Run Analysis", icon=icon("play")),
                           downloadButton("save_button", "Save Data")
                         ),
                         
                         mainPanel(
                           
                           shinycssloaders::withSpinner(
-                            plotlyOutput("Plot")),
+                            plotlyOutput("Plot")), #Counterions
                           br(),
-                          plotlyOutput("ExtraChemicals")))),
-             
+                          plotlyOutput("ExtraChemicals")))), #Ions
+
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+#------------------------------------------------------------------------------#
+                          #END OUTPUT SECTION#
+#------------------------------------------------------------------------------#            
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+#------------------------------------------------------------------------------#
+                            #ABOUT SECTION#
+#------------------------------------------------------------------------------#            
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+
              tabPanel("About",
                       h5("Ion Exchange Model"),
                       textOutput("about"),
@@ -1226,12 +1216,17 @@ ui <- fluidPage(
                       textOutput("how2use8"))
   )
 )
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
-#------------------------------------------------------------------------------#
-#BEGIN SERVER#
-#------------------------------------------------------------------------------#
 
+
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+#------------------------------------------------------------------------------#
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+#------------------------------------------------------------------------------#
+                            #BEGIN SERVER#
+#------------------------------------------------------------------------------#
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+#------------------------------------------------------------------------------#
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
 server <- function(input, output, session) {
   
@@ -1239,25 +1234,22 @@ server <- function(input, output, session) {
   #STATIC DISPLAY TEXTS#
   #------------------------------------------------------------------------------#
   
+#--------------------------Resin Characteristics-------------------------------#  
+  output$RC<-renderText("Resin Characteristics")
   output$Q<-renderText("Resin Capacity")
   output$rb<-renderText("Bead Radius")
   output$EBED<-renderText("Bed Porosity")
   output$name<-renderText("Name")
-  
+#------------------------------------------------------------------------------#  
   output$CS<-renderText("Column Specifications")
   output$MC<-renderText("Material Characteristics")
   output$CS3<-renderText("Solver Related")
-  
+#--------------------------Column Specifications-------------------------------#  
   output$Length<-renderText("Length")
   output$Velocity<-renderText("Velocity")
   output$Diameter<-renderText("Diameter")
   output$Flowrate<-renderText("Flow Rate")
-  
-  output$kL<-renderText("Film Transfer Coefficient")
-  output$Ds<-renderText("Surface Diffusion Coefficient")
-  
-  output$RC<-renderText("Resin Characteristics")
-  
+#------------------------------------------------------------------------------#  
   output$SR<-renderText("Solver Related")
   output$nr<-renderText("Radial Collocation Points")
   output$nz<-renderText("Axial Collocation Points")
@@ -1285,7 +1277,6 @@ server <- function(input, output, session) {
   output$bicarbion<-renderTable(bicarbion)
   
   
-  #output$how2use<-renderText("There are two ways to start this model:")
   output$how2use2<-renderText("1) Use an Excel file to describe parameters of water treatment unit operation (examples provided). One can upload such file by clicking 'Browse' in the top left corner of the Input page.")
   output$how2use3<-renderText("2) Start with the data that is provided in the user interface and manipulate the data from there. Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
   output$how2use4<-renderText(" Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
@@ -1293,6 +1284,7 @@ server <- function(input, output, session) {
   output$how2use6<-renderText("David Colantonio")
   output$how2use7<-renderText("Levi Haupert")
   output$how2use8<-renderText("Jonathan Burkhardt")
+  
   #------------------------------------------------------------------------------#
   #INPUT FILE HANDLING#
   #------------------------------------------------------------------------------#
@@ -1320,10 +1312,20 @@ server <- function(input, output, session) {
   })
   
   
+  
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+#------------------------------------------------------------------------------#
+                            #DATA PREP SECTION#
+#------------------------------------------------------------------------------#            
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#  
  
-  #------------------------------------------------------------------------------#
-  #PARAMS DATA HANDLING#
-  #------------------------------------------------------------------------------#  
+  
+  
+  
+  
+#------------------------------------------------------------------------------#
+                        #PARAMS DATA HANDLING#
+#------------------------------------------------------------------------------#  
   
   #When the param sheet is read in, make it a reactiveVal so that the data can
   #Be saved between refreshes and edited
@@ -1453,20 +1455,26 @@ server <- function(input, output, session) {
   velocityvar<-reactiveVal()
   
  
-  #------------------------------------------------------------------------------#
-  #IONS DATA HANDLING#
-  #------------------------------------------------------------------------------#  
+#------------------------------------------------------------------------------#
+                        #IONS TAB DATA HANDLING#
+#------------------------------------------------------------------------------#  
   
   
   iondat<- dataEditServer("edit-1", data = "ionsheet.csv") 
   dataOutputServer("output-1", data = iondat)
-  
+
+#------------------------------------------------------------------------------#
+                        #CIN TAB DATA HANDLING#
+  #The prep here seems like it can mostly be done mostly in one or two functions
+  #instead of the multiple functions that are used here, but, some of the 
+  #independent steps are used throughout the code. So this makes it easier
+  #To break it up
+#------------------------------------------------------------------------------#   
   
   cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
   dataOutputServer("output-2", data = cindat)
   
-  
-  
+  #Convert the cin data time to hours if it is not already
   cindat_hours<-reactive({
     cindata<-cindat()
     time<-cindata['time']
@@ -1477,110 +1485,143 @@ server <- function(input, output, session) {
       newtime<-time*24
     }
     newcin<-cbind(newtime, cindata[,2:ncol(cindata)])
-    newcin ### newcin seems to be created, but is it used? This seems to be what we want to use.
+    return(newcin)
   })
 
   
-  effluentdat<-dataEditServer("edit-3", data="effluent.csv")
-  dataOutputServer("output-1", data=effluentdat)
-  
+  #convert cindat to meq if it is not already
   cin_hours_meq<-reactive({cin_correct(iondat(), cindat_hours())})
-  
-  observe({print("cin_hours_meq")})
-  observe({print(cin_hours_meq())})
-  
-  #observe({print(iondat())})
-  #observe({print(cindat_hours())})
-  #observe({print(paste0("cin",cin_hours_meq()))})
-  
+  cin_hours_mgl<-reactive({mass_converter_mgl(iondat(), cindat_hours())})
+
+  #When the file is first uploaded the influent data and simulated data both have
+  #the same names, so to differentiate them I rename them to chemical_influent 
+  #with this function
   cin_hours_meq_renamer<-reactive({
+    
     cindata<-cin_hours_meq()[,2:ncol(cindat_hours())]
     time<-cin_hours_meq()[,1]
     
-    #colnames(timedata)<-c('hours')
     colnames(cindata)<-paste(colnames(cindata), "influent", sep="_")
     alldat<-cbind(time, cindata)
     
-    alldat
+    return(alldat)
+    
+  })
+  
+  cin_hours_mgl_renamer<-reactive({
+    cindata<-cin_hours_mgl()[,2:ncol(cindat_hours())]
+    time<-cin_hours_mgl()[,1]
+    
+    colnames(cindata)<-paste(colnames(cindata), "influent", sep="_")
+    alldat<-cbind(time, cindata)
+    
+    return(alldat)
   })
 
-  
+  #The cin tab is now in the correct units and named appropriately. Gather then 
+  #brings them to a shape that makes it easy to convert and easy to plot
+  #Using the tidyr::gather function with the hours still attached gives a bad 
+  #result, so the time is Seperated out and then reattached in 
+  #cindat_meq_hours_preprepped
   cindat_meq_hours_organized<-reactive({tidyr::gather(cin_hours_meq_renamer()[2:ncol(cindat_hours())])})
   cin_time_df_in_hours<-reactive({cin_hours_meq_renamer()[,1]})
-  
   cindat_meq_hours_preprepped<-reactive({cbind(cin_time_df_in_hours(), cindat_meq_hours_organized())})
   
+  cindat_mgl_hours_organized<-reactive({tidyr::gather(cin_hours_mgl_renamer()[2:ncol(cindat_hours())])})
+  cinat_meq_hours_preprepped<-reactive({cbind(cin_time_df_in_hours(), cindat_mgl_hours_organized())})
+  
+  #Finally now that the shape of the data frame is different, we have to rename 
+  #the columns one more time
   cin_meq_hours_prep<-reactive({
     cintab<-cindat_meq_hours_preprepped()
     colnames(cintab)<-c("hours", "name", "conc")
 
-    cintab ### nested function? use return for clarity on what is returned
+    return(cintab)
   })
   
-  #observe({print(cin_meq_hours_prep())})
- 
- 
-  # effdat2<-read.csv("effluent.csv")
+  cin_mgl_hours_prep<-reactive({
+    cintab<-cinat_meq_hours_preprepped()
+    colnames(cintab)<-c("hours", "name", "conc")
+    
+    return(cintab)
+  })
+  
+  
+  
+#------------------------------------------------------------------------------#
+                      #EFFLUENT TAB HANDLING#
+#------------------------------------------------------------------------------# 
+  
+  effluentdat<-dataEditServer("edit-3", data="effluent.csv")
+  dataOutputServer("output-1", data=effluentdat)
 
-  effdata<-reactive({ ### pull nested functions OUT
-    if(nrow(effluentdat())>1){
+  
+  inputeffluentdatamgl<-reactive({mass_converter_mgl(iondat(), effluentdat())})
+  
+  effdata<-reactive({ 
+    
+    if(nrow(effluentdat())>1){                                      #If effluent data is not empty
 
-      #mydata<-effluentdat()
-      # mydata<-eff_correct(iondat(),effluentdat())
-      # mydata_init<-cin_correct(iondat(), effluentdat()) ### cin data gets converted on time, effluent data doesn't?
-      # mydata<-mass_converter_mgl(iondat(), mydata_init)
-      mydata<-mass_converter_mgl(iondat(), effluentdat())
-      
-      observe(print('mydata'))
-      observe({print(mydata)})
-      # observe(print('effluent'))
-      # observe({print(effluentdat())})
-      colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")
+      mydata<-inputeffluentdatamgl()                                #convert to mgl
+      colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")#Distinguish the names from the simulated data
 
-      timevec<-data.frame(hours=c(mydata[,1])) #### does this account for if time selection is not hours??
-      concframe<-gather(mydata[,2:ncol(mydata)])
+      timevec<-data.frame(hours=c(mydata[,1]))
+      concframe<-gather(mydata[,2:ncol(mydata)])                    #Gather into shape that is easy to convert and plot
       effframe<-cbind(timevec, concframe)
 
       colnames(effframe)<-c("hours", "name", "conc")
 
-      
-      # print('effframe')
-      # print(effframe)
       return(effframe)
 
     }
+    
     else{
+      
       effframe<-data.frame(hours=NA, name=NA, conc=NA)
+      
       return(effframe)
+      
     }
   })
 
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+#------------------------------------------------------------------------------#
+                      #END DATA PREP SECTION#
+#------------------------------------------------------------------------------#            
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#  
 
 
+  
+  
+  
 
-  #------------------------------------------------------------------------------#
-  #CALLING THE HSDMIX FUNCTION#
-  #------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+                    #CALLING THE HSDMIX FUNCTION#
+#------------------------------------------------------------------------------#
 
+  #HSDMIX values is stored in this reactiveVal "out"
   out<-reactiveVal()
 
   observeEvent(input$run_button, {
     out(HSDMIX_prep(input, iondat(), cindat(), nt_report))
   })
-
+  
+  
   # find outlet indices
   outlet_id <- reactive({dim(out()[[2]])[4]})
   liquid_id <- reactive({dim(out()[[2]])[2]})
 
-  #------------------------------------------------------------------------------#
-  #                 IEX CONCENTRATION OUTPUT DATAFRAME                           #
-  #------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
+#                 IEX CONCENTRATION OUTPUT DATAFRAME                           
+#------------------------------------------------------------------------------#
   ### TODO: add better error handling HSDMIX_prep can now return an 'error' value which is an integer, or the full data
   #### only want to proceed if it isn't an error state
 
   timeframe<-reactive({data.frame(hours=out()[[1]])})
   allchemicalconcs<-list()
 
+  
+  #HSDMIX outputs a list, so this takes the list and binds them into a dataframe
   allchemicals_hours_meq<-eventReactive(input$run_button, {for (x in 1:nrow(iondat())){
     conc<-out()[[2]][, liquid_id(), x, outlet_id()]
     allchemicalconcs[[x]]<-conc
@@ -1590,23 +1631,6 @@ server <- function(input, output, session) {
     allconcdf
   })
 
-  observe(print('allchemhoursmeq'))
-  observe(print(allchemicals_hours_meq()))
-  
-  # allchemicals2<-reactive(mass_converter_mgl(iondat(), allchemicals_hours_meq()))
-
-  # massvector<-reactive({c(iondat()$mw/iondat()$valence)})
-  # allchemicalscorrected<-reactive({mapply('*', allchemicals_hours_meq(), massvector())})
-  # allchemicalscorrected2<-reactive({data.frame(allchemicalscorrected())})
-  # #allchem<-reactive({cbind(timeframe(), allchemicalscorrected2())})
-  # 
-  # allchemicalscorrected3<-reactive({tidyr::gather(allchemicalscorrected2())})
-  # allchemicalscorrected4<-reactive({data.frame(name=allchemicalscorrected3()[,1],
-  #                                              conc=allchemicalscorrected3()[,2])})
-  # 
-  # allchems<-reactive({cbind(timeframe(), allchemicalscorrected4())})
-  # 
-  # allchemicals2<-reactive({cbind(timeframe(),allchemicals_hours_meq())})
 
   
   allchemicals_hours_mgl<-reactive({ ### pull nested functions out....
@@ -1626,9 +1650,7 @@ server <- function(input, output, session) {
     allchemicalsmgl<-cbind(time, nameandconcs)
     allchemicalsmgl_forsaving<-cbind(time, correctedchemsframe)
 
-    #returnedvalues<-c(allchemicalsmgl,allchemicalsmgl_forsaving, allchem)
-
-    #returnedvalues
+    #
     return(allchemicalsmgl)
 
   })
@@ -1825,8 +1847,8 @@ server <- function(input, output, session) {
   iondatacc0<-reactive({allchemicalscc04()[addIon_loc():nrow(allchemicals_hours_mgl()),]})
   # iondatacc0<-reactive({allchemicalscc04()[addIon_loc():nrow(allchemicals2()),]})
   
-  observe({print("iondatacc0")})
-  observe({print(iondatacc0())})
+  # observe(print{("iondatacc0")})
+  # observe({print(iondatacc0())})
 
   outputcounterions$name<-reactive({counteriondata()$name})
   outputions$name<-reactive({iondata()$name})
@@ -1860,7 +1882,7 @@ server <- function(input, output, session) {
       #outputinfluent$hours<-cindat_converter()$hours  / (bv_conv / hour2sec) / 1e3
       
       outputeffluent$time<- effdata()$hours/ (bv_conv / hour2sec) / 1e3
-      outputinfluent$hours<-cin_meq_hours_prep()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
+      outputinfluent$hours<-cin_mgl_hours_prep()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
 
     } else {
       outputcounterions$time <- counteriondata()$hours / (time_conv[input$timeunits] / hour2sec)
@@ -1868,7 +1890,7 @@ server <- function(input, output, session) {
       #outputinfluent$hours<-cindat_converter()$hours/ (time_conv[input$timeunits] / hour2sec)
       
       outputeffluent$time<- effdata()$hours/ (time_conv[input$timeunits] / hour2sec)
-      outputinfluent$hours<-cin_meq_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec) ## should this be $time?
+      outputinfluent$hours<-cin_mgl_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec) ## should this be $time?
     }
   })
 
@@ -1905,7 +1927,7 @@ server <- function(input, output, session) {
       outputions$conc <- iondata()$conc / mass_conv[input$OCunits]
       
       outputeffluent$conc <- effdata()$conc/mass_conv[input$OCunits]
-      outputinfluent$conc <- cin_meq_hours_prep()$conc/mass_conv[input$OCunits]
+      outputinfluent$conc <- cin_mgl_hours_prep()$conc/mass_conv[input$OCunits]
       #outputeffluent$conc<- effdata()['conc']/mass_conv[input$OCunits]
     }
 
@@ -1975,7 +1997,7 @@ server <- function(input, output, session) {
 
   influent_processed<-reactive({
     if(input$influentdata==TRUE){
-      plot_data4<-cin_meq_hours_prep()
+      plot_data4<-cin_mgl_hours_prep()
       plot_data4$conc<-outputinfluent$conc
       plot_data4$hours<-outputinfluent$hours
       plot_data4
@@ -2041,7 +2063,7 @@ server <- function(input, output, session) {
       write.xlsx(paramdf(), file, sheetName="params",append=TRUE, row.names=FALSE)
       write.xlsx(iondat(), file, sheetName="ions",append=TRUE, row.names=FALSE)
       write.xlsx(cindat(), file, sheetName="Cin", append=TRUE, row.names=FALSE)
-      write.xlsx(outputsave(), file, sheetName="results per mgl", append=TRUE, row.names=FALSE)
+      write.xlsx(outputsave(), file, sheetName="effluent", append=TRUE, row.names=FALSE)
     }
   )
   
