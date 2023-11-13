@@ -625,10 +625,10 @@ cin_correct<-function(ions, cins){
 
 
 
-effluent_data_processor<-function(inputeffluent, effluentinmgl){
-  if(nrow(inputeffluent)>1){                                      #If effluent data is not empty
+effluent_data_processor<-function(ion, effluent){
+  if(nrow(effluent)>1){                                      #If effluent data is not empty
     
-    mydata<-effluentinmgl                                #convert to mgl
+    mydata<-mass_converter_mgl(ion, effluent)                              #convert to mgl
     colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")#Distinguish the names from the simulated data
     
     timevec<-data.frame(hours=c(mydata[,1]))
@@ -1665,8 +1665,11 @@ server <- function(input, output, session) {
   dataOutputServer("output-1", data=effluentdat)
 
   
-  inputeffluentdatamgl<-reactive({mass_converter_mgl(iondat(), effluentdat())})
-  effdata<-reactive({effluent_data_processor(effluentdat(), inputeffluentdatamgl())})
+  #inputeffluentdatamgl<-reactive({mass_converter_mgl(iondat(), effluentdat())})
+  effdata<-reactive({effluent_data_processor(iondat(), effluentdat())})
+  observe({print(effdata())})
+  
+  #observe({print(effluent_data_processor(effluentdat(), inputeffluentdatamgl()))})
   
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
@@ -1909,27 +1912,21 @@ server <- function(input, output, session) {
     newdat
   })
 
-  counterionfigureyrangemax<-reactive({1.35*max(counterion_data_processed()$conc)})
-  counterionfigureyrangemin<-reactive({min(counterion_data_processed()$conc)})
   
-  ionfigureyrangemax<-reactive({1.5*max(ion_data_processed()$conc)})
-  ionfigureyrangemin<-reactive({min(ion_data_processed()$conc)})
-  
-  observe({print(counterionfigureyrangemax())})
 
   fig<-reactive({create_plotly(counterion_data_processed(), effluent_processed(), cindat_converter_counter())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                  legend=list(orientation='h', y=1),
                                  xaxis=list(title=input$timeunits),
                                  yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', 
-                                            exponentformat='e', range=c(counterionfigureyrangemin(), counterionfigureyrangemax())))})
+                                            exponentformat='e'))})
 
   bonusfig<-reactive({create_plotly2(ion_data_processed(), effluent_processed(), cindat_converter_ion())})
   ionfigure<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                              legend=list(orientation='h', y=1),
                                              xaxis=list(title=input$timeunits),
                                              yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', 
-                                                        exponentformat='e', range=c(ionfigureyrangemin(), ionfigureyrangemax())))})
+                                                        exponentformat='e'))})
 
 
 
@@ -1953,7 +1950,7 @@ server <- function(input, output, session) {
     justnames<-colnames(chemicalsforsaving)
     fixednames<-c("time", justnames[2:length(justnames)])
     colnames(chemicalsforsaving)<-fixednames
-    output
+    return(chemicalsforsaving)
   })
   
 
@@ -1968,6 +1965,7 @@ server <- function(input, output, session) {
       write.xlsx(outputsave(), file, sheetName="effluent", append=TRUE, row.names=FALSE)
     }
   )
+    
   
   
   
