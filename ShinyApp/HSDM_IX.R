@@ -625,6 +625,56 @@ cin_correct<-function(ions, cins){
 
 
 
+effluent_data_processor<-function(inputeffluent, effluentinmgl){
+  if(nrow(inputeffluent)>1){                                      #If effluent data is not empty
+    
+    mydata<-effluentinmgl                                #convert to mgl
+    colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")#Distinguish the names from the simulated data
+    
+    timevec<-data.frame(hours=c(mydata[,1]))
+    concframe<-gather(mydata[,2:ncol(mydata)])                    #Gather into shape that is easy to convert and plot
+    effframe<-cbind(timevec, concframe)
+    
+    colnames(effframe)<-c("hours", "name", "conc")
+    
+    return(effframe)
+    
+  }
+  
+  else{
+    
+    effframe<-data.frame(hours=NA, name=NA, conc=NA)
+    
+    return(effframe)
+    
+  }
+}
+
+
+influent_chemical_renamer<-function(influent, influent_hours){
+  cindata<-influent[,2:ncol(influent_hours)]
+  time<-influent[,1]
+  
+  colnames(cindata)<-paste(colnames(cindata), "influent", sep="_")
+  alldat<-cbind(time, cindata)
+  
+  return(alldat)
+}
+
+
+influent_organizer<-function(influent, influent_hours){
+  
+  cindat_organized<-tidyr::gather(influent[2:ncol(influent_hours)])
+  cin_time<-influent[,1]
+  cin_prepped<-cbind(cin_time, cindat_organized)
+  
+  colnames(cin_prepped)<-c("hours", "name", "conc")
+  
+  return(cin_prepped)
+  
+}
+
+
 #------------------------------------------------------------------------------#
                                   #HSDMIX Prep
 #This function makes sure that the appropriate data frames are created
@@ -704,6 +754,69 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
 }
 
 
+
+HSDMIX_in_hours_mgl<-function(HSDMIXoutput, ions, time){
+  
+  allchems_meq<-HSDMIXoutput
+  iondata<-ions
+  timedata<-time
+  
+  massvector_meq<-c(iondata$mw/iondata$valence)
+  
+  correctedchems<-mapply('*', allchems_meq, massvector_meq)
+  correctedchemsframe<-data.frame(correctedchems)
+  allchem<-cbind(time, correctedchemsframe)
+  allchemgathered<-tidyr::gather(correctedchemsframe)
+  nameandconcs<-data.frame(name=allchemgathered[,1],
+                           conc=allchemgathered[,2])
+  
+  allchemicalsmgl<-cbind(timedata, nameandconcs)
+  
+  return(allchemicalsmgl)
+  
+}
+
+
+
+HSDMIX_cc0<-function(HSDMIXoutput, c0values){
+  
+  allchemicalscc0<-mapply('/', HSDMIXoutput, c0values)
+  dataframecc0<-data.frame(allchemicalscc0)
+  organized<-tidyr::gather(dataframecc0)
+  cc0frame<-data.frame(name=organized[,1],
+                       conc=organized[,2])
+  
+  return(cc0frame)
+  
+}
+
+
+effluent_cc0<-function(effluent, ions, c0values){
+  
+  if(nrow(effluent)>1){
+    effdat<-cin_correct(ions, effluent)
+    cc0dat<-c0values
+    
+    time<-effdat[,1]
+    subseteffdat<-effdat[,2:ncol(effdat)]
+    
+    effcc0<-mapply('/', subseteffdat, cc0dat)
+    effcc02<-data.frame(effcc0)
+    effcc03<-tidyr::gather(effcc02)
+    effcc04<-data.frame(name=effcc03[,1],
+                        conc=effcc03[,2])
+    return(effcc04) ## use return() for clarity
+    
+  }
+  
+  else{
+    effcc04<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+    return(effcc04)
+  }
+  
+}
+
+
 #------------------------------------------------------------------------------#
                           #cc0 Conversion function
 #------------------------------------------------------------------------------#
@@ -778,31 +891,7 @@ mass_converter_mgl <- function (iondata, concs) {
   
 }
 
-effdata<-reactive({ 
-  
-  if(nrow(effluentdat())>1){                                      #If effluent data is not empty
-    
-    mydata<-inputeffluentdatamgl()                                #convert to mgl
-    colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")#Distinguish the names from the simulated data
-    
-    timevec<-data.frame(hours=c(mydata[,1]))
-    concframe<-gather(mydata[,2:ncol(mydata)])                    #Gather into shape that is easy to convert and plot
-    effframe<-cbind(timevec, concframe)
-    
-    colnames(effframe)<-c("hours", "name", "conc")
-    
-    return(effframe)
-    
-  }
-  
-  else{
-    
-    effframe<-data.frame(hours=NA, name=NA, conc=NA)
-    
-    return(effframe)
-    
-  }
-})
+
 
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -939,6 +1028,7 @@ ui <- fluidPage(
              tabPanel("Input", 
                       sidebarLayout(
                         sidebarPanel(
+                          selectInput("model", "Ion Exchange Method", c("HSDMIX", "PSDMIX")),
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                           textOutput("reject"),
                           textOutput("OutputConcentration"),
@@ -1004,6 +1094,12 @@ ui <- fluidPage(
                                        ))
                                               
                                      ),
+
+                                      fluidRow(
+                                        column(3, ),
+                                        column(2, uiOutput("EPOR")),
+                                        column(2, uiOutput("EPORv"))
+                                      ),
 #------------------------------------------------------------------------------#                                       
                                        
                                      hr(),
@@ -1240,7 +1336,30 @@ server <- function(input, output, session) {
   output$rb<-renderText("Bead Radius")
   output$EBED<-renderText("Bed Porosity")
   output$name<-renderText("Name")
-#------------------------------------------------------------------------------#  
+#------------------------------------------------------------------------------#
+  
+  #The reason these are multiple if else statements is because it gives more
+  #control of where the items will appear in the UI
+  output$EPOR<-renderUI({
+    if(input$model=="HSDMIX"){
+      #pass
+    }
+    else{
+      renderText("Resin Porosity")
+    }
+  })
+  
+  output$EPORv<-renderUI({
+    if(input$model=="HSDMIX"){
+      #pass
+    }
+    else{
+      numericInput("EPORvalue", "", 0.2)
+    }
+  })
+  
+#------------------------------------------------------------------------------#
+
   output$CS<-renderText("Column Specifications")
   output$MC<-renderText("Material Characteristics")
   output$CS3<-renderText("Solver Related")
@@ -1454,6 +1573,33 @@ server <- function(input, output, session) {
   
   velocityvar<-reactiveVal()
   
+#------------------------------------------------------------------------------#
+                  #IBICARBONATE TO ALKALINITY CONVERTER#
+#------------------------------------------------------------------------------#  
+  
+  
+  bicarbconverted<-reactiveVal()
+  bicarbmeq2mgl<-50.045001
+  
+  h_plus<-reactiveVal()
+  observe({h_plus(10^-input$pH)})
+  
+  calcium_carb_alpha<-reactive({k1*h_plus()/(h_plus()**2 + k1*h_plus()+k1*k2)})
+  
+  observe({
+    if(input$alkunits=='meq'){
+      bicarbconverted(calcium_carb_alpha()*input$alkvalue)
+    }
+    else{
+      bicarbconverted(calcium_carb_alpha()*input$alkvalue/bicarbmeq2mgl) #mw/valence -> mw
+    }
+  })
+  
+  
+  output$bicarbcin<-renderText(bicarbconverted())
+  output$bicarbcinmgl<-renderText(bicarbconverted()*bicarbmeq2mgl)
+  
+  
  
 #------------------------------------------------------------------------------#
                         #IONS TAB DATA HANDLING#
@@ -1496,56 +1642,19 @@ server <- function(input, output, session) {
   #When the file is first uploaded the influent data and simulated data both have
   #the same names, so to differentiate them I rename them to chemical_influent 
   #with this function
-  cin_hours_meq_renamer<-reactive({
-    
-    cindata<-cin_hours_meq()[,2:ncol(cindat_hours())]
-    time<-cin_hours_meq()[,1]
-    
-    colnames(cindata)<-paste(colnames(cindata), "influent", sep="_")
-    alldat<-cbind(time, cindata)
-    
-    return(alldat)
-    
-  })
-  
-  cin_hours_mgl_renamer<-reactive({
-    cindata<-cin_hours_mgl()[,2:ncol(cindat_hours())]
-    time<-cin_hours_mgl()[,1]
-    
-    colnames(cindata)<-paste(colnames(cindata), "influent", sep="_")
-    alldat<-cbind(time, cindata)
-    
-    return(alldat)
-  })
+  cin_hours_meq_renamer<-reactive({influent_chemical_renamer(cin_hours_meq(), cindat_hours())})
+  cin_hours_mgl_renamer<-reactive({influent_chemical_renamer(cin_hours_mgl(), cindat_hours())})
 
   #The cin tab is now in the correct units and named appropriately. Gather then 
   #brings them to a shape that makes it easy to convert and easy to plot
   #Using the tidyr::gather function with the hours still attached gives a bad 
   #result, so the time is Seperated out and then reattached in 
   #cindat_meq_hours_preprepped
-  cindat_meq_hours_organized<-reactive({tidyr::gather(cin_hours_meq_renamer()[2:ncol(cindat_hours())])})
-  cin_time_df_in_hours<-reactive({cin_hours_meq_renamer()[,1]})
-  cindat_meq_hours_preprepped<-reactive({cbind(cin_time_df_in_hours(), cindat_meq_hours_organized())})
   
-  cindat_mgl_hours_organized<-reactive({tidyr::gather(cin_hours_mgl_renamer()[2:ncol(cindat_hours())])})
-  cinat_meq_hours_preprepped<-reactive({cbind(cin_time_df_in_hours(), cindat_mgl_hours_organized())})
+  cin_meq_hours_prep<-reactive({influent_organizer(cin_hours_meq_renamer(), cindat_hours())})
+  cin_mgl_hours_prep<-reactive({influent_organizer(cin_hours_mgl_renamer(), cindat_hours())})
   
-  #Finally now that the shape of the data frame is different, we have to rename 
-  #the columns one more time
-  cin_meq_hours_prep<-reactive({
-    cintab<-cindat_meq_hours_preprepped()
-    colnames(cintab)<-c("hours", "name", "conc")
 
-    return(cintab)
-  })
-  
-  cin_mgl_hours_prep<-reactive({
-    cintab<-cinat_meq_hours_preprepped()
-    colnames(cintab)<-c("hours", "name", "conc")
-    
-    return(cintab)
-  })
-  
   
   
 #------------------------------------------------------------------------------#
@@ -1557,32 +1666,8 @@ server <- function(input, output, session) {
 
   
   inputeffluentdatamgl<-reactive({mass_converter_mgl(iondat(), effluentdat())})
+  effdata<-reactive({effluent_data_processor(effluentdat(), inputeffluentdatamgl())})
   
-  effdata<-reactive({ 
-    
-    if(nrow(effluentdat())>1){                                      #If effluent data is not empty
-
-      mydata<-inputeffluentdatamgl()                                #convert to mgl
-      colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")#Distinguish the names from the simulated data
-
-      timevec<-data.frame(hours=c(mydata[,1]))
-      concframe<-gather(mydata[,2:ncol(mydata)])                    #Gather into shape that is easy to convert and plot
-      effframe<-cbind(timevec, concframe)
-
-      colnames(effframe)<-c("hours", "name", "conc")
-
-      return(effframe)
-
-    }
-    
-    else{
-      
-      effframe<-data.frame(hours=NA, name=NA, conc=NA)
-      
-      return(effframe)
-      
-    }
-  })
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
 #------------------------------------------------------------------------------#
@@ -1631,50 +1716,8 @@ server <- function(input, output, session) {
     allconcdf
   })
 
-
+  allchemicals_hours_mgl<-reactive({HSDMIX_in_hours_mgl(allchemicals_hours_meq(), iondat(), timeframe())})
   
-  allchemicals_hours_mgl<-reactive({ ### pull nested functions out....
-
-    allchems_meq<-allchemicals_hours_meq()
-    ions<-iondat()
-    time<-timeframe()
-    massvector_meq<-c(ions$mw/ions$valence)
-
-    correctedchems<-mapply('*', allchems_meq, massvector_meq)
-    correctedchemsframe<-data.frame(correctedchems)
-    allchem<-cbind(time, correctedchemsframe)
-    allchemgathered<-tidyr::gather(correctedchemsframe)
-    nameandconcs<-data.frame(name=allchemgathered[,1],
-                             conc=allchemgathered[,2])
-
-    allchemicalsmgl<-cbind(time, nameandconcs)
-    allchemicalsmgl_forsaving<-cbind(time, correctedchemsframe)
-
-    #
-    return(allchemicalsmgl)
-
-  })
-
-  allchemicals2<-reactive({tidyr::spread(allchemicals_hours_mgl(), "name", "conc")})
-  #observe({print(allchemicals2())})
-
-  #observe({print( allchemicals_hours_mgl())})
-
-  empty_df<-data.frame(hours=c(0), CHLORIDE=c(0))
-
-  # chemholder<-reactiveVal(empty_df)
-  # observe({chemholder(allchem())})
-
-  outputsave<-reactive({
-    output<-allchemicals2()
-    justnames<-colnames(allchemicals2())
-    fixednames<-c("time", justnames[2:length(justnames)])
-    colnames(output)<-fixednames
-    output
-    })
-
-
-
 
   #------------------------------------------------------------------------------#
   #                   END IEX CONCENTRATION OUTPUTDATAFRAME#
@@ -1690,57 +1733,11 @@ server <- function(input, output, session) {
   ## need to create meq/L c0 for math to work out
   cc0vector_meq<-reactive({cc0_conv_meq(iondat(), cindat())})
   
-  # observe({print("allchemicals_hours_meq")})
-  # observe({print(allchemicals_hours_meq())})
-  # observe({print("cc0vector_meq")})
-  # observe({print(cc0vector_meq())}) #################################################################PRINT
+
+  computedcc0<-reactive({HSDMIX_cc0(allchemicals_hours_meq(), cc0vector_meq())})
+  effluentcc0<-reactive({effluent_cc0(effluentdat(), iondat(), cc0vector_meq())})
+  influentcc0<-reactive({HSDMIX_cc0(cin_hours_meq_renamer()[,2:ncol(cin_hours_meq_renamer())], cc0vector_meq())})
   
-  
-  allchemicalscc0<-reactive({mapply('/', allchemicals_hours_meq(), cc0vector_meq())})
-  allchemicalscc02<-reactive({data.frame(allchemicalscc0())})
-  allchemicalscc03<-reactive({tidyr::gather(allchemicalscc02())})
-  allchemicalscc04<-reactive({data.frame(name=allchemicalscc03()[,1],
-                                         conc=allchemicalscc03()[,2])})
-
-
-  effluentcc0<-reactive({
-    if(nrow(effluentdat())>1){
-      # effdat<-mass_converter_mgl(iondat(),effluentdat())
-      effdat<-cin_correct(iondat(), effluentdat())
-      cc0dat<-cc0vector_meq()
-      
-      time<-effdat[,1]
-      subseteffdat<-effdat[,2:ncol(effdat)]
-
-      effcc0<-mapply('/', subseteffdat, cc0dat)
-      effcc02<-data.frame(effcc0)
-      effcc03<-tidyr::gather(effcc02)
-      effcc04<-data.frame(name=effcc03[,1],
-                          conc=effcc03[,2])
-      return(effcc04) ## use return() for clarity
-
-    }
-    else{
-      effcc04<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
-      return(effcc04)
-    }
-  })
-
-
-
-  #
-  influentcc0<-reactive({mapply('/', cin_hours_meq_renamer()[,2:ncol(cin_hours_meq_renamer())], cc0vector_meq())})
-  
-  # observe({print("cin_hours_meq_renamer")})
-  # observe({print(cin_hours_meq_renamer())})
-
-  influentcc02<-reactive({data.frame(influentcc0())})
-  influentcc03<-reactive({tidyr::gather(influentcc02())})
-  influentcc04<-reactive({data.frame(name=influentcc03()[,1],
-                                     conc=influentcc03()[,2])})
-  
-  # observe({print(influentcc04())})
-
 
 
   #------------------------------------------------------------------------------#
@@ -1748,138 +1745,51 @@ server <- function(input, output, session) {
   #------------------------------------------------------------------------------#
   #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
-  #alkvalue<-reactiveVal()
-
-  bicarbconverted<-reactiveVal()
-  bicarbmeq2mgl<-50.045001
-
-  h_plus<-reactiveVal()
-  observe({h_plus(10^-input$pH)})
-
-  calcium_carb_alpha<-reactive({k1*h_plus()/(h_plus()**2 + k1*h_plus()+k1*k2)})
-
-  observe({
-    if(input$alkunits=='meq'){
-      bicarbconverted(calcium_carb_alpha()*input$alkvalue)
-    }
-    else{
-      bicarbconverted(calcium_carb_alpha()*input$alkvalue/bicarbmeq2mgl) #mw/valence -> mw
-    }
-  })
-
-
-  output$bicarbcin<-renderText(bicarbconverted())
-  output$bicarbcinmgl<-renderText(bicarbconverted()*bicarbmeq2mgl)
 
 
 
-  #------------------------------------------------------------------------------#
-  #CONVERSION OF DATAFRAMES#
-  #------------------------------------------------------------------------------#
-
-  bonusdataframe<-data.frame(hours=c(), conc=c())
-
-  allconcsconvert<-eventReactive(input$run_button, {for (x in 1:nrow(data_edit())){
-
-    dx_frame<-data.frame(
-      hours=out()[[1]], conc=out()[[2]][, liquid_id(), x, outlet_id()], name=data_edit()[x,1]
-    )
-    bonusdataframe<-rbind(bonusdataframe, dx_frame)
-
-  }
-    bonusdataframe
-  })
-
-  chemnames<-reactive({allconcsconvert()$name})
-  allconcscc0<-reactive({rbind(allconcscc02(), chemnames())})
 
 
-  #------------------------------------------------------------------------------#
-  #END INITIALIZING CONVERSION FRAMES#
-  #------------------------------------------------------------------------------#
-  #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+#------------------------------------------------------------------------------#
+                     #CONVERTING OUTPUT DATAFRAMES#
+#------------------------------------------------------------------------------#
 
-  # efffile<-read.csv("effluent.csv") #### doesn't seem to be used
 
-  #------------------------------------------------------------------------------#
-  #CONVERTING OUTPUT DATAFRAMES#
-  #------------------------------------------------------------------------------#
-  allchemicals2<-reactive({cbind(timeframe(), allchemicals_hours_meq())})
-
-  outputcounterions<-reactiveValues(counterion=0)
-  outputions<-reactiveValues(ion=0)
-
-  #outputcountereffluent<-reactiveValues()
+  outputcounterions<-reactiveValues()
+  outputions<-reactiveValues()
   outputeffluent<-reactiveValues()
-
-
-  outputeffluentcounter<-reactiveValues()
-  outputeffluention<-reactiveValues()
-
   outputinfluent<-reactiveValues()
 
-  outputcounterions$conc<-0
-  outputcounterions$time<-0
-
-  outputeffcount<-reactiveValues(counterion=0)
-  outputeffions<-reactiveValues(ion=0)
 
   ion_list<-c("CHLORIDE", "SULFATE", "BICARBONATE", "NITRATE")
-
   ion_flag<-reactive({ion_list %in% colnames(cindat())})
   number_of_ions<-reactive({length(ion_flag()[ion_flag()==TRUE])})
-
 
   counterIon_loc<-reactive({ number_of_ions() * nt_report })
   addIon_loc<-reactive({ counterIon_loc() + 1 })
 
 
-  counteriondata<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
-
-  observe({counteriondata(allchemicals_hours_mgl()[0:counterIon_loc(),])})
-  # observe({counteriondata(allchemicals2()[0:counterIon_loc(),])})
-  
+  counteriondata<-reactive({allchemicals_hours_mgl()[0:counterIon_loc(),]})
   iondata<-reactive({allchemicals_hours_mgl()[addIon_loc():nrow(allchemicals_hours_mgl()),]})
-  # iondata<-reactive({allchemicals2()[addIon_loc():nrow(allchemicals2()),]})
-  
 
-  counteriondatacc0<-reactive({allchemicalscc04()[0:counterIon_loc(),]})
-  iondatacc0<-reactive({allchemicalscc04()[addIon_loc():nrow(allchemicals_hours_mgl()),]})
-  # iondatacc0<-reactive({allchemicalscc04()[addIon_loc():nrow(allchemicals2()),]})
-  
-  # observe(print{("iondatacc0")})
-  # observe({print(iondatacc0())})
+  counteriondatacc0<-reactive({computedcc0()[0:counterIon_loc(),]})
+  iondatacc0<-reactive({computedcc0()[addIon_loc():nrow(allchemicals_hours_mgl()),]})
 
   outputcounterions$name<-reactive({counteriondata()$name})
   outputions$name<-reactive({iondata()$name})
 
 
 
-# 
-#   effluent_data_time<-reactiveVal()
-#   effluent_data_conc<-reactiveVal()
-#   observe({effluent_data_time(effdata()['hours'])}) ##???????
-#   observe({effluent_data_conc(effdata()['conc'])})
-
-  #effluent_data$hours<-reactive({effdata()['hours']})
-  #effluent_data$conc<-reactive({effdata()['conc']})
-  #effluent_data$name<-reactive({effdata()['name']})
-  #observe({effluent_data(effdata())})
-
-  # effluent_data<-reactiveVal()                    ???????????????????????
-  # observe({effluent_data(effdata())})
-
 
 
   observe({
-    #req(allchemicals2())
     ## convert time units for graphing
     # calculating kBV
     if (input$timeunits == "Bed Volumes (x1000)") {
       bv_conv <- get_bv_in_sec(input)
       outputcounterions$time <- counteriondata()$hours / (bv_conv / hour2sec) / 1e3
       outputions$time <- iondata()$hours / (bv_conv / hour2sec) / 1e3
-      #outputinfluent$hours<-cindat_converter()$hours  / (bv_conv / hour2sec) / 1e3
       
       outputeffluent$time<- effdata()$hours/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-cin_mgl_hours_prep()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
@@ -1887,7 +1797,6 @@ server <- function(input, output, session) {
     } else {
       outputcounterions$time <- counteriondata()$hours / (time_conv[input$timeunits] / hour2sec)
       outputions$time <- iondata()$hours / (time_conv[input$timeunits] / hour2sec)
-      #outputinfluent$hours<-cindat_converter()$hours/ (time_conv[input$timeunits] / hour2sec)
       
       outputeffluent$time<- effdata()$hours/ (time_conv[input$timeunits] / hour2sec)
       outputinfluent$hours<-cin_mgl_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec) ## should this be $time?
@@ -1896,23 +1805,10 @@ server <- function(input, output, session) {
 
 
 
-  # observe({
-  #   if(input$timeunits == "Bed Volumes (x1000)"){
-  #     bv_conv <- get_bv_in_sec(input)
-  #     outputeffluent$time<- effdata()$hours/ (bv_conv / hour2sec) / 1e3
-  #     outputinfluent$hours<-cin_meq_hours_prep()$hours  / (bv_conv / hour2sec) / 1e3
-  #   }
-  #   else{
-  #     outputeffluent$time<- effdata()$hours/ (time_conv[input$timeunits] / hour2sec)
-  #     outputinfluent$hours<-cin_meq_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec)
-  #   }
-  # })
-
 
 
 
   observe({
-    req(allchemicals2())
     ### convert y-axis/mass units for graphing
     if(input$OCunits=="c/c0"){
       ## just replicates the returned data
@@ -1920,38 +1816,27 @@ server <- function(input, output, session) {
       outputions$conc<-iondatacc0()$conc
       
       outputeffluent$conc<- effluentcc0()$conc
-      outputinfluent$conc <- influentcc04()$conc#influentcc04()$conc
-      #outputeffluent$conc <- effluentcc04()$conc
+      outputinfluent$conc <- influentcc0()$conc#influentcc04()$conc
     } else {
       outputcounterions$conc <- counteriondata()$conc / mass_conv[input$OCunits]
       outputions$conc <- iondata()$conc / mass_conv[input$OCunits]
       
       outputeffluent$conc <- effdata()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- cin_mgl_hours_prep()$conc/mass_conv[input$OCunits]
-      #outputeffluent$conc<- effdata()['conc']/mass_conv[input$OCunits]
     }
 
   })
 
 
 
-  # observe({
-  #   if(input$OCunits=="c/c0"){
-  #     outputeffluent$conc<- effluentcc0()$conc
-  #     outputinfluent$conc<-influentcc04()$conc#influentcc04()$conc
-  #   }
-  #   else{
-  #     outputeffluent$conc<- effdata()$conc/mass_conv[input$OCunits]
-  #     outputinfluent$conc<-cin_meq_hours_prep()$conc/mass_conv[input$OCunits]
-  #   }
-  # })
+ 
 
 
 
 
   ### graph data
 
-  processed_data<-reactive({
+  counterion_data_processed<-reactive({
     if(input$computeddata==TRUE){
       plot_data <- counteriondata()
       plot_data$conc <- outputcounterions$conc
@@ -1964,7 +1849,7 @@ server <- function(input, output, session) {
     }
   })
 
-  processed_data2<-reactive({
+ ion_data_processed<-reactive({
     if(input$computeddata==TRUE){
       plot_data2 <- iondata()
       plot_data2$conc <- outputions$conc
@@ -2026,13 +1911,13 @@ server <- function(input, output, session) {
 
 
 
-  fig<-reactive({create_plotly(processed_data(), effluent_processed(), cindat_converter_counter())})
+  fig<-reactive({create_plotly(counterion_data_processed(), effluent_processed(), cindat_converter_counter())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                  legend=list(orientation='h', y=1),
                                  xaxis=list(title=input$timeunits),
                                  yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', exponentformat='e'))})
 
-  bonusfig<-reactive({create_plotly2(processed_data2(), effluent_processed(), cindat_converter_ion())})
+  bonusfig<-reactive({create_plotly2(ion_data_processed(), effluent_processed(), cindat_converter_ion())})
   ionfigure<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                              legend=list(orientation='h', y=1),
                                              xaxis=list(title=input$timeunits),
@@ -2047,13 +1932,22 @@ server <- function(input, output, session) {
     ionfigure())
 
 
+  
 
   paramdf<-reactive({data.frame(name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
                       value=c(input$Qv, input$EBEDv, input$Lv, input$Vv, input$rbv, NA, NA, input$nrv, input$nzv, input$timeunits2),
                       units=c(input$qunits, NA, input$LengthUnits, input$VelocityUnits, input$rbunits, NA, "cm2/s", NA, NA, input$timeunits2)
                       )})
 
-
+  
+  outputsave<-reactive({
+    chemicalsforsaving<-tidyr::spread(allchemicals_hours_mgl(), "name", "conc")
+    justnames<-colnames(chemicalsforsaving)
+    fixednames<-c("time", justnames[2:length(justnames)])
+    colnames(chemicalsforsaving)<-fixednames
+    output
+  })
+  
 
   output$save_button <- downloadHandler(
     filename = function() {
