@@ -1909,19 +1909,27 @@ server <- function(input, output, session) {
     newdat
   })
 
-
+  counterionfigureyrangemax<-reactive({1.35*max(counterion_data_processed()$conc)})
+  counterionfigureyrangemin<-reactive({min(counterion_data_processed()$conc)})
+  
+  ionfigureyrangemax<-reactive({1.5*max(ion_data_processed()$conc)})
+  ionfigureyrangemin<-reactive({min(ion_data_processed()$conc)})
+  
+  observe({print(counterionfigureyrangemax())})
 
   fig<-reactive({create_plotly(counterion_data_processed(), effluent_processed(), cindat_converter_counter())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                  legend=list(orientation='h', y=1),
                                  xaxis=list(title=input$timeunits),
-                                 yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', exponentformat='e'))})
+                                 yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', 
+                                            exponentformat='e', range=c(counterionfigureyrangemin(), counterionfigureyrangemax())))})
 
   bonusfig<-reactive({create_plotly2(ion_data_processed(), effluent_processed(), cindat_converter_ion())})
   ionfigure<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                              legend=list(orientation='h', y=1),
                                              xaxis=list(title=input$timeunits),
-                                             yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', exponentformat='e'))})
+                                             yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', 
+                                                        exponentformat='e', range=c(ionfigureyrangemin(), ionfigureyrangemax())))})
 
 
 
