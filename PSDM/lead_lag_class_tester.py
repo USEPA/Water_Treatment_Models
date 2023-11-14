@@ -151,7 +151,7 @@ if test_gac_gac:
 
 ### Test IX
 if test_ix_ix: 
-    ix_fn = 'C:/Users/jburkhar/OneDrive - Environmental Protection Agency (EPA)/Profile/Desktop/Git/PSDM/PSDM/test_iex/lag_iex.xlsx'
+    ix_fn = 'test_iex/lag_iex.xlsx'
     
     LL_ix = LLobj(ix_filename=ix_fn, ix_nr=10, ix_nz=15)
     

@@ -11,6 +11,7 @@ library(shinyWidgets)
 library(colorBlindness)
 library(xlsx)
 
+
 #------------------------------------------------------------------------------#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
@@ -474,6 +475,11 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   
   return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
 }
+
+#------------------------------------------------------------------------------#
+                                #PSDMIX Function
+#------------------------------------------------------------------------------#
+
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
@@ -1028,7 +1034,6 @@ ui <- fluidPage(
              tabPanel("Input", 
                       sidebarLayout(
                         sidebarPanel(
-                          selectInput("model", "Ion Exchange Method", c("HSDMIX", "PSDMIX")),
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                           textOutput("reject"),
                           textOutput("OutputConcentration"),
@@ -1095,11 +1100,6 @@ ui <- fluidPage(
                                               
                                      ),
 
-                                      fluidRow(
-                                        column(3, ),
-                                        column(2, uiOutput("EPOR")),
-                                        column(2, uiOutput("EPORv"))
-                                      ),
 #------------------------------------------------------------------------------#                                       
                                        
                                      hr(),
@@ -1292,24 +1292,21 @@ ui <- fluidPage(
 #------------------------------------------------------------------------------#            
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
-             tabPanel("About",
-                      h5("Ion Exchange Model"),
-                      textOutput("about"),
-                      br(),
-                      tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Read more about the Ion Exchange Model"),
-                      br(), br(),
-                      #textOutput("how2use"),
-                      h5("There are two ways to start this model:"),
-                      textOutput("how2use2"),
-                      br(),
-                      textOutput("how2use3"),
-                      textOutput("how2use4"),
-                      br(),
-                      #textOutput("how2use5"),
-                      h5("Developed By"),
-                      textOutput("how2use6"),
-                      textOutput("how2use7"),
-                      textOutput("how2use8"))
+tabPanel("About",
+         
+         ("The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design."),
+         br(), br(),
+         tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Click here to read more about the Ion Exchange Model"),
+         br(), br(),
+         strong("There are two ways to start this model:"), br(),
+         ("1) Use an Excel file to describe parameters of the water treatment unit operation (examples provided). Files can be uploaded by clicking 'Browse' in the top left corner of the Input page."),br(),
+         ("2) Start with the data that is provided in the user interface and manipulate the data from there. "),br(),
+         br(),("Enter information into Column Parameters tab, then add concentration and other ion information in the Ions tab. These can be adjusted within the GUI or saved in an .xlsx file to reuse in the future. Click 'Run Analysis' to begin the simulation. Simulation time can take a few seconds to minutes (20 + seconds) depending on how many ions are simulated."),
+         br(),br(),
+         strong("Developed By"),br(),
+         ("David Colantonio"),br(),
+         ("Levi Haupert"),br(),
+         ("Jonathan Burkhardt"),)
   )
 )
 
@@ -1337,26 +1334,6 @@ server <- function(input, output, session) {
   output$EBED<-renderText("Bed Porosity")
   output$name<-renderText("Name")
 #------------------------------------------------------------------------------#
-  
-  #The reason these are multiple if else statements is because it gives more
-  #control of where the items will appear in the UI
-  output$EPOR<-renderUI({
-    if(input$model=="HSDMIX"){
-      #pass
-    }
-    else{
-      renderText("Resin Porosity")
-    }
-  })
-  
-  output$EPORv<-renderUI({
-    if(input$model=="HSDMIX"){
-      #pass
-    }
-    else{
-      numericInput("EPORvalue", "", 0.2)
-    }
-  })
   
 #------------------------------------------------------------------------------#
 
@@ -1390,19 +1367,9 @@ server <- function(input, output, session) {
   output$IonList<-renderText("Ion List")
   output$ConcentrationList<-renderText("Concentration Points")
   
-  output$about<-renderText("The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design.")
-  
   output$AlkConv<-renderText("Bicarbonate is the common chemical used to measure alkalinity in this model, however, the user may have the pH of their water without the Bicarbonate specifications. If this is the case then the user can use this calculator to take their pH measurement and find the corresponding Bicarbonate concentrations.  ")
   output$bicarbion<-renderTable(bicarbion)
   
-  
-  output$how2use2<-renderText("1) Use an Excel file to describe parameters of water treatment unit operation (examples provided). One can upload such file by clicking 'Browse' in the top left corner of the Input page.")
-  output$how2use3<-renderText("2) Start with the data that is provided in the user interface and manipulate the data from there. Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
-  output$how2use4<-renderText(" Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
-  output$how2use5<-renderText("Developed By")
-  output$how2use6<-renderText("David Colantonio")
-  output$how2use7<-renderText("Levi Haupert")
-  output$how2use8<-renderText("Jonathan Burkhardt")
   
   #------------------------------------------------------------------------------#
   #INPUT FILE HANDLING#
@@ -1663,14 +1630,9 @@ server <- function(input, output, session) {
   
   effluentdat<-dataEditServer("edit-3", data="effluent.csv")
   dataOutputServer("output-1", data=effluentdat)
-
   
-  #inputeffluentdatamgl<-reactive({mass_converter_mgl(iondat(), effluentdat())})
   effdata<-reactive({effluent_data_processor(iondat(), effluentdat())})
-  observe({print(effdata())})
-  
-  #observe({print(effluent_data_processor(effluentdat(), inputeffluentdatamgl()))})
-  
+
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
 #------------------------------------------------------------------------------#

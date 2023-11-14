@@ -253,7 +253,7 @@ class HSDMIX:
         return saved_name
     
     
-    def solve(self, t_eval=None, const_Cin=False, OCFE=False, quiet=True):
+    def solve(self, t_eval=None, const_Cin=False, OCFE=False, quiet=True, u_init=None):
         """ Returns (t, u)
         t = time values
         u = array of shape (phases, ions, axial, time) 
@@ -355,7 +355,9 @@ class HSDMIX:
         
         u[LIQUID, PRESAT, 1:] = Cin.sum() # column initially full of presat solution?
         u[RESIN:, PRESAT, :] = Q  # resin initially loaded with PRESAT
-
+        if np.any(u_init): # start with a different distribution in the resin.
+            u[RESIN:, :, :] = u_init[RESIN:, :, :]
+          
         u0 = u.reshape(NEQ)  # initial concentration vector for solve_ivp call
 
         

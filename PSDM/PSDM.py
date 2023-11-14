@@ -1944,6 +1944,7 @@ class PSDM():
                 z2 = np.multiply(ym_vA, y0tmp[:,:nc,:mc])
                 z2[z2<0] = 0.
                 qte2 = np.tile(z2.sum(axis=0), ThreeDSize)  #total mass on carbon
+                qte2[qte2==0.] = 1e-30 ### set mass to very small number (avoid divide by zero)
                 yt0_2 = np.multiply(xni_vA, z2)
                 yt0_2 = np.tile(yt0_2.sum(axis=0), ThreeDSize) #liquid phase in equilibrium#yt0_c
                 z2 = np.divide(z2, qte2) 
@@ -1956,7 +1957,7 @@ class PSDM():
                 cpore2 = np.multiply(foul_fac, cpore2)
                 cpore2[qte2 <= 0.] = 0.
                 cpore2[yt0_2 <= 0.] = 0. #yt0_c
-                cpore2[xni_vA*np.log10(q0_2) < -20] = 0.
+                cpore2[xni_vA*np.asarray(q0_2).astype(np.float64) < -20] = 0.
                                         
                 cpore_tmp2 = cpore2[:,nc-1]              
                 cpore_tmp2[cpore_tmp2 < 0.] = 0.

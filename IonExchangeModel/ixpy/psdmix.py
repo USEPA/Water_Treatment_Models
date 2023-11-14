@@ -71,7 +71,7 @@ class PSDMIX(HSDMIX):
         # Note: also inherits save_results method from HSDMIX
     
     
-    def solve(self, t_eval=None, const_Cin=False, OCFE=False, quiet=True):
+    def solve(self, t_eval=None, const_Cin=False, OCFE=False, quiet=True, u_init=None):
         """ Returns (t, u)
         t = time values
         u = array of shape (phases, ions, axial, time) 
@@ -176,7 +176,9 @@ class PSDMIX(HSDMIX):
         
         u[LIQUID, PRESAT, 1:] = Cin.sum() # column initially full of presat solution?
         u[RESIN:, PRESAT, :] = Y  # resin initially loaded with PRESAT
-
+        if np.any(u_init): # start with a different distribution in the resin.
+            u[RESIN:, :, :] = u_init[RESIN:, :, :]
+             
         u0 = u.reshape(NEQ)  # initial concentration vector for solve_ivp call
 
         
@@ -349,7 +351,7 @@ class PSDMIX(HSDMIX):
                                 t_eval=T_eval, jac_sparsity=Jac_sp) 
         solve_time = timeit.default_timer() - start_time
         if not quiet:
-            print('HSDM solve_time (s): ' + str(solve_time))
+            print('PSDM solve_time (s): ' + str(solve_time))
 
         t = self.result.t * t_half # convert back to actual time
         NT = len(self.result.t)
