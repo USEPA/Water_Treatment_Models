@@ -17,7 +17,7 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 example_input_medium.xlsx (9 ions, concentrations specified in ng/L)
 
 ## Excel-based Input File
-TThe input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI.
+TThe input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
     <img src="DocumentPics/excelsheet.png"
@@ -53,6 +53,11 @@ TThe input for the Excel-based input file must be formatted like the one shown i
 5.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
 
 ![plot](DocumentPics/Slide7.PNG)
+
+6. The user can use the buttons on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
+
+![plottraces](DocumentPics/Slide8.PNG)
+
 
 
 
@@ -96,9 +101,13 @@ The Ions tab contains information about the ions to be simulated. The Ions tab s
 |Ds_units|  Ds_units| Units for Ds (acceptable inputs: cm^2/s or m^2/s) |
 |Concentration units| conc_units| Units of corresponding concentration units in Cin. (acceptable units: meq, mg, ug, ng) All assumed to be per liter.|
 
-### Concentration Points
+### Concentration Points / Influent Data
 
-The Concentration Points table (stored in Excel-based files in the "Cin" sheet) represents time series of concentrations in the system over time (conc_units for an ion defines the concentration units for each column). NOTE: The duration of a simulation is specified by the largest time/last row in the Time column. Times in this table should be specified in ascending order, and a minimum of two (2) rows are needed to run a simulation (time 0, and run duration). If concentrations are the same in all rows, the simulation has a constant concentration, but variable concentrations can be modeled (where linear interpolation is used between points). Time units for the times in this table is specified on the "Input>Column Parameters" tab as time (day or hr).
+The Concentration Points table (stored in Excel-based files in the "Cin" sheet) represents time series of concentrations in the system over time (conc_units for an ion defines the concentration units for each column). NOTE: The duration of a simulation is specified by the largest time/last row in the Time column. Times in this table should be specified in ascending order, and a minimum of two (2) rows are needed to run a simulation (time 0, and run duration). If concentrations are the same in all rows, the simulation has a constant concentration, but variable concentrations can be modeled (where linear interpolation is used between points). Time units for the times in this table is specified on the "Input>Column Parameters" tab as time (day or hr). This data can be plotted as well by simply clicking the "Influent Data" button on the 'Output' page.
+
+### Effluent Data
+
+The effluent data represents the results from a previous experiment or results from a previous model. This data does not need to be present for the model to run. If the user would like to see this data on the plot, the data must be present on the fourth sheet of the input excel file. When the analysis has been ran, the user can toggle on the "effluent data" button on the left hand side to see the data ploted. The units that the effluent data is in is represented by the 'conc_units' column in the ions tab, the second sheet. Whatever unit corresponds to the chemical in the 'conc_units' tab will be converted to the 'Output Units' on the output page. If the user is not careful the effluent data may seem like it is plotting incorrect values do to the inconsistencies. Moreover, if the user wants to plot the effluent data then the chemical the user wishes to plot must exist in both the 'ions' page, the 'cin page', and the 'effluent page'.
 
 ### Output
 The Output tab provides a graphical output of results after a simulation is completed. The units for time and concentration can be adjusted via the dropdown menus in the left-hand column.
@@ -147,6 +156,15 @@ The column size and flow rate may also be defined in terms of L, bed diameter (d
 A note on selection of flow convention: The entry field for the two conventions are independent. The values shown in disabled fields (gray backgrounds) are not updated to correspond to values entered using the other convention. Thus, switching between the radio buttons usually results in switching between two different systems.
 
 **Note:** If flow rate is provided, diameter is required
+
+
+#### Handling Alkalinity
+
+Bicarbonate is the chemical used in this model to measure alkalinity. Some users may find that they are interested in the alkalinity of their water and want to observe how it is affected over time. To do this, we can treat the Bicarbonate in the ions tab as alkalinity (this ion can be renamed manually in the xlsx file or within the app). The corresponding Bicarbonate concentration level will need to be calculated from the measured alkalinity. There is a Bicarbonate concentration calculator within the app that takes a pH level and returns the corresponding Bicarbonate concentration level. To breifly summarize, if the user has alkalinity and wants to use that in their model, use Bicarbonate in the ions tab and replace "BICARBONATE" with "ALKALINITY" then use the alkalinity calculator to find and replace the correpsonding pH with mass per volume.
+
+![alk1](DocumentPics/alk1.PNG)
+
+![alk2](DocumentPics/alk2.PNG)
 
 ## References
 ACS EST Water 2023, 3, 2, 576–587
