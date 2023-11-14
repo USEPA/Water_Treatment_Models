@@ -11,6 +11,7 @@ library(shinyWidgets)
 library(colorBlindness)
 library(xlsx)
 
+
 #------------------------------------------------------------------------------#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
@@ -474,6 +475,11 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   
   return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
 }
+
+#------------------------------------------------------------------------------#
+                                #PSDMIX Function
+#------------------------------------------------------------------------------#
+
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
@@ -1028,7 +1034,6 @@ ui <- fluidPage(
              tabPanel("Input", 
                       sidebarLayout(
                         sidebarPanel(
-                          selectInput("model", "Ion Exchange Method", c("HSDMIX", "PSDMIX")),
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                           textOutput("reject"),
                           textOutput("OutputConcentration"),
@@ -1095,11 +1100,6 @@ ui <- fluidPage(
                                               
                                      ),
 
-                                      fluidRow(
-                                        column(3, ),
-                                        column(2, uiOutput("EPOR")),
-                                        column(2, uiOutput("EPORv"))
-                                      ),
 #------------------------------------------------------------------------------#                                       
                                        
                                      hr(),
@@ -1337,26 +1337,6 @@ server <- function(input, output, session) {
   output$EBED<-renderText("Bed Porosity")
   output$name<-renderText("Name")
 #------------------------------------------------------------------------------#
-  
-  #The reason these are multiple if else statements is because it gives more
-  #control of where the items will appear in the UI
-  output$EPOR<-renderUI({
-    if(input$model=="HSDMIX"){
-      #pass
-    }
-    else{
-      renderText("Resin Porosity")
-    }
-  })
-  
-  output$EPORv<-renderUI({
-    if(input$model=="HSDMIX"){
-      #pass
-    }
-    else{
-      numericInput("EPORvalue", "", 0.2)
-    }
-  })
   
 #------------------------------------------------------------------------------#
 
@@ -1663,14 +1643,9 @@ server <- function(input, output, session) {
   
   effluentdat<-dataEditServer("edit-3", data="effluent.csv")
   dataOutputServer("output-1", data=effluentdat)
-
   
-  #inputeffluentdatamgl<-reactive({mass_converter_mgl(iondat(), effluentdat())})
   effdata<-reactive({effluent_data_processor(iondat(), effluentdat())})
-  observe({print(effdata())})
-  
-  #observe({print(effluent_data_processor(effluentdat(), inputeffluentdatamgl()))})
-  
+
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
 #------------------------------------------------------------------------------#
