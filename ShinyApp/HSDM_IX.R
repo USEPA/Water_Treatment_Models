@@ -1628,7 +1628,7 @@ server <- function(input, output, session) {
                       #EFFLUENT TAB HANDLING#
 #------------------------------------------------------------------------------# 
   
-  effluentdat<-dataEditServer("edit-3", data="effluent.csv")
+  effluentdat<-dataEditServer("edit-3", data="effluent.csv",read_args=list(colClasses=c("numeric")))
   dataOutputServer("output-1", data=effluentdat)
   
   effdata<-reactive({effluent_data_processor(iondat(), effluentdat())})
