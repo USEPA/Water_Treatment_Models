@@ -4,8 +4,6 @@ Created on Tue May 14 08:24:46 2019
 
 HSDM batch model
 
-Note: outputs times steps and accepts specific time steps in hours
-
 @author: LHaupert
 """
 
