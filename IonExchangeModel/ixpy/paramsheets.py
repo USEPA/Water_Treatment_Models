@@ -423,7 +423,7 @@ def conv_params_data(data):
               'ds':'cm2/s', 'v':'cm/s', 'qm':'meq/kg', 'l':'cm', \
              'flrt':'cm3/s', 'diam':'cm', 'qf':'meq/L', 'ebed':None, \
              'nz':None, 'nr':None, 'epor':None, 'dp':'cm2/s', \
-                'w':None, 'm':'g', 'vl':'L', 't_end':'h'}
+                'w':None, 'm':'g', 'vl':'L', 't_end':'s'}
     
     correct_idx = {'rhop':'RHOP', 'qm':'Qm', 'ebed':'EBED', 'l':'L', 'kl':'kL',\
                    'ds':'Ds', 'qf':'Qf', 'dp':'Dp', 'epor':'EPOR', 'vl':'VL', \
