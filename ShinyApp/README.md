@@ -13,19 +13,24 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 1. R/R Studio (At least version 2022.7)
 2. Excel (recommended)
 3. Files: HSDMI_IX.R, config.xlsx
-4. Optional: example_input_small.xlsx(5 ions, concentrations specified in ng/L), 
-example_input_medium.xlsx (9 ions, concentrations specified in ng/L)
+4. Optional: example.xlsx
 
 ## Excel-based Input File
-TThe input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
+The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
     <img src="DocumentPics/excelsheet.png"
          alt="Excel Input">
-    <figcaption>The excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.</figcaption>
+    <figcaption>The excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.
+    * Dp and Dp_units are provided in example input files. These are required for PSDM-IX modeling but will be ignored for HSDM-IX modeling.
+    </figcaption>
 </figure>
 
 &nbsp;
+
+## Available Models
+* HSDM-IX: Homogeneous Suface Diffision Model - Used for gel-type resin systems
+* PSDM-IX: Pore and Surface Diffusion Model - Used for macroporous resin systems
 
 ## Quick Start
 
