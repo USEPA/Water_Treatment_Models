@@ -1344,7 +1344,7 @@ ui <- fluidPage(
                                        column(2, textOutput("Q")),
                                        column(2,shinyWidgets::autonumericInput(
                                          inputId = "Qv",
-                                         label="Resin Capacity",
+                                         label="",
                                          value = 1400, 
                                          decimalPlaces = 2,
                                          digitGroupSeparator = ",",
@@ -2258,7 +2258,7 @@ server <- function(input, output, session) {
       write.xlsx(paramdf(), file, sheetName="params",append=TRUE, row.names=FALSE)
       write.xlsx(iondat(), file, sheetName="ions",append=TRUE, row.names=FALSE)
       write.xlsx(cindat(), file, sheetName="Cin", append=TRUE, row.names=FALSE)
-      write.xlsx(effdata(), file, sheetName="effluent", append=TRUE, row.names=FALSE)
+      write.xlsx(effluentdat(), file, sheetName="effluent", append=TRUE, row.names=FALSE)
       write.xlsx(outputsave(), file, sheetName="model results", append=TRUE, row.names=FALSE)
     }
   )
