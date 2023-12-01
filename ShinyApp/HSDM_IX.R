@@ -502,7 +502,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 
 process_files <- function (file) {
   
-  effluent<-data.frame(hours=c(0), conc=c(0), name=c("CHLORIDE"))
+  effluent<-data.frame(hours=c(0), CHLORIDE=c(0))
   
   params<-read_xlsx(file, sheet="params")
   ions<-read_xlsx(file, sheet="ions")
