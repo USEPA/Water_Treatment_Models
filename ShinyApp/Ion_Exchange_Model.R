@@ -1341,56 +1341,27 @@ ui <- fluidPage(
                                      
                                      #--------------------------Resin Characteristics-------------------------------#                                     
                                      fluidRow(
-                                       
                                        column(3,),
-                                       column(1,   tags$head(tags$style(HTML("div#inlin label { width: 0%; }
-                               div#inlin input { display: inline-block; width: 0%;}"))),
-                                              
-                                              tags$style(type="text/css", ".inline label{ display: table-cell; text-align: center; vertical-align: middle; }
-                                   .inline .form-group { display: table-row;}")
-                                       ),
-                                       
-                                       tags$div(id="inline1", class="inline", shinyWidgets::autonumericInput(
-                                           inputId = "Qv",
-                                           label="Resin Capcity",
-                                           value = 1400,
-                                           width=1,
-                                           decimalPlaces = 2,
-                                           digitGroupSeparator = ",",
-                                           decimalCharacter = ".")),
-                                       # column(2,shinyWidgets::autonumericInput(
-                                       #   inputId = "Qv",
-                                       #   label="",
-                                       #   value = 1400, 
-                                       #   decimalPlaces = 2,
-                                       #   digitGroupSeparator = ",",
-                                       #   decimalCharacter = ".")),
+                                       column(2, textOutput("Q")),
+                                       column(2,shinyWidgets::autonumericInput(
+                                         inputId = "Qv",
+                                         label="",
+                                         value = 1400, 
+                                         decimalPlaces = 2,
+                                         digitGroupSeparator = ",",
+                                         decimalCharacter = ".")),
                                        column(3, selectInput("qunits", "", c("meq/L")))), 
                                      
                                      fluidRow(
                                        column(3, textOutput("RC")),
-                                       column(1,  tags$head(tags$style(HTML("div#inlin label { width: 5%; }
-                               div#inlin input { display: inline-block; width: 85%;}"))),
-                                              
-                                              tags$style(type="text/css", ".inline label{ display: table-cell; text-align: center; vertical-align: middle; }
-                                   .inline .form-group { display: table-row;}")
-                                       ),
-                                       
-                                       tags$div(id="inline1", class="inline", shinyWidgets::autonumericInput(
-                                         inputId = "EBEDv",
-                                         label="Bed Porosity",
-                                         value = 0.0337,
-                                         width=1,
+                                       column(2, textOutput("rb")),
+                                       column(2, shinyWidgets::autonumericInput(
+                                         inputId = "rbv",
+                                         label="",
+                                         value = 0.03375, 
                                          decimalPlaces = 5,
                                          digitGroupSeparator = ",",
                                          decimalCharacter = ".")),
-                                       # column(2, shinyWidgets::autonumericInput(
-                                       #   inputId = "rbv",
-                                       #   label="",
-                                       #   value = 0.03375, 
-                                       #   decimalPlaces = 5,
-                                       #   digitGroupSeparator = ",",
-                                       #   decimalCharacter = ".")),
                                        column(3, selectInput("rbunits", "", c("cm", "m", "mm", "in", "ft")))
                                      ),
                                      
@@ -1401,7 +1372,6 @@ ui <- fluidPage(
                                          inputId = "EBEDv",
                                          label="",
                                          value = 0.35, 
-                                         width=1,
                                          currencySymbolPlacement = "p",
                                          decimalPlaces = 3,
                                          digitGroupSeparator = ",",
@@ -1414,7 +1384,7 @@ ui <- fluidPage(
                                        column(3, ),
                                        
                                        column(2, uiOutput("EPOR")),
-
+                                       
                                        column(2, shinyWidgets::autonumericInput(
                                          inputId = "EPORv",
                                          label="",
