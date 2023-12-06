@@ -91,6 +91,7 @@ velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft
 timevector <- c("hr","day")
 flowratevector<-c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")
 diametervector<-c("cm", "m", "mm", "in", "ft")
+modelvector<-c("HSDM", "PSDM")
 
 
 #------------------------------------------------------------------------------#
@@ -972,7 +973,7 @@ PSDMIX_prep<-function(input, iondata, concdata, nt_report){
   paramdataframe<-data.frame(name=c("Q", "EBED", "EPOR", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
                               value=c(input$Qv,
                                       input$EBEDv,
-                                      input$EPORvalue,
+                                      input$EPORv,
                                       input$Lv*length_conv[input$LengthUnits],
                                       Vv,
                                       input$rbv*length_conv[input$rbunits], NA, NA,
@@ -1312,7 +1313,7 @@ ui <- fluidPage(
              tabPanel("Input", 
                       sidebarLayout(
                         sidebarPanel(
-                          selectInput("model", "Ion Exchange Method", c("HSDMIX", "PSDMIX")),
+                          selectInput("model", "Model Selection", c("HSDM", "PSDM")),
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                           textOutput("reject"),
                           textOutput("OutputConcentration"),
@@ -1644,7 +1645,7 @@ server <- function(input, output, session) {
   # })
   
   observe({
-    toggleState("EPORv", condition=input$model!="HSDMIX")
+    toggleState("EPORv", condition=input$model!="HSDM")
   })
   
 
@@ -1841,6 +1842,25 @@ server <- function(input, output, session) {
   #vector to start
   #with the users input.
   
+  # modelvector2<-reactive({c(filter(paramsheet(), name=="model")$value, modelvector)})
+  # modelvector3<-reactive({unique(modelvector2())})
+  # #observe({print(chosenmodel())})
+  # observe({print(modelvector2())})
+  # observe({print(modelvector3())})
+  # print("paramsheet")
+  #observe({print(paramsheet())})
+  # print("modelv")
+  #observe({print(modelv())})
+  
+  modelvec<-reactive({
+    
+    model<-c(filter(paramsheet(), name=="model")$value, modelvector)
+    updatedmodel<-unique(model)
+    
+    updatedmodel
+    
+  })
+  
   
   lengthvector2<-reactive({c(filter(paramsheet(), name=="L")$units, lengthvector)})
   lengthvector3<-reactive({unique(lengthvector2())})
@@ -1855,6 +1875,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "rbunits", choices=rbvector2())
     updateSelectInput(session, "LengthUnits", choices=lengthvector3())
     updateSelectInput(session, "timeunits2", choices=timevector3())
+    updateSelectInput(session, "model", choices=modelvec())
   })
   
   observe({
@@ -1978,28 +1999,28 @@ server <- function(input, output, session) {
   out<-reactiveVal()
   
   observeEvent(input$run_button, {
-    if(input$model=="HSDMIX"){
+    if(input$model=="HSDM"){
       out(HSDMIX_prep(input, iondat(), cindat(), nt_report))
     }
     else{
       out(PSDMIX_prep(input, iondat(), cindat(), nt_report))
     }
   })
+  
+  observe({print(out())})
  
   
   # find outlet indices
   outlet_id <- reactive({dim(out()[[2]])[4]})
   liquid_id <- reactive({dim(out()[[2]])[2]})
-  
-  observe({print(out())})
-  
-  
+
+
   #------------------------------------------------------------------------------#
-  #                 IEX CONCENTRATION OUTPUT DATAFRAME                           
+  #                 IEX CONCENTRATION OUTPUT DATAFRAME
   #------------------------------------------------------------------------------#
   ### TODO: add better error handling HSDMIX_prep can now return an 'error' value which is an integer, or the full data
   #### only want to proceed if it isn't an error state
-  
+
   timeframe<-reactive({data.frame(hours=out()[[1]])})
   allchemicalconcs<-list()
 
