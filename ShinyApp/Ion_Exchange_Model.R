@@ -1918,9 +1918,9 @@ server <- function(input, output, session) {
   #IONS TAB DATA HANDLING#
   #------------------------------------------------------------------------------#  
   
-  
-  iondat<- dataEditServer("edit-1", data = "ionsheet.csv") 
+  iondat<- dataEditServer("edit-1", data = "ionsheet.csv")
   dataOutputServer("output-1", data = iondat)
+  
   
   #------------------------------------------------------------------------------#
   #CIN TAB DATA HANDLING#
@@ -1949,14 +1949,14 @@ server <- function(input, output, session) {
   
   
   #convert cindat to meq if it is not already
-  cin_hours_meq<-reactive({cin_correct(iondat(), cindat_hours())})
-  cin_hours_mgl<-reactive({mass_converter_mgl(iondat(), cindat_hours())})
+  cin_hours_meq<-eventReactive(input$run_button,{cin_correct(iondat(), cindat_hours())})
+  cin_hours_mgl<-eventReactive(input$run_button,{mass_converter_mgl(iondat(), cindat_hours())})
   
   #When the file is first uploaded the influent data and simulated data both have
   #the same names, so to differentiate them I rename them to chemical_influent 
   #with this function
-  cin_hours_meq_renamer<-reactive({influent_chemical_renamer(cin_hours_meq(), cindat_hours())})
-  cin_hours_mgl_renamer<-reactive({influent_chemical_renamer(cin_hours_mgl(), cindat_hours())})
+  cin_hours_meq_renamer<-eventReactive(input$run_button, {influent_chemical_renamer(cin_hours_meq(), cindat_hours())})
+  cin_hours_mgl_renamer<-eventReactive(input$run_button, {influent_chemical_renamer(cin_hours_mgl(), cindat_hours())})
   
   #The cin tab is now in the correct units and named appropriately. Gather then 
   #brings them to a shape that makes it easy to convert and easy to plot
@@ -1964,8 +1964,8 @@ server <- function(input, output, session) {
   #result, so the time is Seperated out and then reattached in 
   #cindat_meq_hours_preprepped
   
-  cin_meq_hours_prep<-reactive({influent_organizer(cin_hours_meq_renamer(), cindat_hours())})
-  cin_mgl_hours_prep<-reactive({influent_organizer(cin_hours_mgl_renamer(), cindat_hours())})
+  cin_meq_hours_prep<-eventReactive(input$run_button,{influent_organizer(cin_hours_meq_renamer(), cindat_hours())})
+  cin_mgl_hours_prep<-eventReactive(input$run_button,{influent_organizer(cin_hours_mgl_renamer(), cindat_hours())})
   
   
   
