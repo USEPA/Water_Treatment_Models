@@ -1022,7 +1022,7 @@ PSDMIX_prep<-function(input, iondata, concdata, nt_report){
       corr_ions[item, 'Ds'] <- iondata[item, 'Ds'] * ds_conv[iondata[item, 'Ds_units']]
 
       # Dp units are the same as Ds
-      #corr_ions[item, 'Dp'] <- iondata[item, 'Dp'] * ds_conv[iondata[item, 'Dp_units']]
+      corr_ions[item, 'Dp'] <- iondata[item, 'Dp'] * ds_conv[iondata[item, 'Dp_units']]
 
     }
   }
@@ -2007,7 +2007,6 @@ server <- function(input, output, session) {
     }
   })
   
-  observe({print(out())})
  
   
   # find outlet indices
