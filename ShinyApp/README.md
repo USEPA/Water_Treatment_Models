@@ -26,7 +26,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 <figure>
      <img src="DocumentPics/excelsheet2.PNG"
          alt="Excel Input">
-     <figcaption>The excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.
+     <figcaption>The Excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.
     * Dp and Dp_units are provided in example input files. These are required for PSDM modeling but will be ignored for HSDM modeling.
     </figcaption>
 </figure>
