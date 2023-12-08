@@ -5,15 +5,11 @@ Created on Wed May 20 08:10:32 2020
 @author: BDATSOV
 """
 
-###### 
-
-
-
 import pandas as pd
 import numpy as np
 import sys
 
-
+pd.options.mode.chained_assignment = None 
 
 def lowerEntries(item):    
     '''
@@ -122,8 +118,8 @@ def conv_volume(u_in, u_out, label, caller):
 
 
 def conv_time(u_in, u_out, label, caller):
-    units = ['days','hours','min','sec','m','s','h','d', 'hr', 'day', 'hour']
-    coefs = [1. , 24., 24.*60., 24*60*60, 24.*60., 24*60*60, 24., 1., 24., 1., 24.]
+    units = ['days','hours','min','sec','m','s', 'seconds', 'h','d', 'hr', 'day', 'hour']
+    coefs = [1. , 24., 24.*60., 24*60*60, 24.*60., 24*60*60, 24*60*60, 24., 1., 24., 1., 24.]
     cv, u_in, u_out = conv_units(u_in,u_out, units, coefs, label, caller)
     
     return cv, u_in, u_out
@@ -256,8 +252,8 @@ def conv_fr_to_vel(u_in, u_out, diam, diam_u, label, caller):
 def conv_conc(u_in, u_out, label, caller, **kwargs):
     MW = kwargs.get('MW', 1.)
     val = kwargs.get('val', 1.)
-    units = ['meq', 'mg', 'ug', 'ng', 'mgN', 'mgC']
-    coefs = [1, MW/val, 1000.*MW/val, 1.0e6*MW/val, 14.001/val, 12.011/val]
+    units = ['meq', 'mg', 'ug', 'ng', 'mgN', 'mgC', 'eq', 'g']
+    coefs = [1, MW/val, 1000.*MW/val, 1.0e6*MW/val, 14.001/val, 12.011/val, 1/1000, 1/1000*MW/val]
     cv, u_in, u_out = conv_units(u_in, u_out, units, coefs, label, caller)
     return cv, u_in, u_out
 
@@ -273,7 +269,6 @@ def conv_capacity_mass(u_in, u_out, label, caller, **kwargs):
     wght = []
     for var in vars_lst:
         if '/' in var:
-#            print(var.split('/'))
             conc.append(var.split('/')[0])
             wght.append(var.split('/')[1])
         elif 'gpm' in var:
@@ -295,7 +290,6 @@ def conv_capacity_vol(u_in, u_out, label, caller, **kwargs):
     vol = []
     for var in vars_lst:
         if '/' in var:
-#            print(var.split('/'))
             conc.append(var.split('/')[0])
             vol.append(var.split('/')[1])
         elif 'gpm' in var:
@@ -312,8 +306,6 @@ def conv_capacity_vol(u_in, u_out, label, caller, **kwargs):
     return cv, u_in, u_out
 
 cap_factor = conv_capacity_mass('meq/g','meq/kg', '','')
-
-#cap_factor = conv_capacity_vol('meq/ml','meq/L', 10., 1.,'','')
 
     
 def conv_database(data_in, u_in, u_out, conv_fn, MW, val):
@@ -332,10 +324,9 @@ def conv_database(data_in, u_in, u_out, conv_fn, MW, val):
             ***the keys must be the same for all dictionaries***
     '''
     for u in u_in.keys():
-#        tmp_conv_fn = conv_fn[u]
         args = {'MW':MW[u], 'val':val[u]}
         cf, u_in[u], u_out[u] = conv_fn(u_in[u], u_out[u], u, u, **args)
-        data_in[u] *= cf
+        data_in[u] = cf * data_in[u]
         
     return data_in, u_in, u_out
 
@@ -429,23 +420,25 @@ def conv_params_data(data):
     u_in = {}
     
     u_out = {'time':'s', 'rhop':'g/ml', 'rb':'cm', 'kl':'cm/s', \
-             'ds':'cm2/s', 'v':'cm/s', 'qm':'meq/kg', 'l':'cm', \
+              'ds':'cm2/s', 'v':'cm/s', 'qm':'meq/kg', 'l':'cm', \
              'flrt':'cm3/s', 'diam':'cm', 'qf':'meq/L', 'ebed':None, \
-             'nz':None, 'nr':None, 'epor':None, 'dp':'cm2/s','ph':None}
+             'nz':None, 'nr':None, 'epor':None, 'dp':'cm2/s', \
+                'w':None, 'm':'g', 'vl':'L', 't_end':'s'}
     
     correct_idx = {'rhop':'RHOP', 'qm':'Qm', 'ebed':'EBED', 'l':'L', 'kl':'kL',\
-                   'ds':'Ds', 'qf':'Qf', 'dp':'Dp', 'epor':'EPOR','ph':'pH'}
+                   'ds':'Ds', 'qf':'Qf', 'dp':'Dp', 'epor':'EPOR', 'vl':'VL', \
+                    'vr':'VR','t_end':'t_end'}
     
     u_fn = {'time':conv_time, 'rhop':conv_dens, 'rb':conv_length, 'kl':conv_vel, \
              'ds':conv_area_per_time, 'v':conv_vel, 'qm':conv_capacity_mass, \
              'flrt':conv_vol_per_time, 'l':conv_length, 'diam':conv_length, \
              'qf':conv_capacity_vol, 'ebed':conv_the_same, 'nz':conv_the_same, \
              'nr':conv_the_same, 'epor':conv_the_same, 'dp':conv_area_per_time, \
-                'ph':conv_the_same}
+                'w':conv_the_same, 'm':conv_weight, 'vl':conv_volume, \
+                    't_end':conv_time}
     
     
     for p in params_Dct.keys():
-        p = p.lower()
         u_in[p] = params_Dct[p]['units']
         u_out[p] = u_out[p]
         u_fn[p] = u_fn[p]
@@ -456,22 +449,34 @@ def conv_params_data(data):
     ####################################
     # check for velocity in parameters #
     ####################################
-    
-    if 'v' not in params_out.index:
-        flrt_f, u_in_fr, u_out_fr = conv_fr_to_vel(low_data.loc['flrt','units'], 'cm/s', \
-                                low_data.loc['diam','value'], \
-                                low_data.loc['diam','units'], '', '')    
-    
-        flrt_cv = params_out.loc['flrt','value']*flrt_f
+    if 'v' in params_out.index or 'flrt' in params_out.index:
+
+        if 'v' not in params_out.index:
+            flrt_f, u_in_fr, u_out_fr = conv_fr_to_vel(low_data.loc['flrt','units'], 'cm/s', \
+                                    low_data.loc['diam','value'], \
+                                    low_data.loc['diam','units'], '', '')    
         
-        v_row = pd.DataFrame([[flrt_cv, 'cm/s']], columns = ['value', 'units'], \
-                             index = ['v'])
+            flrt_cv = params_out.loc['flrt','value']*flrt_f
             
-        params_out = pd.concat([params_out, v_row], axis=0)
+            v_row = pd.DataFrame([[flrt_cv, 'cm/s']], columns = ['value', 'units'], \
+                                index = ['v'])
+                
+            params_out = pd.concat([params_out, v_row], axis=0)
+        else:
+            params_out = params_out
+            if 'flrt' in params_out.index:
+                print('The linear velocity has been used instead of the flow rate.')
     else:
-        params_out = params_out
-        if 'flrt' in params_out.index:
-            print('The linear velocity has been used instead of the flow rate.')
+        '''
+        If velocity of flow rate are not provided assumed is a batch model simulation
+        Calculate VR and add it to the params dataframe
+        '''
+        vr = (1-params_out.loc['w','value'])*params_out.loc['m','value']/\
+            params_out.loc['rhop','value']/1.0E3
+        vr_row = pd.DataFrame([[vr, 'L']], columns = ['value', 'units'], \
+                                index = ['VR'])
+        params_out = pd.concat([params_out, vr_row], axis=0)
+    
     
     Q_dict = dict_from_data(params_out, 'value')
 
@@ -481,6 +486,7 @@ def conv_params_data(data):
                              index = ['Q'])
 
     params_out = pd.concat([params_out, q_row], axis=0)
+    
        
     for cp in correct_idx.keys():
         params_out.rename(index={cp:correct_idx[cp]}, inplace=True)

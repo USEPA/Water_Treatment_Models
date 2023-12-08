@@ -30,8 +30,6 @@ software code related to this project to any federal grant or cooperative
 agreement.
          
 """
-import mkl
-mkl.set_num_threads(1)
 import warnings
 warnings.simplefilter("ignore")
 
@@ -39,18 +37,13 @@ from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
-# from numpy import interp
 import pandas as pd
 import scipy as sp
-# from scipy import special
 from scipy.integrate import quad, solve_ivp
 from scipy.interpolate import interp1d
 from scipy.stats import linregress
-# from scipy.optimize import minimize
 import multiprocessing as mp
 import time as ti #time as a variable is used in code, so ti is used
-
-# import stopit # used to kill runs that take too long in analyze_all #consider getting rid of stopit....
 
 #Read in all associated PSDM functions
 from PSDM_functions import min_per_day, lpg, spar_Jac, foul_params, kf_calc
@@ -58,9 +51,6 @@ from PSDM_functions import find_minimum_df, tortuosity, calc_solver_matrix
 from PSDM_functions import density, viscosity, recalc_k, generate_grid
 from PSDM_functions import interp 
 from PSDM_functions import process_input_data, process_input_file
-# from PSDM_functions import *
-# from PSDM_functions import find_minimum_df
-# from PSDM_tools import *
 
 def run_MP_helper(test_column, k, invN, compound, k_mult):
     mp.freeze_support()
@@ -131,7 +121,6 @@ class PSDM():
             
             
         '''
-        # mp.freeze_support()
         self.project_name = kw.get('project_name','PSDM')
         
         #collocation initilazation
@@ -332,7 +321,6 @@ class PSDM():
         
         else:
             print('mass_transfer input must be a dictionary: {compound: {kf|dp|ds: value}}')
-        # print(self.mass_transfer)
         
 # =============================================================================
 # end __init__
@@ -389,7 +377,6 @@ class PSDM():
             return data_store
         
     def __calculate_capacity(self, compound):
-        # print(compound)
         flow = self.flrt * self.flow_mult
         breakthrough_code = 'none'
         carbon_mass = self.wt
@@ -491,7 +478,7 @@ class PSDM():
                     if m > 0:
                         intersection = (infl.mean() - b)/m
                     else:
-                        intersection = self.duration#np.max(xt) #aveC
+                        intersection = self.duration
                     
                     breakthrough_time = intersection
                     breakthrough_code = 'estimated'
@@ -505,8 +492,7 @@ class PSDM():
                
                 if breakthrough_time <= np.max(xdata):
                     xdata_trunc = xdata[xdata <= breakthrough_time]
-                    # print(xdata_trunc)
-                    num_vals = len(xdata_trunc)#.shape[0]
+                    num_vals = len(xdata_trunc)
                     f_effl = interp1d(xdata[:num_vals+1], yte[:num_vals+1], fill_value='extrapolate')
                 else:
                     f_effl = interp1d(xdata, yte, fill_value='extrapoloate')
@@ -586,7 +572,7 @@ class PSDM():
                        quad(f_effl, 0, intersection)[0]
                         
                 q_meas = flow * self.t_mult * qtmp * self.mass_mul /\
-                         (carbon_mass) #* self.mass_mul# ug/g
+                         (carbon_mass) # ug/g
                 k = q_meas / ((aveC * self.mass_mul) ** self.xn) 
                 
             breakthrough_code = 'supplied'
@@ -648,7 +634,7 @@ class PSDM():
         inf = self.data_df[self.influent][compound]
         eff = self.data_df[self.carbon][compound] 
         #convert cbo to molar values
-        cbo = inf * self.mass_mul / mw #/ 1000. #(* self.mass_mult ????)
+        cbo = inf * self.mass_mul / mw 
         time = (inf.index * t_mult).values
         if inf.index[-1] < 10 and self.time_type == 'days':
             dstep = 15.
@@ -685,14 +671,13 @@ class PSDM():
         if compound == 'Test':
             kf_v = self.k_data['Test']['kf'] #will break
             
-        cout = eff * self.mass_mul / mw / cb0 #/ 1000.
+        cout = eff * self.mass_mul / mw / cb0 
         
         if self.mass_transfer[compound]['dp'] == 0.:
-            dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
+            dp_v = (difl/(tortu))       #porosity not used in AdDesignS appendix, removed to match
         else:
             dp_v = self.mass_transfer[compound]['dp']
         
-        # @stopit.threading_timeoutable()
         def run(k_val, xn):
             nonlocal cinf
             nonlocal cout_f
@@ -791,7 +776,7 @@ class PSDM():
                 # #defines the influent concentration at time t
                 cinfl = interp(cinfA[idx: idx+2], extra) # 
                 
-                z = ym * y0tmp[:nc, :mc] #* ym #updated ym should always be 1 for single comp.
+                z = ym * y0tmp[:nc, :mc] #updated ym should always be 1 for single comp.
                 qte = z
                 yt0 = xni * z
                 
@@ -815,7 +800,6 @@ class PSDM():
                 
                 ww = wr[:nd]@bb
 
-                # ydot[:nd,:] = bb
                 ydot[:nd,1:] = bb[:, 1:]
             
                 ydot[nc-1][0] = (stdv*dgI*(cinfl - cpore[nc-1][0]) - ww[0])/\
@@ -839,7 +823,6 @@ class PSDM():
                 # defines interpolating function of predicted effluent
                 cp_tmp = y.y[-1]
                 cp_tmp[cp_tmp < 0.] = 0.#sets negative values to 0.
-                # cp_tmp[cp_tmp > np.max(cin)*3.] = np.max(cin)*3. #sets the max to 5x cb0
                 cp = interp1d(y.t, cp_tmp, fill_value='extrapolate') 
                 self.ydot = y.y * cb0 * mw / self.mass_mul
                 self.yt = y.t / tconv / t_mult
@@ -857,7 +840,6 @@ class PSDM():
         
         def run_fit(k_val, xn):
             cp, ssq = run(k_val, xn)
-            # cp, ssq = run(k_val, xn, timeout=self.timeout)
             return ssq
         
         if self.optimize_flag:
@@ -876,15 +858,13 @@ class PSDM():
             best_fit, _ = run(best_val_k, best_val_xn)
             min_val = min_val.values[0][0]
             
-            writer = pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx')
-            ssqs.to_excel(writer, 'Sheet1')
-            writer.save()
+            with pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx') as writer:
+                ssqs.to_excel(writer, 'Sheet1')
         
         else: #assume test_range and xn_range are single values
             best_val_xn = self.xn_range[0]
             best_val_k = self.test_range[0]
             best_fit, min_val = run(best_val_k, best_val_xn)
-            # best_fit, min_val = run(best_val_k, best_val_xn, timeout=self.timeout)
             ssqs = pd.DataFrame(min_val, columns=[best_val_xn],\
                                 index=[best_val_k])
         
@@ -902,16 +882,15 @@ class PSDM():
                      index = ['Sc','Re','difl','kf','K','1/n','dp','ds','ssq','ebct','sf'])
         
         if self.optimize_flag:
-            writer = pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') #'-'+repr(round(best_val_xn,2))
+            with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer: #'-'+repr(round(best_val_xn,2))
 
-            model_data.to_excel(writer, 'model_fit')
-            
-            inf.to_excel(writer, 'influent')
-            eff.to_excel(writer, 'effluent')
-            data_tmp.to_excel(writer, 'parameters')
-
-            ti.sleep(1)
-            writer.save()
+                model_data.to_excel(writer, 'model_fit')
+                
+                inf.to_excel(writer, 'influent')
+                eff.to_excel(writer, 'effluent')
+                data_tmp.to_excel(writer, 'parameters')
+    
+                ti.sleep(1)
             
         return compound, best_val_k, best_val_xn, ssqs, model_data
     #end kfit
@@ -989,9 +968,9 @@ class PSDM():
         if compound == 'Test':
             kf_v = self.k_data['Test']['kf'] #will break
             
-        cout = eff * self.mass_mul / mw / cb0 #/ 1000.
+        cout = eff * self.mass_mul / mw / cb0 
         
-        dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
+        dp_v = (difl/(tortu))       #porosity not used in AdDesignS appendix, removed to match
         ds_base = 1. #set up for nonlocal
         
         # @stopit.threading_timeoutable()
@@ -1086,7 +1065,7 @@ class PSDM():
                 q0[np.logical_not(np.isfinite(q0))] = 0.
                 z[np.logical_not(np.isfinite(z))] = 0.
                 
-                cpore = z * q0**xni # * (molar_k / molar_k_t)**xni
+                cpore = z * q0**xni 
                 cpore[np.logical_or.reduce((qte<=0.,\
                                             yt0<=0,\
                                             xni*np.log10(q0)<-20,\
@@ -1123,7 +1102,7 @@ class PSDM():
                 # defines interpolating function of predicted effluent
                 cp_tmp = y.y[-1]
                 cp_tmp[cp_tmp < 0.] = 0.#sets negative values to 0.
-                cp_tmp[cp_tmp > np.max(cin)*3.] = np.max(cin)*3. #sets the max to 5x cb0
+                cp_tmp[cp_tmp > np.max(cin)*3.] = np.max(cin)*3. #sets the max to 3x cb0
                 cp = interp1d(y.t, cp_tmp, fill_value='extrapolate') 
             except Exception:# as e:
                 t_temp = np.linspace(0, ttol, 20)
@@ -1134,7 +1113,6 @@ class PSDM():
         def run_fit(ds_mult):
             #passes a ds_multiplier, rather than ds directly
             cp = run(ds_mult)
-            # cp = run(ds_mult, timeout=self.timeout)
             ssq = ((cout_f(time_dim2)-cp(time_dim2))**2).sum()
             return ssq
         
@@ -1149,14 +1127,12 @@ class PSDM():
             best_fit = run(min_val.index[0])
             min_val = min_val.values[0]
             
-            writer = pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx')
-            ssqs.to_excel(writer, 'Sheet1')
-            writer.save()
+            with pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx') as writer:
+                ssqs.to_excel(writer, 'Sheet1')
         
         else: #assume test_range and xn_range are single values
             best_val_ds = self.test_range[0] * ds_base
             best_fit = run(best_val_ds)
-            # best_fit = run(best_val_ds, timeout=self.timeout)
             min_val = 1e2 #run_fit(best_val_k, best_val_xn)
             ssqs = pd.Series(min_val, index=[best_val_ds])
         
@@ -1165,25 +1141,25 @@ class PSDM():
                               best_fit(itp) * cb0 * mw / \
                               self.mass_mul, \
                               fill_value='extrapolate')
-        writer = pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') 
+            
+        with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer:
         
-        model_data = pd.DataFrame(output_fit(itp/tconv), \
-                                  columns = ['data'], \
-                                  index = itp/tconv/t_mult)
-        model_data.to_excel(writer, 'model_fit')
-        
-        inf.to_excel(writer, 'influent')
-        eff.to_excel(writer, 'effluent')
-        
-        data_tmp = pd.Series([sc, self.re, difl, kf_v, self.k_data[compound]['K'],\
-                              self.k_data[compound]['1/n'], dp_v, \
-                              best_val_ds, min_val, self.ebct, self.sf], \
-                              index = ['Sc','Re','difl','kf','K','1/n','dp',\
-                                       'ds','ssq','ebct','sf'])
-        data_tmp.to_excel(writer, 'parameters')
-        if self.optimize_flag:
-            ti.sleep(1)
-            writer.save()
+            model_data = pd.DataFrame(output_fit(itp/tconv), \
+                                      columns = ['data'], \
+                                      index = itp/tconv/t_mult)
+            model_data.to_excel(writer, 'model_fit')
+            
+            inf.to_excel(writer, 'influent')
+            eff.to_excel(writer, 'effluent')
+            
+            data_tmp = pd.Series([sc, self.re, difl, kf_v, self.k_data[compound]['K'],\
+                                  self.k_data[compound]['1/n'], dp_v, \
+                                  best_val_ds, min_val, self.ebct, self.sf], \
+                                  index = ['Sc','Re','difl','kf','K','1/n','dp',\
+                                           'ds','ssq','ebct','sf'])
+            data_tmp.to_excel(writer, 'parameters')
+            if self.optimize_flag:
+                ti.sleep(1)
             
         return compound, best_val_ds, ssqs, model_data, ds_base
     #end dsfit
@@ -1330,7 +1306,6 @@ class PSDM():
                 if xn_grid < des_xn:
                     #can reduce search space
                     grid_num_xn = 3
-                    # xn_grid = des_xn * 1 # might be unnecessary
                     if idx_xn == max_idx_xn:
                         grid_num_xn = 2
                         xn_rng_tmp[0] = xn_rng_tmp[1] - des_xn 
@@ -1341,7 +1316,6 @@ class PSDM():
                 if k_grid < des_k:
                     #can reduce seach space
                     grid_num_k = 3
-                    # k_grid = des_k * 1. # might be unnecessary
                     if idx_k == max_idx_k:
                         grid_num_k = 2
                         k_rng_tmp[0] = k_rng_tmp[1] - des_k 
@@ -1382,23 +1356,21 @@ class PSDM():
                 plt.close()
             
             if save_file:
-                writer = pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx")
-                ssqs.to_excel(writer, 'Sheet1')
-                writer.save()
+                with pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx") as writer:
+                    ssqs.to_excel(writer, 'Sheet1')
                 
-                writer = pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
-                                        compound+'.xlsx')
+                with pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
+                                        compound+'.xlsx') as writer:
             
-                md.to_excel(writer, 'model_fit')
-                
-                inf.to_excel(writer, 'influent')
-                eff.to_excel(writer, 'effluent')
-                
-                data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
-                             min_val, self.ebct, self.sf], \
-                             index=['Re','K','1/n','ssq','ebct','sf'])
-                data_tmp.to_excel(writer, 'parameters')
-                writer.save()
+                    md.to_excel(writer, 'model_fit')
+                    
+                    inf.to_excel(writer, 'influent')
+                    eff.to_excel(writer, 'effluent')
+                    
+                    data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
+                                 min_val, self.ebct, self.sf], \
+                                 index=['Re','K','1/n','ssq','ebct','sf'])
+                    data_tmp.to_excel(writer, 'parameters')
             
             self.k_data[compound]['K'] = best_val_k
             self.k_data[compound]['1/n'] = best_val_xn
@@ -1459,7 +1431,6 @@ class PSDM():
             _, _, _, ssqs, _ = self.run_psdm_kfit(compound)
             
             if status_print:
-            # if True:
                 output = ssqs.values[0][0]
                 if output > 1e-3:
                     printer = np.round(output,3)
@@ -1471,7 +1442,6 @@ class PSDM():
             
             return ssqs.values[0][0]
         
-        # dtypes = [('k',float),('1/n',float),('ssq',float)]
         opt_flg = self.optimize_flag
         orig_test_range = self.test_range * 1.
         orig_xn_range = np.round(self.xn_range * 1.,5)
@@ -1505,7 +1475,6 @@ class PSDM():
             min_k_factor = k_factor * (1 - perc_pm)
             
             #test xn range
-            # print('Searching 1/n space')
             decreasing = True
             correct_direction = False
             sign = 1
@@ -1551,7 +1520,6 @@ class PSDM():
             
             # increment k_range, assume best_xn is correct
             if pm > 0:
-                # print('Additional K-space Search')
                 if num==0:
                     #prevents div/zero error
                     num=1
@@ -1567,7 +1535,6 @@ class PSDM():
                     ssq = min_fun(x0, compound, k_val, q_val)
                     
                     if ssq < best_ssq:
-                        # best_xn = xn * 1
                         best_k_factor = pmk * 1
                         best_ssq = ssq * 1
                         decreasing = True
@@ -1589,7 +1556,6 @@ class PSDM():
                         ssq = min_fun(x0, compound, k_val, q_val)
                         
                         if ssq < best_ssq:
-                            # best_xn = xn * 1
                             best_k_factor = pmk * 1
                             best_ssq = ssq * 1
                             decreasing = True
@@ -1620,7 +1586,6 @@ class PSDM():
                 correct_direction = False
                 sign = 1
                 pmk = best_k_factor + sign * des_k # initiates xn
-                # count_check = 0
                 
                 while pmk <= max_k_factor and decreasing:
                     count = 0
@@ -1648,7 +1613,7 @@ class PSDM():
                     pmk = best_k_factor + sign * des_k # initiates xn
                     decreasing = True
                     
-                    while pmk >= min_k_factor and decreasing:# and pmk > 0.:
+                    while pmk >= min_k_factor and decreasing:
                         count = 0
                         for xn in new_xn_range:
                             x0 = [pmk, xn]
@@ -1703,10 +1668,9 @@ class PSDM():
             need to add save file handler. 
             currently not implimented
             '''
-            writer = pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx')
-            self.k_data.to_excel(writer, 'Sheet1')
-            writer.save()
-            pass
+            # writer = pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx')
+            with pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx') as writer:
+                self.k_data.to_excel(writer, 'Sheet1')
         
         #reset original values
         self.optimize_flag = opt_flg
@@ -1821,7 +1785,7 @@ class PSDM():
                     ### should this be before or after the fouling? 
             
             if water_type != 'Organic Free':
-                ds_v /= 1e10 #1e6  #original code =1e-30, but this caused instability
+                ds_v /= 1e10  #original code =1e-30, but this caused instability
             
             d = (ds_v/dp_v)[self.compounds]
             
@@ -1843,8 +1807,8 @@ class PSDM():
             edp = (dp_v*dgp*tau/(rad**2))[self.compounds]
                         
             # from orthog(n)
-            beds = (eds + d*edp) * edd# * br[:-1]
-            bedp = edp * (1. - d) * edd# * br[:-1]
+            beds = (eds + d*edp) * edd
+            bedp = edp * (1. - d) * edd
             
             #depends on kf
             st = (kf_v * (1. -ebed) * tau/(ebed*rad))[self.compounds]
@@ -1973,8 +1937,7 @@ class PSDM():
                            
                 ww2 = np.matmul(wr_A[:,:nd].reshape((self.num_comps,1,nd)),
                                 bb2)
-                
-                # ydot2[:,:nd,:] = bb2
+                              
                 ydot2[:,:nd,1:] = bb2[:,:,1:]
                 
                 num = (cinfl - cpore2[:,nc-1,0]).reshape(TwoDSize)
@@ -2144,9 +2107,7 @@ class PSDM():
                                              aggfunc=np.max,
                                              )['ssq']
             
-            # print(np.round(ssqs.min().min(),6), np.round(ssqs.max().max(),6))
             if ~np.isclose(ssqs.min().min(), ssqs.max().max()):# np.floor(ssqs.values[0][0]):
-                # print('I am here')
             
                 min_val = find_minimum_df(ssqs)
                 best_val_xn = min_val.columns[0]
@@ -2181,23 +2142,21 @@ class PSDM():
                     plt.close()
                 
                 if save_file:
-                    writer = pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx")
-                    ssqs.to_excel(writer, 'Sheet1')
-                    writer.save()
+                    with pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx") as writer:
+                        ssqs.to_excel(writer, 'Sheet1')
                     
-                    writer = pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
-                                            compound+'.xlsx')
+                    with pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
+                                            compound+'.xlsx') as writer:
                 
-                    md.to_excel(writer, 'model_fit')
-                    
-                    inf.to_excel(writer, 'influent')
-                    eff.to_excel(writer, 'effluent')
-                    
-                    data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
-                                  min_val, self.ebct, self.sf], \
-                                  index=['Re','K','1/n','ssq','ebct','sf'])
-                    data_tmp.to_excel(writer, 'parameters')
-                    writer.save()
+                        md.to_excel(writer, 'model_fit')
+                        
+                        inf.to_excel(writer, 'influent')
+                        eff.to_excel(writer, 'effluent')
+                        
+                        data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
+                                      min_val, self.ebct, self.sf], \
+                                      index=['Re','K','1/n','ssq','ebct','sf'])
+                        data_tmp.to_excel(writer, 'parameters')
                 
                 self.k_data[compound]['K'] = best_val_k * 1
                 self.k_data[compound]['1/n'] = best_val_xn * 1

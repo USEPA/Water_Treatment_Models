@@ -14,7 +14,7 @@ srt_dir = os.getcwd()
 
 import numpy as np
 import pandas as pd
-import pylab as plt
+import matplotlib.pyplot as plt
 plt.close('all') # can be commented out, this just closes any previously generated graphics
 
 
@@ -60,7 +60,7 @@ compounds, carbons, = PSDM.process_input_file(fn,\
 print('Output files are saved to folder with example files')
 print('Running Example 1\n','-'*50)
 # File to write out results    
-writer = pd.ExcelWriter('Example_TCE_' + carbons[0] + '_example1.xlsx')
+xlsx_fn1 = 'Example_TCE_' + carbons[0] + '_example1.xlsx'
 
 for comp in compounds:
     print(comp)
@@ -97,10 +97,9 @@ for comp in compounds:
     plt.close()
     
     tab2 = 'model-'+comp
-    results.to_excel(writer, sheet_name=tab2)
+    with pd.ExcelWriter(xlsx_fn1, engine='openpyxl') as writer:
+        results.to_excel(writer, sheet_name=tab2)
 
-#must save writer to actually store .xlsx file    
-writer.save()
 
 # =============================================================================
 # Example 1(a) - changing concentration of influent
@@ -110,7 +109,8 @@ print('\nRunning Example 1a - Changing Concentration\nMultiple EBCT\n','-'*50)
 raw_data2 = raw_data * 1.
 raw_data2[column.influent] = 5000 # 5ppm, rather than 50 ppm in original file
 
-writer = pd.ExcelWriter('Example_TCE_' + carbons[0] + '_example1a.xlsx')
+xlsx_fn1a = 'Example_TCE_' + carbons[0] + '_example1a.xlsx'
+
 
 for comp in compounds:
     print(comp)
@@ -167,10 +167,12 @@ for comp in compounds:
     plt.close()
     
     tab2 = 'model-'+comp
-    results.to_excel(writer, sheet_name=tab2)
+    
+    with pd.ExcelWriter(xlsx_fn1a, engine='openpyxl') as writer:
+        results.to_excel(writer, sheet_name=tab2)
 
-#must save writer to actually store .xlsx file    
-# writer.save()
+
+
 
 # =============================================================================
 # Example 2 - variable influent
@@ -185,7 +187,7 @@ compounds, carbons, = PSDM.process_input_file(fn,\
                                                column_sheet='columnSpecs'
                                               )
 
-writer = pd.ExcelWriter('Example_TCE_' + carbons[0] + '_example2.xlsx')
+xlsx_fn2 = 'Example_TCE_' + carbons[0] + '_example2.xlsx'
 
 chem_type = 'halogenated alkanes'
 water_type = 'Rhine'
@@ -247,10 +249,10 @@ for comp in compounds:
     plt.close()
     
     tab2 = 'model-'+comp
-    results.to_excel(writer, sheet_name=tab2)
+    with pd.ExcelWriter(xlsx_fn2, engine='openpyxl') as writer:
 
-#must save writer to actually store .xlsx file    
-writer.save()
+        results.to_excel(writer, sheet_name=tab2)
+
 
 
 # =============================================================================

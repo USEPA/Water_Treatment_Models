@@ -26,8 +26,6 @@ agreement.
 
 """
 
-# import mkl
-# mkl.set_num_threads(1)
 import warnings
 warnings.simplefilter("ignore")
 
@@ -263,7 +261,8 @@ def process_input_file(filename, data_sheet='data',\
         else:
             new_lvl.append(i)
 
-    rawdata_df.columns.set_levels(new_lvl, level=0, inplace=True)
+    rawdata_df.columns = rawdata_df.columns.set_levels(new_lvl, level=0)
+
     return rawdata_df, column_data, compounds, carbons
 
 def process_column_data(filename):
@@ -447,8 +446,9 @@ def process_raw_data_new(filename, rept_lim=0):
             new_lvl.append(carbons[0])
         else:
             new_lvl.append(i)
-            
-    rawdata_df.columns.set_levels(new_lvl, level=0, inplace=True)
+    
+    
+    rawdata_df.columns = rawdata_df.columns.set_levels(new_lvl, level=0)
     
     return rawdata_df, column_data, compounds, carbons
 
@@ -530,7 +530,7 @@ def calc_solver_matrix(nr, nz, ne):
         loopq = [2*(i+1)-3 for i in range(1,nc)]
         loopc = [2*(i+1)-4 for i in range(1,nc)]
         cfac = np.array([2*i for i in range(1,nc)])
-        loopd = loopq[:-1]#[2*(i+1)-5 for i in range(2,nc)]
+        loopd = loopq[:-1]
         dfac = np.array([(2*i-2)*(2*i-4+ia) for i in range(3,nc+1)])
     
         for j in range(nd):
@@ -889,7 +889,6 @@ def spar_Jac(ncomp, nr, nz, ne):
                 right2 = sparse.bsr_matrix((nz_tot, nz_tot))
                 right3 = right2
             right_mat = sparse.bmat([[right1],[right2]])
-            #sparse.spdiags(low_diag, -(nr-1)*(nz_tot), bead_num, nz_tot)
             right_mat = sparse.bmat([[right_mat], [right3]])
             
             mat1 = sparse.bmat([[mat2, right_mat]])

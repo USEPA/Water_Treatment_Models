@@ -301,12 +301,8 @@ if __name__ == "__main__":
     # =============================================================================
 
     #replicating MWH - Crittenden's example 15-14
-
     c = calc_mesh_diameter()
-    # print(c)
-
     c = calc_mesh_diameter(mesh='140x200')
-    # print(c)
 
     lc = build_large_scale_column(L=[83.3, 'cm'],
                                   diam=[5.1, 'cm'],

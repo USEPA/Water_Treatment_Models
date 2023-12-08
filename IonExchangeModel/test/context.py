@@ -5,4 +5,4 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import ixpy
-from ixpy import hsdmix, psdmix
+from ixpy import hsdmix, psdmix, hsdmixbatch, psdmixbatch
