@@ -1842,15 +1842,6 @@ server <- function(input, output, session) {
   #vector to start
   #with the users input.
   
-  # modelvector2<-reactive({c(filter(paramsheet(), name=="model")$value, modelvector)})
-  # modelvector3<-reactive({unique(modelvector2())})
-  # #observe({print(chosenmodel())})
-  # observe({print(modelvector2())})
-  # observe({print(modelvector3())})
-  # print("paramsheet")
-  #observe({print(paramsheet())})
-  # print("modelv")
-  #observe({print(modelv())})
   
   modelvec<-reactive({
     
