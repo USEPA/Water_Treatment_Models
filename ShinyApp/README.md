@@ -19,7 +19,7 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
-    <img src="DocumentPics/excelsheet.png"
+    <img src="DocumentPics/excelsheet.PNG"
          alt="Excel Input">
 </figure>
 
