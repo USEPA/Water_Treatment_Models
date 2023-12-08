@@ -30,8 +30,8 @@ software code related to this project to any federal grant or cooperative
 agreement.
          
 """
-import mkl
-mkl.set_num_threads(1)
+# import mkl
+# mkl.set_num_threads(1)
 import warnings
 warnings.simplefilter("ignore")
 
