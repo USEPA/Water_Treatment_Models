@@ -64,7 +64,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ![Run](DocumentPics/Slide5.PNG)
 
-7.	Switch to the output tab (There should be a loading “spinner” to let you know it’s running)
+7.	Switch to the Output tab (There should be a loading “spinner” to let you know it’s running)
 
 ![waiting](DocumentPics/Slide6.PNG)
 
@@ -72,7 +72,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ![plot](DocumentPics/Slide7.PNG)
 
-9. The user can use the buttons on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
+9. The user can use the check boxes on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
 
 ![plottraces](DocumentPics/Slide8.PNG)
 
