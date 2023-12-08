@@ -79,7 +79,9 @@ The parameters tab is used to describe the physical constraints of the resin cha
 |---            				|---       |---            |
 |Resin Capacity 				|     Q    | Resin capacity is a measurement of the total capacity of anions that can be absorbed by a volume of resin. This capacity is expressed in molar quantity per unit volume (meq/L, molar equivalent per liter). The value is determined experimentally by titration. It is usually reported by the manufacturer.  [Read More](https://pubs.acs.org/doi/10.1021/acsestwater.2c00572)    |
 |Bead Radius    				|     rb   | Bead radius is the measurement of the distance of the bead resin from the center to the surface.              |        
-|Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent. A well packed bed with spherical resin beads will typically have an EBED of approximatley 0.35.             |        
+|Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent. A well packed bed with spherical resin beads 
+will typically have an EBED of approximatley 0.35.             |        
+|Bead Porosity | EPOR | The bead porosity is the measure of the bead volume occupied by a solvent, usually water. The factor is between 0 and 1, where 0 represents a bead absent of a solvent and 1 is a bead where all the available space is filled with a solvent. A well packed bead will typically have and EPOR of 0.2. |
 |Length         				|     L    |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor. |        
 |Velocity  					|     v    | The linear velocity, or superficial velocity, represents the distance an average water particle travels over a given period of time. HSDM-IX only considers an average of steady-state condition, not variable flow.     |    
 |Diameter 				|     diam    |  The diameter of a cylindrical column.             |        
@@ -102,8 +104,10 @@ The Ions tab contains information about the ions to be simulated. The Ions tab s
 |Valence                            | valence          |The number of electrons that a given element or chemical can lose.                |
 |Film Transfer Coefficient      |kL         |Film transfer diffusion coefficient. Mass transfer coefficient in the boundary of the beads                            |
 |kL_units|   kL_units | Units for kL (acceptable inputs: cm/s or m/s)|
-|Surface Diffusion Coefficient  |Ds         |Diffusion coefficient of the chemical in the media                                |
+|Surface Diffusion Coefficient  |Ds         |Diffusion coefficient of the chemical in gel-type media (HSDM), or along the media surface in macroporous media (PSDM)  |      
 |Ds_units|  Ds_units| Units for Ds (acceptable inputs: cm^2/s or m^2/s) |
+| Pore Diffusion Coefficient | Dp | Diffusion coefficient of the chemical in the water within pores of a macroporous media (PSDM). Unused in HSDM.|
+|Dp_units| Dp_units| Units for Dp (acceptable inputs: cm^2/s or m^2/s) |
 |Concentration units| conc_units| Units of corresponding concentration units in Cin. (acceptable units: meq, mg, ug, ng) All assumed to be per liter.|
 
 ### Concentration Points / Influent Data
