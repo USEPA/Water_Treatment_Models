@@ -263,7 +263,9 @@ def process_input_file(filename, data_sheet='data',\
         else:
             new_lvl.append(i)
 
-    rawdata_df.columns.set_levels(new_lvl, level=0, inplace=True)
+
+    rawdata_df.columns = rawdata_df.columns.set_levels(new_lvl, level=0)#, inplace=True)
+
     return rawdata_df, column_data, compounds, carbons
 
 def process_column_data(filename):
@@ -447,8 +449,9 @@ def process_raw_data_new(filename, rept_lim=0):
             new_lvl.append(carbons[0])
         else:
             new_lvl.append(i)
-            
-    rawdata_df.columns.set_levels(new_lvl, level=0, inplace=True)
+    
+    
+    rawdata_df.columns = rawdata_df.columns.set_levels(new_lvl, level=0)#, inplace=True)
     
     return rawdata_df, column_data, compounds, carbons
 

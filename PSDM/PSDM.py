@@ -876,9 +876,8 @@ class PSDM():
             best_fit, _ = run(best_val_k, best_val_xn)
             min_val = min_val.values[0][0]
             
-            writer = pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx')
-            ssqs.to_excel(writer, 'Sheet1')
-            writer.save()
+            with pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx') as writer:
+                ssqs.to_excel(writer, 'Sheet1')
         
         else: #assume test_range and xn_range are single values
             best_val_xn = self.xn_range[0]
@@ -902,16 +901,15 @@ class PSDM():
                      index = ['Sc','Re','difl','kf','K','1/n','dp','ds','ssq','ebct','sf'])
         
         if self.optimize_flag:
-            writer = pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') #'-'+repr(round(best_val_xn,2))
+            with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer: #'-'+repr(round(best_val_xn,2))
 
-            model_data.to_excel(writer, 'model_fit')
-            
-            inf.to_excel(writer, 'influent')
-            eff.to_excel(writer, 'effluent')
-            data_tmp.to_excel(writer, 'parameters')
-
-            ti.sleep(1)
-            writer.save()
+                model_data.to_excel(writer, 'model_fit')
+                
+                inf.to_excel(writer, 'influent')
+                eff.to_excel(writer, 'effluent')
+                data_tmp.to_excel(writer, 'parameters')
+    
+                ti.sleep(1)
             
         return compound, best_val_k, best_val_xn, ssqs, model_data
     #end kfit
@@ -1149,9 +1147,8 @@ class PSDM():
             best_fit = run(min_val.index[0])
             min_val = min_val.values[0]
             
-            writer = pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx')
-            ssqs.to_excel(writer, 'Sheet1')
-            writer.save()
+            with pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx') as writer:
+                ssqs.to_excel(writer, 'Sheet1')
         
         else: #assume test_range and xn_range are single values
             best_val_ds = self.test_range[0] * ds_base
@@ -1165,25 +1162,25 @@ class PSDM():
                               best_fit(itp) * cb0 * mw / \
                               self.mass_mul, \
                               fill_value='extrapolate')
-        writer = pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') 
+            
+        with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer:
         
-        model_data = pd.DataFrame(output_fit(itp/tconv), \
-                                  columns = ['data'], \
-                                  index = itp/tconv/t_mult)
-        model_data.to_excel(writer, 'model_fit')
-        
-        inf.to_excel(writer, 'influent')
-        eff.to_excel(writer, 'effluent')
-        
-        data_tmp = pd.Series([sc, self.re, difl, kf_v, self.k_data[compound]['K'],\
-                              self.k_data[compound]['1/n'], dp_v, \
-                              best_val_ds, min_val, self.ebct, self.sf], \
-                              index = ['Sc','Re','difl','kf','K','1/n','dp',\
-                                       'ds','ssq','ebct','sf'])
-        data_tmp.to_excel(writer, 'parameters')
-        if self.optimize_flag:
-            ti.sleep(1)
-            writer.save()
+            model_data = pd.DataFrame(output_fit(itp/tconv), \
+                                      columns = ['data'], \
+                                      index = itp/tconv/t_mult)
+            model_data.to_excel(writer, 'model_fit')
+            
+            inf.to_excel(writer, 'influent')
+            eff.to_excel(writer, 'effluent')
+            
+            data_tmp = pd.Series([sc, self.re, difl, kf_v, self.k_data[compound]['K'],\
+                                  self.k_data[compound]['1/n'], dp_v, \
+                                  best_val_ds, min_val, self.ebct, self.sf], \
+                                  index = ['Sc','Re','difl','kf','K','1/n','dp',\
+                                           'ds','ssq','ebct','sf'])
+            data_tmp.to_excel(writer, 'parameters')
+            if self.optimize_flag:
+                ti.sleep(1)
             
         return compound, best_val_ds, ssqs, model_data, ds_base
     #end dsfit
@@ -1382,23 +1379,21 @@ class PSDM():
                 plt.close()
             
             if save_file:
-                writer = pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx")
-                ssqs.to_excel(writer, 'Sheet1')
-                writer.save()
+                with pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx") as writer:
+                    ssqs.to_excel(writer, 'Sheet1')
                 
-                writer = pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
-                                        compound+'.xlsx')
+                with pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
+                                        compound+'.xlsx') as writer:
             
-                md.to_excel(writer, 'model_fit')
-                
-                inf.to_excel(writer, 'influent')
-                eff.to_excel(writer, 'effluent')
-                
-                data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
-                             min_val, self.ebct, self.sf], \
-                             index=['Re','K','1/n','ssq','ebct','sf'])
-                data_tmp.to_excel(writer, 'parameters')
-                writer.save()
+                    md.to_excel(writer, 'model_fit')
+                    
+                    inf.to_excel(writer, 'influent')
+                    eff.to_excel(writer, 'effluent')
+                    
+                    data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
+                                 min_val, self.ebct, self.sf], \
+                                 index=['Re','K','1/n','ssq','ebct','sf'])
+                    data_tmp.to_excel(writer, 'parameters')
             
             self.k_data[compound]['K'] = best_val_k
             self.k_data[compound]['1/n'] = best_val_xn
@@ -1703,10 +1698,9 @@ class PSDM():
             need to add save file handler. 
             currently not implimented
             '''
-            writer = pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx')
-            self.k_data.to_excel(writer, 'Sheet1')
-            writer.save()
-            pass
+            # writer = pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx')
+            with pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx') as writer:
+                self.k_data.to_excel(writer, 'Sheet1')
         
         #reset original values
         self.optimize_flag = opt_flg
@@ -2181,23 +2175,21 @@ class PSDM():
                     plt.close()
                 
                 if save_file:
-                    writer = pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx")
-                    ssqs.to_excel(writer, 'Sheet1')
-                    writer.save()
+                    with pd.ExcelWriter(f"ssq_{self.carbon}-{compound}.xlsx") as writer:
+                        ssqs.to_excel(writer, 'Sheet1')
                     
-                    writer = pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
-                                            compound+'.xlsx')
+                    with pd.ExcelWriter(self.project_name+'_'+self.carbon + '-' + \
+                                            compound+'.xlsx') as writer:
                 
-                    md.to_excel(writer, 'model_fit')
-                    
-                    inf.to_excel(writer, 'influent')
-                    eff.to_excel(writer, 'effluent')
-                    
-                    data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
-                                  min_val, self.ebct, self.sf], \
-                                  index=['Re','K','1/n','ssq','ebct','sf'])
-                    data_tmp.to_excel(writer, 'parameters')
-                    writer.save()
+                        md.to_excel(writer, 'model_fit')
+                        
+                        inf.to_excel(writer, 'influent')
+                        eff.to_excel(writer, 'effluent')
+                        
+                        data_tmp = pd.Series([self.re, best_val_k, best_val_xn,\
+                                      min_val, self.ebct, self.sf], \
+                                      index=['Re','K','1/n','ssq','ebct','sf'])
+                        data_tmp.to_excel(writer, 'parameters')
                 
                 self.k_data[compound]['K'] = best_val_k * 1
                 self.k_data[compound]['1/n'] = best_val_xn * 1
