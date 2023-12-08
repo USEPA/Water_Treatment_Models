@@ -7,7 +7,6 @@ library(plotly)
 library(shinyjs)
 library(tidyr)
 library(DataEditR)
-library(shinyWidgets)
 library(colorBlindness)
 library(xlsx)
 
@@ -27,7 +26,7 @@ library(xlsx)
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
-                          #unit conversions
+#unit conversions
 #------------------------------------------------------------------------------#
 ## length
 m2cm<-100                               #meters to centimeters
@@ -66,7 +65,7 @@ k2<-10^(-10.43)
 #~~~~~~~~~~~~~~~~~~~ end unit conversions
 
 #------------------------------------------------------------------------------#
-                          #conversion dictionaries
+#conversion dictionaries
 #------------------------------------------------------------------------------#
 ##set up dictionaries   ### IF new values are added to drop-downs, must also be added here
 length_conv <- c("m"=m2cm, "cm"=cm2cm, "mm"=mm2cm, "in"=in2cm, "ft"=ft2cm)
@@ -92,10 +91,11 @@ velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft
 timevector <- c("hr","day")
 flowratevector<-c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")
 diametervector<-c("cm", "m", "mm", "in", "ft")
+modelvector<-c("HSDM", "PSDM")
 
 
 #------------------------------------------------------------------------------#
-                                #HSDMIX Function
+#HSDMIX Function
 #------------------------------------------------------------------------------#
 
 # Inputs ----
@@ -477,21 +477,220 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 }
 
 #------------------------------------------------------------------------------#
-                                #PSDMIX Function
+#PSDMIX Function
 #------------------------------------------------------------------------------#
 
+PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
+  NR <- filter(params, name == "nr")$value # numer of grid points along bead radius
+  NZ <- filter(params, name == "nz")$value # number of grid points along column axis.
+  
+  Q <- filter(params, name == "Q")$value # meq/L in resin beads
+  L <- filter(params, name == "L")$value # bed depth (cm)
+  v <- filter(params, name == "v")$value # superficial flow velocity (cm/s)
+  EBED <- filter(params, name == "EBED")$value # bed porosity
+  EPOR <- filter(params, name == "EPOR")$value # pellet porosity
+  rb <- filter(params, name == "rb")$value # bead radius (cm)
+  
+  # Ion info
+  # Presaturant ion (reference ion A) listed first
+  ion_names <- ions$name
+  KxA <- ions$KxA
+  valence <- ions$valence 
+  
+  # mass transport paramters
+  kL <- ions$kL # film transfer (cm/s)
+  Ds <- ions$Ds # surface diffusion (sq. cm/s)
+  Dp <- ions$Dp # pore diffusion (sq. cm/s)
+  
+  # XXX: Obviously, we will want to load influent concentrations in a more R-idiomatic way. 
+  # This is basically Fortran77 :/.
+  C_in_t <- data.matrix(Cin)
+  
+  # Derived parameters ----
+  Nt_interp <- dim(C_in_t)[1]
+  NION <- length(ion_names)
+  LIQUID <- NR + 1 # mnemonic device
+  
+  C_in_t[, 1] <- C_in_t[, 1] * inputtime # convert time specification from hours to seconds
+  
+  
+  t_max = C_in_t[Nt_interp, 1]
+  times <- seq(0.0, t_max*0.99, length.out = nt_report) # seconds
+  # times is just a bit short of hours_max to avoid problems with the interpolator.
+  
+  # XXX: Unfortunately, I can't find  whether deSolve has any way to provide the the timesteps the integrator actually takes
+  # so we have to manually define the time scales for the inorganic ions and/or the longer eluting compounds.
+  # This is super annoying for troubleshooting BDF or Radau computations 
+  # and really inefficient+inconvenient for stiff problems in general.
+  
+  C_in_0 <- C_in_t[1, 2:(NION+1)] # initial influent concentration (meq/L)
+  CT <- sum(C_in_0) # total charge equivalent concentration in feed
+  EBCT <- L/v # empty bed contact time.
+  tc <- 1.0 # characteristic time # vestigial?
+  NEQ <- (NR+1) * NION * NZ
+  grid_dims = c((NR+1), NION, NZ)
+  
+  dv_ions <- valence == 2
+  mv_ions <- valence == 1
+  mv_ions[1] <- FALSE # exclude presaturant (refrence ion)
+  
+  # Interpolating functions ----
+  # for tracking C_in during integration.
+  interp_list <- vector(mode = "list", length = NION)
+  for (ii in 1:NION){
+    interp_list[[ii]] <- approxfun(C_in_t[ , 1], y = C_in_t[ , ii+1])
+  }
+  
+  # Initialize grid ----
+  # Liquid phase is index (NR+1)
+  x0 <- array(0.0, grid_dims)
+  x0[LIQUID, , 1] <- C_in_0 # set inlet concentrations
+  x0[LIQUID, 1, 2:NZ] <- CT  # Rest of liquid in column is full of presaturant
+  x0[1:NR, 1, ] <- Q # resin intially loaded with presaturant
+  dim(x0) <- c(NEQ)
+  
+  # collocation ----
+  colloc <- rad_colloc(NR)
+  BR <- colloc[[1]]  # 1-d radial Laplacian
+  WR <- colloc[[2]]  # Gauss-Radau quadrature weights
+  AZ <- ax_colloc(NZ) # 1st derivative along Z
+  
+  
+  # Derivative function ----
+  diffun <- function(t, x, parms){
+    
+    dim(x) <- grid_dims
+    C <- x[LIQUID, , ]
+    Y <- x[1:NR, , ]
+    q <- Y / (1 - EPOR)
+    
+    
+    CT_test <- colSums(C)
+    
+    # update influent concentrations
+    for (ii in 1:NION){
+      C[ii, 1] <- interp_list[[ii]](t)
+    }
+    
+    # advection collocation intermediate step
+    AZ_C <- array(0.0, c(NION, NZ))
+    for (ii in 1:NION) {
+      AZ_C[ii, ] <- AZ%*%C[ii, ]
+    }
+    
+    
+    dx_dt <- array(0.0, grid_dims)
+    
+    Cpore <- array(0.0, c(NR, NION, NZ))
+    
+    
+    if (2 %in% valence){
+      # divalent isotherm
+      for (jj in 1:NR){
+        for (ii in 2:NZ){
+          cc <- -CT_test[ii] 
+          bb <- 1 + (1/q[jj, 1, ii]) * sum(q[jj, mv_ions, ii]/KxA[mv_ions])
+          aa <- (1/q[jj,1,ii]**2) * q[jj,dv_ions, ii] / KxA[dv_ions]
+          denom <- -bb - sqrt(bb**2 - 4 * aa * cc)
+          Cpore[jj,1, ii] <- 2 * cc / denom
+        }
+        
+        for (ii in 2:NION){
+          Cpore[jj, ii, 2:NZ] <- q[jj, ii, 2:NZ]/KxA[ii]*(Cpore[jj, 1, 2:NZ]/q[jj, 1, 2:NZ])**valence[ii]
+        }
+      }
+      
+      
+    } else {
+      # monovalent isotherm  
+      sum_terms <- array(0.0, c(NZ))
+      
+      for (jj in 1:NR){
+        for (ii in 2:NZ) {
+          sum_terms[ii] <- sum(q[jj, ,ii] / KxA) / CT_test[ii]
+        }
+        
+        for (ii in 2:NION) {
+          Cpore[jj, ii, 2:NZ] <- q[jj, ii, 2:NZ] / KxA[ii] / sum_terms[2:NZ]
+        }
+      }
+    }
+    
+    C_star <- Cpore[NR, , ]  
+    
+    
+    J <- array(0.0, c(NION, NZ))  
+    for (ii in 2:NION) {
+      J[ii , 2:NZ] <- -kL[ii] * (C[ii , 2:NZ] - C_star[ii , 2:NZ])
+    }  
+    # surface flux calculation
+    J[1, 2:NZ] <- - colSums(J[2:NION, 2:NZ]) # Implicitly calculate reference ion
+    
+    Jas <- 3 / rb * J
+    
+    dx_dt[LIQUID, , 2:NZ] <- (- v / L * AZ_C[ ,2:NZ] + (1 - EBED) * Jas[ ,2:NZ]) / EBED * tc 
+    
+    
+    # internal diffusion (XXX: loops computationally slow)
+    BR_Y <- array(0.0, c(NR, NION, NZ))
+    BR_Cpore <- array(0.0, c(NR, NION, NZ))
+    for (ii in 1:NION){
+      for (jj in 2:NZ){
+        BR_Y[ , ii, jj] <- BR%*%Y[ , ii, jj]
+        BR_Cpore[ , ii, jj] <- BR%*%Cpore[ , ii, jj]
+      }
+    }
+    
+    
+    dY_dt <- array(0.0, c(NR, NION, NZ))
+    for (ii in 2:NION){
+      dY_dt[ , ii, ] <- tc * (EPOR * (Dp[ii] - Ds[ii]) * BR_Cpore[ , ii, ] + Ds[ii] * BR_Y[ , ii, ]) / rb**2
+    }
+    
+    for (ii in 1:(NR-1)){
+      dY_dt[ii, 1, 2:NZ] <- -colSums(dY_dt[ii, 2:NION, 2:NZ]) # Implicitly calculate reference ion
+    }
+    
+    surf_term <- array(0.0, c(NION, NZ))
+    for (ii in 1:NION){
+      for (jj in 2:NZ){
+        surf_term[ii, jj] <- WR[1:(NR-1)]%*%dY_dt[1:(NR-1), ii, jj]
+      }
+    }
+    
+    dx_dt[NR, , 2:NZ] <- (-tc / rb * J[ , 2:NZ] - surf_term[ , 2:NZ])/WR[NR]
+    dx_dt[1:(NR-1), , 2:NZ] <- dY_dt[1:(NR-1), , 2:NZ]
+    
+    list(dx_dt) # return derivatives
+  }
+  
+  # Integration ----
+  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "bdf")
+  # XXX: is there something we can do with diagnose(out) ?
+  
+  t_out = out[ , 1]/60/60 # hours
+  x_out = out[ , 2:(NEQ+1)]
+  dim(x_out) <- c(nt_report, (NR+1), NION, NZ)
+  
+  # Check charge blances at outlet at end of simulation XXX: Maybe move inside of HSDMIX?
+  stopifnot(all.equal(sum(x_out[nt_report, NR, , NZ]), Q))
+  stopifnot(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))
+  #stopifnot(all.equal(sum(x_out[nt_report, LIQUID, , NZ]), CT)) # XXX: TODO: tricky for timevarying infl.
+  
+  return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
+}
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 
 
 #------------------------------------------------------------------------------#
-                              #FUNCTION LIBRARY
+#FUNCTION LIBRARY
 #------------------------------------------------------------------------------#
 
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
-                              #process_files
+#process_files
 # process_files is a function that reads in the input file, then splits each 
 # page into 3 csv files and saves them separate. This may seem unnecessary at
 # first, but the reason we do this is because the package DataEditR can only 
@@ -502,7 +701,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 
 process_files <- function (file) {
   
-  effluent<-data.frame(hours=c(0), CHLORIDE=c(0))
+  effluent<-data.frame(hours=(0), CHLORIDE=(0))
   
   params<-read_xlsx(file, sheet="params")
   ions<-read_xlsx(file, sheet="ions")
@@ -517,26 +716,26 @@ process_files <- function (file) {
   #Has no intention of plotting it, which makes tryCatch useful ehre
   
   tryCatch({
-
+    
     eff<-read_xlsx(file, sheet='effluent')
     write.csv(eff, "effluent.csv", row.names=FALSE)
-
-    },
-
-    warning=function(war){
-      #pass
-    },
-    error=function(err){
-
-      write.csv(effluent, "effluent.csv", row.names=FALSE)
-
+    
+  },
+  
+  warning=function(war){
+    #pass
+  },
+  error=function(err){
+    
+    write.csv(effluent, "effluent.csv", row.names=FALSE)
+    
   })
   
 }
 
 
 #------------------------------------------------------------------------------#
-                          #Create Plotly
+#Create Plotly
 #This function is used to create the plot for just the ions. 
 #frame1 = Computed Data
 #frame2 = Effluent Data
@@ -544,7 +743,7 @@ process_files <- function (file) {
 #------------------------------------------------------------------------------#
 
 create_plotly<-function(frame1, frame2, frame3){
-
+  
   
   #Create a subset of data that 
   counterionframe<-subset(frame1, name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE"))
@@ -553,8 +752,8 @@ create_plotly<-function(frame1, frame2, frame3){
   
   #Using the curated data, plot
   counterionfig<-plot_ly(counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
-       add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
-       add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
+    add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
+    add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
   
   return(counterionfig)
   
@@ -568,7 +767,7 @@ create_plotly2<-function(frame1, frame2, frame3){
   ionframe<-subset(frame1, !(name %in% c("CHLORIDE", "SULFATE", "NITRATE", "BICARBONATE")))
   ioneff<-subset(frame2, !(name %in% c("CHLORIDE_effluent", "SULFATE_effluent", "NITRATE_effluent", "BICARBONATE_effluent")))
   ioninfluent<-frame3
-
+  
   ionfig<-plot_ly(ionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name)%>%
     add_trace(data=ioneff, x=~hours, y=~conc, mode='markers')%>%
     add_trace(data=ioninfluent, x=~hours, y=~conc, mode='lines+markers')
@@ -579,7 +778,7 @@ create_plotly2<-function(frame1, frame2, frame3){
 
 
 #------------------------------------------------------------------------------#
-                              #Bed Volume
+#Bed Volume
 #------------------------------------------------------------------------------#
 
 get_bv_in_sec <- function(input) {
@@ -682,7 +881,7 @@ influent_organizer<-function(influent, influent_hours){
 
 
 #------------------------------------------------------------------------------#
-                                  #HSDMIX Prep
+#HSDMIX Prep
 #This function makes sure that the appropriate data frames are created
 #and that they have the converted values 
 #------------------------------------------------------------------------------#
@@ -738,7 +937,7 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
   if (error == 0) {
     corr_cin <- cin_correct(iondata, concdata)
     for (item in 1:nrow(iondata)) {
-
+      
       ### TODO: Need to check the mass transfer unit conversions
       ## convert kL to cm/s
       corr_ions[item, 'kL'] <- iondata[item, 'kL'] * kL_conv[iondata[item, 'kL_units']]
@@ -752,8 +951,88 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
   
   timeconverter <- time_conv[input$timeunits2]  ### TODO: Is this really necessary, or doing what we think it is doing? 
   
+  
   if (error == 0) {
     return (HSDMIX_solve(paramdataframe, corr_ions, corr_cin, timeconverter, nt_report))
+  } else {
+    return (error)
+  }
+}
+
+
+
+PSDMIX_prep<-function(input, iondata, concdata, nt_report){
+  # prepare paramdataframe for use by HSDMIX_solve
+  if (input$veloselect == 'Linear') {
+    Vv = input$Vv*velocity_conv[input$VelocityUnits]
+  } else {
+    Vv = input$Fv * volumetric_conv[input$FlowrateUnits]/(pi/4 * ((input$Dv * length_conv[input$DiameterUnits])**2))
+  }
+  
+  
+  paramdataframe<-data.frame(name=c("Q", "EBED", "EPOR", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
+                              value=c(input$Qv,
+                                      input$EBEDv,
+                                      input$EPORv,
+                                      input$Lv*length_conv[input$LengthUnits],
+                                      Vv,
+                                      input$rbv*length_conv[input$rbunits], NA, NA,
+                                      input$nrv,
+                                      input$nzv, 1),
+                              units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, NA, input$timeunits)
+                              )
+  
+  
+  # check that ions and concdata match
+  error <- 0
+  for (item in 1:nrow(iondata)) {
+    ## checking ions are in concentration
+    if (!(iondata[item, 'name'] %in% colnames(concdata))) {
+      print(paste0(iondata[item, 'name'], " not found in Concentration Data Columns"))
+      error <- error + 1
+    }
+  }
+
+  for (item in colnames(concdata)) {
+    ## checking concentration ions in ion list
+    if (item != "time") {
+      if (!(item %in% iondata[, 'name'])) {
+        print(paste0(item, " not found in Ion Data"))
+        error <- error + 1
+      }
+    }
+  }
+
+  print(paste0("Number of errors: ", error))
+
+  ## replicate inputs, will change in next section
+  corr_ions <- iondata
+  corr_cin <- concdata
+
+  ## we now know that compounds are in both lists, assuming error == 0
+  if (error == 0) {
+    corr_cin <- cin_correct(iondata, concdata)
+    for (item in 1:nrow(iondata)) {
+
+      ### TODO: Need to check the mass transfer unit conversions
+      ## convert kL to cm/s
+      corr_ions[item, 'kL'] <- iondata[item, 'kL'] * kL_conv[iondata[item, 'kL_units']]
+
+      ## convert Ds to cm/s^2
+      corr_ions[item, 'Ds'] <- iondata[item, 'Ds'] * ds_conv[iondata[item, 'Ds_units']]
+
+      # Dp units are the same as Ds
+      corr_ions[item, 'Dp'] <- iondata[item, 'Dp'] * ds_conv[iondata[item, 'Dp_units']]
+
+    }
+  }
+
+
+  timeconverter <- time_conv[input$timeunits2]  ### TODO: Is this really necessary, or doing what we think it is doing?
+
+  
+  if (error == 0) {
+    return (PSDMIX_solve(paramdataframe, corr_ions, corr_cin, timeconverter, nt_report))
   } else {
     return (error)
   }
@@ -824,7 +1103,7 @@ effluent_cc0<-function(effluent, ions, c0values){
 
 
 #------------------------------------------------------------------------------#
-                          #cc0 Conversion function
+#cc0 Conversion function
 #------------------------------------------------------------------------------#
 
 
@@ -937,10 +1216,10 @@ ui <- fluidPage(
   tags$html(class = "no-js", lang="en"),
   tags$head(
     tags$link(rel="stylesheet", media="all", href="https://www.epa.gov/themes/epa_theme/css/styles.css?r6lsex")),
-  
+
   # Site Header
   #This HTML code is a speical theme that makes it look like an EPA app
-  
+
   HTML(
     '
     <div>
@@ -972,7 +1251,7 @@ ui <- fluidPage(
             </a>
             <button class="usa-menu-btn usa-button l-header__menu-button">Menu</button>
           </div>
-         
+
       <div class="l-header__nav">
         <nav class="usa-nav usa-nav--epa" role="navigation" aria-label="EPA header navigation">
           <div class="usa-nav__inner">
@@ -984,7 +1263,7 @@ ui <- fluidPage(
             <div class="usa-nav__menu">
                <ul class="menu menu--main">
                 <li class="menu__item"><a href="https://github.com/David-Cola/David-Cola.github.io" class="menu__link">Ion Exchange Model</a></li>
-                
+
               </ul>
             </div>
           </div>
@@ -993,73 +1272,74 @@ ui <- fluidPage(
     </header>
     <main id="main" class="main" role="main" tabindex="-1">'
   ),
-  
+
   tags$head(
     tags$style(HTML('.navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
       color: #000; /*Sets the text hover color on navbar*/
     }
-    
+
     .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active >
       a:hover, .navbar-default .navbar-nav > .active > a:focus {
         color: white; /*BACKGROUND color for active*/
           background-color: #0e6cb6;
       }
-    
+
     .navbar-default {
       background-color: #0e6cb6;
         border-color: #030033;
     }
-    
-    
-    
+
+
+
     .navbar-default .navbar-nav > li > a {
       color: white; /*Change active text color here*/
     }'))),
-  
+
   tags$style(HTML("
     .tabbable > .nav > li > a                  {background-color: #D3D3D3;  color:black}
   ")),
-  
+ 
   
   
   
   navbarPage("",
              
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
-#------------------------------------------------------------------------------#
-                            #INPUT SECTION#
-#------------------------------------------------------------------------------#            
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#     
-
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+             #------------------------------------------------------------------------------#
+             #INPUT SECTION#
+             #------------------------------------------------------------------------------#            
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#     
+             
              tabPanel("Input", 
                       sidebarLayout(
                         sidebarPanel(
+                          selectInput("model", "Model Selection", c("HSDM", "PSDM")),
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                           textOutput("reject"),
                           textOutput("OutputConcentration"),
                           sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
                           sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
-                                     
+                          
                           br(),
-                                     
+                          
                           actionButton("run_button", "Run Analysis", icon=icon("play")),
                           textOutput("ionadded"),
                           textOutput("concentrationadded"),
                           textOutput("analysisran")
-                          ),
+                        ),
                         
                         
                         
                         mainPanel(
                           tabsetPanel(
-#------------------------------------------------------------------------------#
+                            #------------------------------------------------------------------------------#
                             #COLUMN PARAMETERS#
-#------------------------------------------------------------------------------#                                 
+                            #------------------------------------------------------------------------------#                                 
                             tabPanel("Column Parameters",
                                      
                                      br(),
                                      
-#--------------------------Resin Characteristics-------------------------------#                                     
+                                     #--------------------------Resin Characteristics-------------------------------#                                     
                                      fluidRow(
                                        column(3,),
                                        column(2, textOutput("Q")),
@@ -1070,20 +1350,20 @@ ui <- fluidPage(
                                          decimalPlaces = 2,
                                          digitGroupSeparator = ",",
                                          decimalCharacter = ".")),
-                                        column(3, selectInput("qunits", "", c("meq/L")))), 
-                                              
-                                      fluidRow(
-                                        column(3, textOutput("RC")),
-                                        column(2, textOutput("rb")),
-                                        column(2, shinyWidgets::autonumericInput(
-                                          inputId = "rbv",
-                                          label="",
-                                          value = 0.03375, 
-                                          decimalPlaces = 5,
-                                          digitGroupSeparator = ",",
-                                          decimalCharacter = ".")),
-                                        column(3, selectInput("rbunits", "", c("cm", "m", "mm", "in", "ft")))
-                                      ),
+                                       column(3, selectInput("qunits", "", c("meq/L")))), 
+                                     
+                                     fluidRow(
+                                       column(3, textOutput("RC")),
+                                       column(2, textOutput("rb")),
+                                       column(2, shinyWidgets::autonumericInput(
+                                         inputId = "rbv",
+                                         label="",
+                                         value = 0.03375, 
+                                         decimalPlaces = 5,
+                                         digitGroupSeparator = ",",
+                                         decimalCharacter = ".")),
+                                       column(3, selectInput("rbunits", "", c("cm", "m", "mm", "in", "ft")))
+                                     ),
                                      
                                      fluidRow(
                                        column(3, ),
@@ -1097,14 +1377,29 @@ ui <- fluidPage(
                                          digitGroupSeparator = ",",
                                          decimalCharacter = "."
                                        ))
-                                              
-                                     ),
-
-#------------------------------------------------------------------------------#                                       
                                        
+                                     ),
+                                     
+                                     fluidRow(
+                                       column(3, ),
+                                       
+                                       column(2, uiOutput("EPOR")),
+                                       
+                                       column(2, shinyWidgets::autonumericInput(
+                                         inputId = "EPORv",
+                                         label="",
+                                         value = 0.2,
+                                         currencySymbolPlacement = "p",
+                                         decimalPlaces = 3,
+                                         digitGroupSeparator = ",",
+                                         decimalCharacter = "."
+                                       ))
+                                     ),
+                                     #------------------------------------------------------------------------------#                                       
+                                     
                                      hr(),
                                      #Parameters Row 2#
-#--------------------------Column Specifications-------------------------------#                                     
+                                     #--------------------------Column Specifications-------------------------------#                                     
                                      fluidRow(
                                        column(3,
                                               br(), br(), br(),
@@ -1165,9 +1460,9 @@ ui <- fluidPage(
                                               margin-top:-0.5em", 
                                                   selectInput("DiameterUnits","",c("cm", "m", "in", "ft")),
                                                   selectInput("FlowrateUnits","",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))))),
-#------------------------------------------------------------------------------#                                     
-
-                                      hr(),
+                                     #------------------------------------------------------------------------------#                                     
+                                     
+                                     hr(),
                                      #Parameters Row 4#
                                      
                                      fluidRow(
@@ -1180,13 +1475,13 @@ ui <- fluidPage(
                                                   selectInput("timeunits2", "", c("hr", "day")),
                                                   br(), br()))),
                                      
-#------------------------------------------------------------------------------#
-                         #END COLUMN PARAMETERS#
-#------------------------------------------------------------------------------#                                       
+                                     #------------------------------------------------------------------------------#
+                                     #END COLUMN PARAMETERS#
+                                     #------------------------------------------------------------------------------#                                       
                                      
-#------------------------------------------------------------------------------#
-                              #IONS TAB#
-#------------------------------------------------------------------------------#                                     
+                                     #------------------------------------------------------------------------------#
+                                     #IONS TAB#
+                                     #------------------------------------------------------------------------------#                                     
                                      
                             ),
                             tabPanel("Ions",
@@ -1200,14 +1495,14 @@ ui <- fluidPage(
                                      h4("Effluent Data"),
                                      dataEditUI("edit-3")
                             ),
-
-#------------------------------------------------------------------------------#
-                              #END IONS TAB#
-#------------------------------------------------------------------------------#
-
-#------------------------------------------------------------------------------#
+                            
+                            #------------------------------------------------------------------------------#
+                            #END IONS TAB#
+                            #------------------------------------------------------------------------------#
+                            
+                            #------------------------------------------------------------------------------#
                             #ALKALINITY TAB#
-#------------------------------------------------------------------------------#
+                            #------------------------------------------------------------------------------#
                             
                             tabPanel("Alkalinity",
                                      br(),
@@ -1216,49 +1511,49 @@ ui <- fluidPage(
                                      br(),
                                      fluidRow(
                                        column(4,
-                                     numericInput("alkvalue", "Alkalinity Value", 5),
-                                     numericInput("pH", "pH", 7)),
-                                     column(4, offset=1,
-                                           selectInput("alkunits", "Concentration Units", c("meq", "mg/L")),
-                                      
-                                           div(style ="
+                                              numericInput("alkvalue", "Alkalinity Value", 5),
+                                              numericInput("pH", "pH", 7)),
+                                       column(4, offset=1,
+                                              selectInput("alkunits", "Concentration Units", c("meq", "mg/L")),
+                                              
+                                              div(style ="
                                               margin-top:2em",
-                                           h5("Bicarbonate Concentration (meq)")),
-                                           div(style ="
+                                                  h5("Bicarbonate Concentration (meq)")),
+                                              div(style ="
                                               margin-top:-1em",
-                                           textOutput("bicarbcin"))),
-                                     column(4, offset=1,
-                                            div(style ="
+                                                  textOutput("bicarbcin"))),
+                                       column(4, offset=1,
+                                              div(style ="
                                               margin-top:2em",
-                                            h5("Bicarbonate Concentration (mg/L)")),
-                                            div(style ="
+                                                  h5("Bicarbonate Concentration (mg/L)")),
+                                              div(style ="
                                               margin-top:-1em",
-                                            textOutput("bicarbcinmgl"))),
-                                     br()
-                                    
+                                                  textOutput("bicarbcinmgl"))),
+                                       br()
+                                       
                                      )#fluid row
-                                    ),#tab panel
-#------------------------------------------------------------------------------#
-                        #END ALKALINITY TAB#
-#------------------------------------------------------------------------------#
-                                   )
-                                  )#mainPanel
-                                 ),#sidebarLayout
+                            ),#tab panel
+                            #------------------------------------------------------------------------------#
+                            #END ALKALINITY TAB#
+                            #------------------------------------------------------------------------------#
+                          )
+                        )#mainPanel
+                      ),#sidebarLayout
                       
-                                ),#navbarPage
-
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
-#------------------------------------------------------------------------------#
-                            #END INPUT SECTION#
-#------------------------------------------------------------------------------#            
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*# 
-
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
-#------------------------------------------------------------------------------#
-                              #OUTPUT SECTION#
-#------------------------------------------------------------------------------#            
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#   
-
+             ),#navbarPage
+             
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+             #------------------------------------------------------------------------------#
+             #END INPUT SECTION#
+             #------------------------------------------------------------------------------#            
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*# 
+             
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+             #------------------------------------------------------------------------------#
+             #OUTPUT SECTION#
+             #------------------------------------------------------------------------------#            
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#   
+             
              tabPanel("Output",
                       
                       sidebarLayout(
@@ -1279,34 +1574,37 @@ ui <- fluidPage(
                             plotlyOutput("Plot")), #Counterions
                           br(),
                           plotlyOutput("ExtraChemicals")))), #Ions
-
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
-#------------------------------------------------------------------------------#
-                          #END OUTPUT SECTION#
-#------------------------------------------------------------------------------#            
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
-
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
-#------------------------------------------------------------------------------#
-                            #ABOUT SECTION#
-#------------------------------------------------------------------------------#            
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
-
-tabPanel("About",
-         
-         ("The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design."),
-         br(), br(),
-         tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Click here to read more about the Ion Exchange Model"),
-         br(), br(),
-         strong("There are two ways to start this model:"), br(),
-         ("1) Use an Excel file to describe parameters of the water treatment unit operation (examples provided). Files can be uploaded by clicking 'Browse' in the top left corner of the Input page."),br(),
-         ("2) Start with the data that is provided in the user interface and manipulate the data from there. "),br(),
-         br(),("Enter information into Column Parameters tab, then add concentration and other ion information in the Ions tab. These can be adjusted within the GUI or saved in an .xlsx file to reuse in the future. Click 'Run Analysis' to begin the simulation. Simulation time can take a few seconds to minutes (20 + seconds) depending on how many ions are simulated."),
-         br(),br(),
-         strong("Developed By"),br(),
-         ("David Colantonio"),br(),
-         ("Levi Haupert"),br(),
-         ("Jonathan Burkhardt"),)
+             
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+             #------------------------------------------------------------------------------#
+             #END OUTPUT SECTION#
+             #------------------------------------------------------------------------------#            
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+             
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+             #------------------------------------------------------------------------------#
+             #ABOUT SECTION#
+             #------------------------------------------------------------------------------#            
+             #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+             
+             tabPanel("About",
+                      h5("Ion Exchange Model"),
+                      textOutput("about"),
+                      br(),
+                      tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Read more about the Ion Exchange Model"),
+                      br(), br(),
+                      #textOutput("how2use"),
+                      h5("There are two ways to start this model:"),
+                      textOutput("how2use2"),
+                      br(),
+                      textOutput("how2use3"),
+                      textOutput("how2use4"),
+                      br(),
+                      #textOutput("how2use5"),
+                      h5("Developed By"),
+                      textOutput("how2use6"),
+                      textOutput("how2use7"),
+                      textOutput("how2use8"))
   )
 )
 
@@ -1315,7 +1613,7 @@ tabPanel("About",
 #------------------------------------------------------------------------------#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
-                            #BEGIN SERVER#
+#BEGIN SERVER#
 #------------------------------------------------------------------------------#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
@@ -1327,25 +1625,43 @@ server <- function(input, output, session) {
   #STATIC DISPLAY TEXTS#
   #------------------------------------------------------------------------------#
   
-#--------------------------Resin Characteristics-------------------------------#  
+  #--------------------------Resin Characteristics-------------------------------#  
   output$RC<-renderText("Resin Characteristics")
   output$Q<-renderText("Resin Capacity")
   output$rb<-renderText("Bead Radius")
   output$EBED<-renderText("Bed Porosity")
   output$name<-renderText("Name")
-#------------------------------------------------------------------------------#
+  #------------------------------------------------------------------------------#
   
-#------------------------------------------------------------------------------#
+  #The reason these are multiple if else statements is because it gives more
+  #control of where the items will appear in the UI
+  
+   output$EPOR<-renderUI({
+      renderText("Bead Porosity")
+  })
 
+  # output$EPORv<-renderUI({
+  #     numericInput("EPORvalue", "", 0.2)
+  # })
+  
+  observe({
+    toggleState("EPORv", condition=input$model!="HSDM")
+  })
+  
+
+  
+  
+  #------------------------------------------------------------------------------#
+  
   output$CS<-renderText("Column Specifications")
   output$MC<-renderText("Material Characteristics")
   output$CS3<-renderText("Solver Related")
-#--------------------------Column Specifications-------------------------------#  
+  #--------------------------Column Specifications-------------------------------#  
   output$Length<-renderText("Length")
   output$Velocity<-renderText("Velocity")
   output$Diameter<-renderText("Diameter")
   output$Flowrate<-renderText("Flow Rate")
-#------------------------------------------------------------------------------#  
+  #------------------------------------------------------------------------------#  
   output$SR<-renderText("Solver Related")
   output$nr<-renderText("Radial Collocation Points")
   output$nz<-renderText("Axial Collocation Points")
@@ -1367,9 +1683,19 @@ server <- function(input, output, session) {
   output$IonList<-renderText("Ion List")
   output$ConcentrationList<-renderText("Concentration Points")
   
+  output$about<-renderText("The Ion Exchange Model is a tool used to model a strong-base anion exchange unit operation in a drinking water treatment plant. This model relies on selectivity coefficient parameters and other information about the anion exchange resin and predicts the breakthrough behavior for unit operation design.")
+  
   output$AlkConv<-renderText("Bicarbonate is the common chemical used to measure alkalinity in this model, however, the user may have the pH of their water without the Bicarbonate specifications. If this is the case then the user can use this calculator to take their pH measurement and find the corresponding Bicarbonate concentrations.  ")
   output$bicarbion<-renderTable(bicarbion)
   
+  
+  output$how2use2<-renderText("1) Use an Excel file to describe parameters of water treatment unit operation (examples provided). One can upload such file by clicking 'Browse' in the top left corner of the Input page.")
+  output$how2use3<-renderText("2) Start with the data that is provided in the user interface and manipulate the data from there. Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
+  output$how2use4<-renderText(" Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
+  output$how2use5<-renderText("Developed By")
+  output$how2use6<-renderText("David Colantonio")
+  output$how2use7<-renderText("Levi Haupert")
+  output$how2use8<-renderText("Jonathan Burkhardt")
   
   #------------------------------------------------------------------------------#
   #INPUT FILE HANDLING#
@@ -1399,19 +1725,19 @@ server <- function(input, output, session) {
   
   
   
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
-#------------------------------------------------------------------------------#
-                            #DATA PREP SECTION#
-#------------------------------------------------------------------------------#            
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#  
- 
+  #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+  #------------------------------------------------------------------------------#
+  #DATA PREP SECTION#
+  #------------------------------------------------------------------------------#            
+  #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#  
   
   
   
   
-#------------------------------------------------------------------------------#
-                        #PARAMS DATA HANDLING#
-#------------------------------------------------------------------------------#  
+  
+  #------------------------------------------------------------------------------#
+  #PARAMS DATA HANDLING#
+  #------------------------------------------------------------------------------#  
   
   #When the param sheet is read in, make it a reactiveVal so that the data can
   #Be saved between refreshes and edited
@@ -1443,44 +1769,44 @@ server <- function(input, output, session) {
     # velocity read in
     velocity(filter(paramsheet(), name=='v')$value)
     updateNumericInput(session, "Vv", value=velocity())
-                                                                                                                               
+    
     velocityvector2(c(filter(paramsheet(), name=='v')$units, velocityvector))
     velocityvector3<-unique(velocityvector2())
     
     updateSelectInput(session, "VelocityUnits", choices=velocityvector3())
-
+    
     ##add toggle of velocity selector
     updateRadioButtons(session, "veloselect", selected="Linear")
-
+    
   }
     else if(flags()[2] & flags()[3]){
       
       flowrate(filter(paramsheet(), name=='flrt')$value)
       diameter(filter(paramsheet(), name=='diam')$value)
-     
-     updateNumericInput(session, "Fv", value=flowrate())
-     updateNumericInput(session, "Dv", value=diameter())
-     
-     
-     flowrate2(c(filter(paramsheet(), name=='flrt')$units, flowratevector))
-     flowrate3(unique(flowrate2()))
-     
-     diameter2(c(filter(paramsheet(), name=='diam')$units, diametervector))
-     diameter3(unique(diameter2()))
-     
-     updateSelectInput(session, "FlowrateUnits", choices=flowrate3())
-     updateSelectInput(session, "DiameterUnits", choices=diameter3())                                     
-     
-     updateRadioButtons(session, "veloselect", selected="Volumetric")
+      
+      updateNumericInput(session, "Fv", value=flowrate())
+      updateNumericInput(session, "Dv", value=diameter())
+      
+      
+      flowrate2(c(filter(paramsheet(), name=='flrt')$units, flowratevector))
+      flowrate3(unique(flowrate2()))
+      
+      diameter2(c(filter(paramsheet(), name=='diam')$units, diametervector))
+      diameter3(unique(diameter2()))
+      
+      updateSelectInput(session, "FlowrateUnits", choices=flowrate3())
+      updateSelectInput(session, "DiameterUnits", choices=diameter3())                                     
+      
+      updateRadioButtons(session, "veloselect", selected="Volumetric")
     }
     else{
-     print("Warning: No flow data provided, defaults used")
+      print("Warning: No flow data provided, defaults used")
     }
-
-    })
-  
-  
     
+  })
+  
+  
+  
   #Take the data from the file that the user uploaded and overwrite the default frame
   capacity<-reactive({filter(paramsheet(), name=="Q")$value})
   eebed<-reactive({filter(paramsheet(), name=="EBED")$value})
@@ -1517,6 +1843,16 @@ server <- function(input, output, session) {
   #with the users input.
   
   
+  modelvec<-reactive({
+    
+    model<-c(filter(paramsheet(), name=="model")$value, modelvector)
+    updatedmodel<-unique(model)
+    
+    updatedmodel
+    
+  })
+  
+  
   lengthvector2<-reactive({c(filter(paramsheet(), name=="L")$units, lengthvector)})
   lengthvector3<-reactive({unique(lengthvector2())})
   
@@ -1530,7 +1866,8 @@ server <- function(input, output, session) {
     updateSelectInput(session, "rbunits", choices=rbvector2())
     updateSelectInput(session, "LengthUnits", choices=lengthvector3())
     updateSelectInput(session, "timeunits2", choices=timevector3())
-    })
+    updateSelectInput(session, "model", choices=modelvec())
+  })
   
   observe({
     toggleState("Vv", condition=input$veloselect!="Volumetric")
@@ -1540,9 +1877,9 @@ server <- function(input, output, session) {
   
   velocityvar<-reactiveVal()
   
-#------------------------------------------------------------------------------#
-                  #IBICARBONATE TO ALKALINITY CONVERTER#
-#------------------------------------------------------------------------------#  
+  #------------------------------------------------------------------------------#
+  #IBICARBONATE TO ALKALINITY CONVERTER#
+  #------------------------------------------------------------------------------#  
   
   
   bicarbconverted<-reactiveVal()
@@ -1567,22 +1904,22 @@ server <- function(input, output, session) {
   output$bicarbcinmgl<-renderText(bicarbconverted()*bicarbmeq2mgl)
   
   
- 
-#------------------------------------------------------------------------------#
-                        #IONS TAB DATA HANDLING#
-#------------------------------------------------------------------------------#  
   
+  #------------------------------------------------------------------------------#
+  #IONS TAB DATA HANDLING#
+  #------------------------------------------------------------------------------#  
   
-  iondat<- dataEditServer("edit-1", data = "ionsheet.csv") 
+  iondat<- dataEditServer("edit-1", data = "ionsheet.csv")
   dataOutputServer("output-1", data = iondat)
-
-#------------------------------------------------------------------------------#
-                        #CIN TAB DATA HANDLING#
+  
+  
+  #------------------------------------------------------------------------------#
+  #CIN TAB DATA HANDLING#
   #The prep here seems like it can mostly be done mostly in one or two functions
   #instead of the multiple functions that are used here, but, some of the 
   #independent steps are used throughout the code. So this makes it easier
   #To break it up
-#------------------------------------------------------------------------------#   
+  #------------------------------------------------------------------------------#   
   
   cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
   dataOutputServer("output-2", data = cindat)
@@ -1600,77 +1937,84 @@ server <- function(input, output, session) {
     newcin<-cbind(newtime, cindata[,2:ncol(cindata)])
     return(newcin)
   })
-
+  
   
   #convert cindat to meq if it is not already
-  cin_hours_meq<-reactive({cin_correct(iondat(), cindat_hours())})
-  cin_hours_mgl<-reactive({mass_converter_mgl(iondat(), cindat_hours())})
-
+  cin_hours_meq<-eventReactive(input$run_button,{cin_correct(iondat(), cindat_hours())})
+  cin_hours_mgl<-eventReactive(input$run_button,{mass_converter_mgl(iondat(), cindat_hours())})
+  
   #When the file is first uploaded the influent data and simulated data both have
   #the same names, so to differentiate them I rename them to chemical_influent 
   #with this function
-  cin_hours_meq_renamer<-reactive({influent_chemical_renamer(cin_hours_meq(), cindat_hours())})
-  cin_hours_mgl_renamer<-reactive({influent_chemical_renamer(cin_hours_mgl(), cindat_hours())})
-
+  cin_hours_meq_renamer<-eventReactive(input$run_button, {influent_chemical_renamer(cin_hours_meq(), cindat_hours())})
+  cin_hours_mgl_renamer<-eventReactive(input$run_button, {influent_chemical_renamer(cin_hours_mgl(), cindat_hours())})
+  
   #The cin tab is now in the correct units and named appropriately. Gather then 
   #brings them to a shape that makes it easy to convert and easy to plot
   #Using the tidyr::gather function with the hours still attached gives a bad 
   #result, so the time is Seperated out and then reattached in 
   #cindat_meq_hours_preprepped
   
-  cin_meq_hours_prep<-reactive({influent_organizer(cin_hours_meq_renamer(), cindat_hours())})
-  cin_mgl_hours_prep<-reactive({influent_organizer(cin_hours_mgl_renamer(), cindat_hours())})
-  
-
+  cin_meq_hours_prep<-eventReactive(input$run_button,{influent_organizer(cin_hours_meq_renamer(), cindat_hours())})
+  cin_mgl_hours_prep<-eventReactive(input$run_button,{influent_organizer(cin_hours_mgl_renamer(), cindat_hours())})
   
   
-#------------------------------------------------------------------------------#
-                      #EFFLUENT TAB HANDLING#
-#------------------------------------------------------------------------------# 
   
-  effluentdat<-dataEditServer("edit-3", data="effluent.csv",read_args=list(colClasses=c("numeric")))
+  
+  #------------------------------------------------------------------------------#
+  #EFFLUENT TAB HANDLING#
+  #------------------------------------------------------------------------------# 
+  
+  effluentdat<-dataEditServer("edit-3", data="effluent.csv")
   dataOutputServer("output-1", data=effluentdat)
   
   effdata<-reactive({effluent_data_processor(iondat(), effluentdat())})
-
-
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
-#------------------------------------------------------------------------------#
-                      #END DATA PREP SECTION#
-#------------------------------------------------------------------------------#            
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#  
-
-
+  
+  
+  #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
+  #------------------------------------------------------------------------------#
+  #END DATA PREP SECTION#
+  #------------------------------------------------------------------------------#            
+  #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#  
   
   
   
-
-#------------------------------------------------------------------------------#
-                    #CALLING THE HSDMIX FUNCTION#
-#------------------------------------------------------------------------------#
-
+  
+  
+  
+  #------------------------------------------------------------------------------#
+  #CALLING THE HSDMIX FUNCTION#
+  #------------------------------------------------------------------------------#
+  
   #HSDMIX values is stored in this reactiveVal "out"
   out<-reactiveVal()
-
+  
   observeEvent(input$run_button, {
-    out(HSDMIX_prep(input, iondat(), cindat(), nt_report))
+    if(input$model=="HSDM"){
+      out(HSDMIX_prep(input, iondat(), cindat(), nt_report))
+    }
+    else{
+      out(PSDMIX_prep(input, iondat(), cindat(), nt_report))
+    }
   })
   
+ 
   
   # find outlet indices
   outlet_id <- reactive({dim(out()[[2]])[4]})
   liquid_id <- reactive({dim(out()[[2]])[2]})
 
-#------------------------------------------------------------------------------#
-#                 IEX CONCENTRATION OUTPUT DATAFRAME                           
-#------------------------------------------------------------------------------#
+
+  #------------------------------------------------------------------------------#
+  #                 IEX CONCENTRATION OUTPUT DATAFRAME
+  #------------------------------------------------------------------------------#
   ### TODO: add better error handling HSDMIX_prep can now return an 'error' value which is an integer, or the full data
   #### only want to proceed if it isn't an error state
 
   timeframe<-reactive({data.frame(hours=out()[[1]])})
   allchemicalconcs<-list()
 
-  
+
   #HSDMIX outputs a list, so this takes the list and binds them into a dataframe
   allchemicals_hours_meq<-eventReactive(input$run_button, {for (x in 1:nrow(iondat())){
     conc<-out()[[2]][, liquid_id(), x, outlet_id()]
@@ -1682,7 +2026,7 @@ server <- function(input, output, session) {
   })
 
   allchemicals_hours_mgl<-reactive({HSDMIX_in_hours_mgl(allchemicals_hours_meq(), iondat(), timeframe())})
-  
+
 
   #------------------------------------------------------------------------------#
   #                   END IEX CONCENTRATION OUTPUTDATAFRAME#
@@ -1697,12 +2041,12 @@ server <- function(input, output, session) {
   #------------------------------------------------------------------------------#
   ## need to create meq/L c0 for math to work out
   cc0vector_meq<-reactive({cc0_conv_meq(iondat(), cindat())})
-  
+
 
   computedcc0<-reactive({HSDMIX_cc0(allchemicals_hours_meq(), cc0vector_meq())})
   effluentcc0<-reactive({effluent_cc0(effluentdat(), iondat(), cc0vector_meq())})
   influentcc0<-reactive({HSDMIX_cc0(cin_hours_meq_renamer()[,2:ncol(cin_hours_meq_renamer())], cc0vector_meq())})
-  
+
 
 
   #------------------------------------------------------------------------------#
@@ -1715,10 +2059,10 @@ server <- function(input, output, session) {
 
 
 
-#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
-#------------------------------------------------------------------------------#
-                     #CONVERTING OUTPUT DATAFRAMES#
-#------------------------------------------------------------------------------#
+  #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+  #------------------------------------------------------------------------------#
+  #CONVERTING OUTPUT DATAFRAMES#
+  #------------------------------------------------------------------------------#
 
 
   outputcounterions<-reactiveValues()
@@ -1755,14 +2099,14 @@ server <- function(input, output, session) {
       bv_conv <- get_bv_in_sec(input)
       outputcounterions$time <- counteriondata()$hours / (bv_conv / hour2sec) / 1e3
       outputions$time <- iondata()$hours / (bv_conv / hour2sec) / 1e3
-      
+
       outputeffluent$time<- effdata()$hours/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-cin_mgl_hours_prep()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
 
     } else {
       outputcounterions$time <- counteriondata()$hours / (time_conv[input$timeunits] / hour2sec)
       outputions$time <- iondata()$hours / (time_conv[input$timeunits] / hour2sec)
-      
+
       outputeffluent$time<- effdata()$hours/ (time_conv[input$timeunits] / hour2sec)
       outputinfluent$hours<-cin_mgl_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec) ## should this be $time?
     }
@@ -1779,13 +2123,13 @@ server <- function(input, output, session) {
       ## just replicates the returned data
       outputcounterions$conc <-  counteriondatacc0()$conc
       outputions$conc<-iondatacc0()$conc
-      
+
       outputeffluent$conc<- effluentcc0()$conc
       outputinfluent$conc <- influentcc0()$conc#influentcc04()$conc
     } else {
       outputcounterions$conc <- counteriondata()$conc / mass_conv[input$OCunits]
       outputions$conc <- iondata()$conc / mass_conv[input$OCunits]
-      
+
       outputeffluent$conc <- effdata()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- cin_mgl_hours_prep()$conc/mass_conv[input$OCunits]
     }
@@ -1794,7 +2138,7 @@ server <- function(input, output, session) {
 
 
 
- 
+
 
 
 
@@ -1814,7 +2158,7 @@ server <- function(input, output, session) {
     }
   })
 
- ion_data_processed<-reactive({
+  ion_data_processed<-reactive({
     if(input$computeddata==TRUE){
       plot_data2 <- iondata()
       plot_data2$conc <- outputions$conc
@@ -1874,21 +2218,21 @@ server <- function(input, output, session) {
     newdat
   })
 
-  
+
 
   fig<-reactive({create_plotly(counterion_data_processed(), effluent_processed(), cindat_converter_counter())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
-                                 legend=list(orientation='h', y=1),
-                                 xaxis=list(title=input$timeunits),
-                                 yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', 
-                                            exponentformat='e'))})
+                                             legend=list(orientation='h', y=1),
+                                             xaxis=list(title=input$timeunits),
+                                             yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
+                                                        exponentformat='e'))})
 
   bonusfig<-reactive({create_plotly2(ion_data_processed(), effluent_processed(), cindat_converter_ion())})
   ionfigure<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
-                                             legend=list(orientation='h', y=1),
-                                             xaxis=list(title=input$timeunits),
-                                             yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all', 
-                                                        exponentformat='e'))})
+                                           legend=list(orientation='h', y=1),
+                                           xaxis=list(title=input$timeunits),
+                                           yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
+                                                      exponentformat='e'))})
 
 
 
@@ -1899,14 +2243,15 @@ server <- function(input, output, session) {
     ionfigure())
 
 
-  
+  outputOptions(output, "Plot", suspendWhenHidden = FALSE)
+  outputOptions(output, "ExtraChemicals", suspendWhenHidden = FALSE)
 
   paramdf<-reactive({data.frame(name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
-                      value=c(input$Qv, input$EBEDv, input$Lv, input$Vv, input$rbv, NA, NA, input$nrv, input$nzv, input$timeunits2),
-                      units=c(input$qunits, NA, input$LengthUnits, input$VelocityUnits, input$rbunits, NA, "cm2/s", NA, NA, input$timeunits2)
-                      )})
+                                value=c(input$Qv, input$EBEDv, input$Lv, input$Vv, input$rbv, NA, NA, input$nrv, input$nzv, input$timeunits2),
+                                units=c(input$qunits, NA, input$LengthUnits, input$VelocityUnits, input$rbunits, NA, "cm2/s", NA, NA, input$timeunits2)
+  )})
 
-  
+
   outputsave<-reactive({
     chemicalsforsaving<-tidyr::spread(allchemicals_hours_mgl(), "name", "conc")
     justnames<-colnames(chemicalsforsaving)
@@ -1914,7 +2259,7 @@ server <- function(input, output, session) {
     colnames(chemicalsforsaving)<-fixednames
     return(chemicalsforsaving)
   })
-  
+
 
   output$save_button <- downloadHandler(
     filename = function() {
@@ -1924,10 +2269,11 @@ server <- function(input, output, session) {
       write.xlsx(paramdf(), file, sheetName="params",append=TRUE, row.names=FALSE)
       write.xlsx(iondat(), file, sheetName="ions",append=TRUE, row.names=FALSE)
       write.xlsx(cindat(), file, sheetName="Cin", append=TRUE, row.names=FALSE)
-      write.xlsx(outputsave(), file, sheetName="effluent", append=TRUE, row.names=FALSE)
+      write.xlsx(effluentdat(), file, sheetName="effluent", append=TRUE, row.names=FALSE)
+      write.xlsx(outputsave(), file, sheetName="model results", append=TRUE, row.names=FALSE)
     }
   )
-    
+  
   
   
   

@@ -12,49 +12,67 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
 2. Excel (recommended)
-3. Files: HSDMI_IX.R, config.xlsx
-4. Optional: example_input_small.xlsx(5 ions, concentrations specified in ng/L), 
-example_input_medium.xlsx (9 ions, concentrations specified in ng/L)
+3. Files: Ion_Exchange_Model.R, config.xlsx
+4. Optional: example.xlsx
 
 ## Excel-based Input File
-TThe input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
+The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
-    <img src="DocumentPics/excelsheet.png"
+    <img src="DocumentPics/excelsheet.PNG"
          alt="Excel Input">
-    <figcaption>The excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.</figcaption>
+</figure>
+
+<figure>
+     <img src="DocumentPics/excelsheet2.PNG"
+         alt="Excel Input">
+     <figcaption>The excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.
+    * Dp and Dp_units are provided in example input files. These are required for PSDM modeling but will be ignored for HSDM modeling.
+    </figcaption>
 </figure>
 
 &nbsp;
 
+## Available Models
+* HSDM: Homogeneous Suface Diffision Model - Used for gel-type resin systems
+* PSDM: Pore and Surface Diffusion Model - Used for macroporous resin systems
+
 ## Quick Start
 
-1. Click import file in the top left of the Interface
+1. In RStudio, click the "Run App" button in the top right corner of the window that contains the code
+
+![Start](DocumentPics/start.PNG)
+
+2. Application opens to Input & Column Parameter view. User can select "Browse" below "Choose .xlsx File" to import preconfigured input file in the upper left, as shown. Or, a user can begin editing input values following steps 4 and 5 below.
 
 ![Import File](DocumentPics/Slide1.PNG)
 
-2. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
+3. Click the drop down selector named "Model Selection" to chose between "HSDM" and "PSDM"
+
+![Model Selection](DocumentPics/modelselector.PNG)
+
+4. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
 
 ![Inputs](DocumentPics/Slide2.PNG)
 
-3. (Optional) In the ions tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
+5. (Optional) In the ions tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
 
-![Adjust](DocumentPics/Slide3.PNG)
+![Adjust](DocumentPics/IonsTab.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-3.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
+6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
 
 ![Run](DocumentPics/Slide5.PNG)
 
-4.	Switch to the output tab (There should be a loading “spinner” to let you know it’s running)
+7.	Switch to the Output tab (There should be a loading “spinner” to let you know it’s running)
 
 ![waiting](DocumentPics/Slide6.PNG)
 
-5.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
+8.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
 
 ![plot](DocumentPics/Slide7.PNG)
 
-6. The user can use the buttons on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
+9. The user can use the check boxes on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
 
 ![plottraces](DocumentPics/Slide8.PNG)
 
@@ -74,18 +92,19 @@ The parameters tab is used to describe the physical constraints of the resin cha
 |---            				|---       |---            |
 |Resin Capacity 				|     Q    | Resin capacity is a measurement of the total capacity of anions that can be absorbed by a volume of resin. This capacity is expressed in molar quantity per unit volume (meq/L, molar equivalent per liter). The value is determined experimentally by titration. It is usually reported by the manufacturer.  [Read More](https://pubs.acs.org/doi/10.1021/acsestwater.2c00572)    |
 |Bead Radius    				|     rb   | Bead radius is the measurement of the distance of the bead resin from the center to the surface.              |        
-|Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent. A well packed bed with spherical resin beads will typically have an EBED of approximatley 0.35.             |        
+|Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent.     |              
+|Bead Porosity | EPOR | The bead porosity is the measure of the bead volume occupied by a solvent, usually water. The factor is between 0 and 1, where 0 represents a bead absent of a solvent and 1 is a bead where all the available space is filled with a solvent. A well packed bead will typically have and EPOR of 0.2. |
 |Length         				|     L    |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor. |        
-|Velocity  					|     v    | The linear velocity, or superficial velocity, represents the distance an average water particle travels over a given period of time. HSDM-IX only considers an average of steady-state condition, not variable flow.     |    
+|Velocity  					|     v    | The linear velocity, or superficial velocity, represents the distance an average water particle travels over a given period of time. HSDM only considers an average of steady-state condition, not variable flow.     |    
 |Diameter 				|     diam    |  The diameter of a cylindrical column.             |        
-|Flow Rate 					|	flrt   | The average flow rate through the column. HSDM-IX only considers and average or steady-state condition, not variable flow. |       
+|Flow Rate 					|	flrt   | The average flow rate through the column. HSDM only considers and average or steady-state condition, not variable flow. |       
 |Radial Collocation Points		|	nr   | Number of grid points in the radial direction used to model transport inside the resin beads (Default nr=7). Can be used to adjust numerical convergence.               |        
 |Axial Collocation Points		|	nz   | Number of grid points in the axial direction used to model transport through the column (Default nz=13). Can be used to adjust numerical convergence.                |        
 |Time                         | time |  The units for time in the corresponding "Cin" sheet in the Excel-based files or "Concentration Points" table under Input>Ion's tab. 
 
 ### Ions Tab
 
-The Ions tab contains information about the ions to be simulated. The Ions tab should contain any anionic species found in the system, as HSDM-IX always models a simultaneous competitive exchange process (counterions like sulfate, nitrate, chloride, and bicarbonate must also be modeled in simulations). Ion characteristics (molecular weight, selectivity, valence, mass transfer coefficients) are stored in the "ions" tab in Excel-based input files and listed under "Ion List" within HSDM-IX under the Input>Ions tab. information on concentrations within the system over time are stored in the "Cin" tab in Excel-based input files or "Concentration Points" within HSDM-IX under the Input>Ions tab.
+The Ions tab contains information about the ions to be simulated. The Ions tab should contain any anionic species found in the system, as HSDM always models a simultaneous competitive exchange process (counterions like sulfate, nitrate, chloride, and bicarbonate must also be modeled in simulations). Ion characteristics (molecular weight, selectivity, valence, mass transfer coefficients) are stored in the "ions" tab in Excel-based input files and listed under "Ion List" within HSDM under the Input>Ions tab. information on concentrations within the system over time are stored in the "Cin" tab in Excel-based input files or "Concentration Points" within HSDM under the Input>Ions tab.
 
 **Note:** Order of rows in the ions table should match order of columns in the Cin table.
 
@@ -97,8 +116,10 @@ The Ions tab contains information about the ions to be simulated. The Ions tab s
 |Valence                            | valence          |The number of electrons that a given element or chemical can lose.                |
 |Film Transfer Coefficient      |kL         |Film transfer diffusion coefficient. Mass transfer coefficient in the boundary of the beads                            |
 |kL_units|   kL_units | Units for kL (acceptable inputs: cm/s or m/s)|
-|Surface Diffusion Coefficient  |Ds         |Diffusion coefficient of the chemical in the media                                |
+|Surface Diffusion Coefficient  |Ds         |Diffusion coefficient of the chemical in gel-type media (HSDM), or along the media surface in macroporous media (PSDM)  |      
 |Ds_units|  Ds_units| Units for Ds (acceptable inputs: cm^2/s or m^2/s) |
+| Pore Diffusion Coefficient | Dp | Diffusion coefficient of the chemical in the water within pores of a macroporous media (PSDM). Unused in HSDM.|
+|Dp_units| Dp_units| Units for Dp (acceptable inputs: cm^2/s or m^2/s) |
 |Concentration units| conc_units| Units of corresponding concentration units in Cin. (acceptable units: meq, mg, ug, ng) All assumed to be per liter.|
 
 ### Concentration Points / Influent Data
