@@ -14,7 +14,7 @@ srt_dir = os.getcwd()
 
 import numpy as np
 import pandas as pd
-import pylab as plt
+import matplotlib.pyplot as plt
 plt.close('all') # can be commented out, this just closes any previously generated graphics
 
 
