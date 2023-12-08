@@ -12,11 +12,11 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
 2. Excel (recommended)
-3. Files: HSDMI_IX.R, config.xlsx
+3. Files: Ion_Exchange_Model.R, config.xlsx
 4. Optional: example.xlsx
 
 ## Excel-based Input File
-The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
+The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
     <img src="DocumentPics/excelsheet.png"
@@ -27,7 +27,7 @@ The input for the Excel-based input file must be formatted like the one shown in
      <img src="DocumentPics/excelsheet2.PNG"
          alt="Excel Input">
      <figcaption>The excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.
-    * Dp and Dp_units are provided in example input files. These are required for PSDM-IX modeling but will be ignored for HSDM-IX modeling.
+    * Dp and Dp_units are provided in example input files. These are required for PSDM modeling but will be ignored for HSDM modeling.
     </figcaption>
 </figure>
 
@@ -39,32 +39,40 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ## Quick Start
 
-1. Click import file in the top left of the Interface
+1. In RStudio, click the "Run App" button in the top right corner of the window that contains the code
+
+![Start](DocumentPics/start.PNG)
+
+2. Click import file in the top left of the Interface
 
 ![Import File](DocumentPics/Slide1.PNG)
 
-2. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
+3. Click the drop down selector named "Model Selection" to chose between "HSDM" and "PSDM"
+
+![Model Selection](DocumentPics/modelselector.PNG)
+
+4. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
 
 ![Inputs](DocumentPics/Slide2.PNG)
 
-3. (Optional) In the ions tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
+5. (Optional) In the ions tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
 
 ![Adjust](DocumentPics/Slide3.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-3.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
+6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
 
 ![Run](DocumentPics/Slide5.PNG)
 
-4.	Switch to the output tab (There should be a loading “spinner” to let you know it’s running)
+7.	Switch to the output tab (There should be a loading “spinner” to let you know it’s running)
 
 ![waiting](DocumentPics/Slide6.PNG)
 
-5.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
+8.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
 
 ![plot](DocumentPics/Slide7.PNG)
 
-6. The user can use the buttons on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
+9. The user can use the buttons on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
 
 ![plottraces](DocumentPics/Slide8.PNG)
 
