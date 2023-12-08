@@ -26,6 +26,11 @@ The input for the Excel-based input file must be formatted like the one shown in
     </figcaption>
 </figure>
 
+<figure>
+     <img src="DocumentPics/excelsheet2.png"
+         alt="Excel Input">
+</figure>
+
 &nbsp;
 
 ## Available Models
