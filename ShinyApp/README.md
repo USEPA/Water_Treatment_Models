@@ -19,7 +19,7 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM-IX looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
-    <img src="DocumentPics/excelsheet.png"
+    <img src="DocumentPics/excelsheet.PNG"
          alt="Excel Input">
     <figcaption>The excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.
     * Dp and Dp_units are provided in example input files. These are required for PSDM-IX modeling but will be ignored for HSDM-IX modeling.
@@ -27,7 +27,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 </figure>
 
 <figure>
-     <img src="DocumentPics/excelsheet2.png"
+     <img src="DocumentPics/excelsheet2.PNG"
          alt="Excel Input">
 </figure>
 
