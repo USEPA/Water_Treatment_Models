@@ -34,8 +34,8 @@ The input for the Excel-based input file must be formatted like the one shown in
 &nbsp;
 
 ## Available Models
-* HSDM-IX: Homogeneous Suface Diffision Model - Used for gel-type resin systems
-* PSDM-IX: Pore and Surface Diffusion Model - Used for macroporous resin systems
+* HSDM: Homogeneous Suface Diffision Model - Used for gel-type resin systems
+* PSDM: Pore and Surface Diffusion Model - Used for macroporous resin systems
 
 ## Quick Start
 
