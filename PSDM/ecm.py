@@ -108,27 +108,19 @@ class ecm():
         
         if print_results:
             print(self.compdata.columns.values)
-            # print(self.beddata)
-            # print('wave front velocity (cm/s)')
-            # print(self.vw)
-        
+
             print('days to breakthrough')
             print(np.round(self.days_to_breakthrough,2))
-            # print(bed_length * 100./(2.97e-4 * 3600 * 24))
-        
+ 
             print('bvf')
             print(np.round(bvf,2))
         
             print('usage rate (m**3/kg)')
             print(np.round((1/usage_rate),3))
-            
-            # print('dg')
-            # print(np.round(dg,2))
-
+  
             print('single solute treatement capacity (mg Carbon/L water)')
             print(np.round(self.sstc,3)) # seems correct
-            # print('q_store (ug/g)')
-            # print(np.round(self.qstore * self.compdata.loc['MW'].values,3))
+
             print('c store (ug/L)')
             print(np.round(self.cstore*self.compdata.loc['MW'].values,3))
             print('C/C0')
@@ -209,18 +201,12 @@ class ecm():
             error1 = np.sum((self.days_to_breakthrough - brk_days)**2) * brk_weight 
             # adds weight to breakthrough day agreement
             error2 = np.sum((np.diag(self.cratio) - peak_conc)**2)
-            # print(error1, error2)
+
             
             tmp = error1 * error2 * 1e5
-            # print(tmp)
+
             return tmp
-        # xbounds = [(1e-2, 1.1e4)] * self.n + [(.2,1.)] * self.n
-        # fitter = de(_helper, xbounds)
-        
-        # xguess = np.append(np.random.random(self.n) * 100, 
-        #                     np.random.random(self.n))
-        # xguess = np.array([1040, 894, 714, 475, 435, 192, 46.9, .25, .25, .3, .33, .38, .43, .56])
-        
+
         fitter = minimize(_helper, xguess, method='L-BFGS-B', bounds=xbounds)
         
         # print(fitter)
@@ -264,19 +250,12 @@ class ecm():
                 rawdata = conc_dict[comp](xdata)
                 error += np.sum((ecmdata-rawdata)**2)
             
-            # print(error)
+   
             return error
 
-        # fitter = de(_helper, xbounds)#, maxiter=500)#, disp=True)
-        
         
         fitter = minimize(_helper, xguess, method='L-BFGS-B', bounds=xbounds)
-        # fitter = minimize(_helper, xguess, method='Nelder-Mead')
-        # fitter = minimize(_helper, xguess, method='COBYLA')
-        
-        # print(fitter)
-        # print(_helper(xguess))
-        
+
         return fitter    
     
     def plot_ecm(self):
@@ -322,6 +301,9 @@ def _process_input_file(filename, comp_sn, bed_sn, values='molar'):
     
     return comp_data, bed_data
 
+
+
+############# Some tests, commented out
 # fn = 'ecm_data.xlsx'
 # ecm_obj = ecm(fn)
 # # print(ecm_obj.compdata)

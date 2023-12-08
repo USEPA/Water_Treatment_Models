@@ -76,11 +76,6 @@ def io_data(data_dict):
     '''
     
     iex_inmem=BytesIO()
-    # writer=pd.ExcelWriter(iex_inmem, engine='xlsxwriter')
-    # for sheet_name in data_dict.keys():
-    #     data_dict[sheet_name].to_excel(writer, sheet_name=sheet_name, index=False)
-    # writer.save()
-    # iex_inmem.seek(0,0)
     with pd.ExcelWriter(iex_inmem, engine='xlsxwriter') as writer:
         for sheet_name in data_dict.keys():
             data_dict[sheet_name].to_excel(writer, sheet_name=sheet_name, index=False)
@@ -93,7 +88,6 @@ def conv_iex_u(u, t, ions):
     
     num_compounds = len(ions['name'])
     for i in range(num_compounds):
-        # if ions['name'][i] not in ['CHLORIDE', 'SULFATE', 'BICARBONATE', 'NITRATE']:
             ## only convert non-counterion concentrations.. may need to fix
         factor = 1 ## assumes meq
         if ions['units'][i] == 'ug':
@@ -107,10 +101,6 @@ def conv_iex_u(u, t, ions):
         
         ix_df[ions['name'][i]] = u[0, i, -1, :] * factor ### returned as meq... need to add smarter conversion
         
-        # else:
-            # ix_df[ions['name'][i]] = u[0, i, -1, :]
-        
-    
        
     ix_df[ix_df <= 0] = 1e-16 ## make negatives or 0's very small, numerical stability
     
@@ -198,7 +188,6 @@ class LLobj():
         
         ## system flow input??
         #### TODO -- if gac_ix or ix_gac, the flow rates must be matched!!!
-
         
         ### get GAC column data or create default
         ## default configuration 10ft diameter bed with 20,000 lbs F400, 0.55 gm/ml, 10 min EBCT 

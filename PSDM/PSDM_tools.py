@@ -153,7 +153,6 @@ def specific_throughput(column_specs, filter_pfas, k_data, c0, ct,
                               treat_days) / (column.wt/1e3)
             
             ebct_store.append(spec_throughput)
-            # plt.plot(results.index, results.values, label=comp+'_'+repr(ebct))
         
         compound_store[comp] = ebct_store
     
@@ -471,8 +470,6 @@ def isotherm_fit(data, isotherm='freundlich', plot=True, save_plot=False, filena
         chi2 = np.sum((resid/y_model)**2)
         chi2_red = chi2/dof
         s_err = np.sqrt(np.sum(resid**2)/dof)
-        
-        # print(t, resid, chi2, chi2_red, s_err)
         
         ci = t*s_err*np.sqrt(1/n + (xdata_plot-np.mean(xdata))**2/\
                              np.sum((xdata-np.mean(xdata))**2))

@@ -95,8 +95,6 @@ if test_gac_gac:
     # run single column - to compare
     # =============================================================================
     for comp in compounds:
-        # print(comp)
-        
         # SETTING UP PSDM simulation column
         column = PSDM.PSDM(column_info[carbons[0]], 
                         chem_data, 
@@ -107,7 +105,6 @@ if test_gac_gac:
                         optimize=False
                         )
         
-        # print('EBCT: ', np.round(column.ebct, 2), ' min') 
         column.test_range = np.array([k_data[comp]['K']])
         column.xn_range = np.array([k_data[comp]['1/n']])
         
@@ -121,7 +118,6 @@ if test_gac_gac:
                  ls=':',
                  label=f"{comp} - Single")
         
-        # print(results)
         
     # =============================================================================
     # run lead-lag for gac    
@@ -133,7 +129,6 @@ if test_gac_gac:
                    )
     
     results_dict = LL_gac.run_LL(swap_days, LL_type='gac')
-    # print(results_dict)
     for comp in compounds:
         
         mid = results_dict['mid results'][comp]
@@ -234,8 +229,6 @@ if test_gac_ix or test_ix_gac:
                         )
         results2 = LL_ix_gac.run_LL(1500, LL_type='ix-gac')
         
-        # print(LL_ix_gac.ix_data)
-        # print(results2)
         
         plt.figure()
         for comp in results2['effluent results'].columns:#['PFHxA']:#'PFHpA', 'PFHxS', 'PFBA']:
@@ -255,10 +248,6 @@ if test_gac_ix or test_ix_gac:
         plt.xlabel('Time (days)')
         plt.tight_layout()    
         
-            
-        # results2['effluent results'].plot.line()
-        # results2['mid results'].plot.line()
-
     
     
     
