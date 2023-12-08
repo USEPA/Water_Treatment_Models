@@ -43,7 +43,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ![Start](DocumentPics/start.PNG)
 
-2. Click import file in the top left of the Interface
+2. Application opens to Input & Column Parameter view. User can select "Browse" below "Choose .xlsx File" to import preconfigured input file in the upper left, as shown. Or, a user can begin editing input values following steps 4 and 5 below.
 
 ![Import File](DocumentPics/Slide1.PNG)
 
