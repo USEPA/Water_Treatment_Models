@@ -57,7 +57,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 5. (Optional) In the ions tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
 
-![Adjust](DocumentPics/Slide3.PNG)
+![Adjust](DocumentPics/IonsTab.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
 6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
