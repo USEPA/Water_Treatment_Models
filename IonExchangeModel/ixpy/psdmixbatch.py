@@ -46,6 +46,7 @@ class PSDMIXbatch:
         
     def save_results(self, file_name, **kwarg):
         # TODO: fix time column output to have correct heading
+        # TODO: Output feature parity with column code
         if 'time' in kwarg.keys():
             time_factor, _, _ = conv_time('s', kwarg['time'], '', '')
         else:
@@ -60,8 +61,8 @@ class PSDMIXbatch:
         if 'concentration' in kwarg.keys():
             
             save_df, _, _ = conv_database(save_df, 
-                                   dict(zip(self.ions.index.tolist(), ['meq']*self.ions.shape[1])),
-                                   dict(zip(self.ions.index.tolist(), [kwarg['concentration']]*self.ions.shape[1])),
+                                   dict(zip(self.ions.index.tolist(), ['meq']*self.ions.shape[0])),
+                                   dict(zip(self.ions.index.tolist(), [kwarg['concentration']]*self.ions.shape[0])),
                                    conv_conc,
                                    self.ions['mw'].to_dict(),
                                    self.ions['valence'].to_dict())
