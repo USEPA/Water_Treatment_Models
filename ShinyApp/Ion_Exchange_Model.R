@@ -701,7 +701,7 @@ PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 
 process_files <- function (file) {
   
-  effluent<-data.frame(hours=(0), CHLORIDE=(0))
+  effluent<-data.frame(time=(0), CHLORIDE=(0))
   
   params<-read_xlsx(file, sheet="params")
   ions<-read_xlsx(file, sheet="ions")
@@ -836,11 +836,11 @@ effluent_data_processor<-function(ion, effluent){
     mydata<-mass_converter_mgl(ion, effluent)                              #convert to mgl
     colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")#Distinguish the names from the simulated data
     
-    timevec<-data.frame(hours=c(mydata[,1]))
+    timevec<-data.frame(time=c(mydata[,1]))
     concframe<-gather(mydata[,2:ncol(mydata)])                    #Gather into shape that is easy to convert and plot
     effframe<-cbind(timevec, concframe)
     
-    colnames(effframe)<-c("hours", "name", "conc")
+    colnames(effframe)<-c("time", "name", "conc")
     
     return(effframe)
     
@@ -848,7 +848,7 @@ effluent_data_processor<-function(ion, effluent){
   
   else{
     
-    effframe<-data.frame(hours=NA, name=NA, conc=NA)
+    effframe<-data.frame(time=NA, name=NA, conc=NA)
     
     return(effframe)
     
@@ -1315,6 +1315,7 @@ ui <- fluidPage(
                         sidebarPanel(
                           selectInput("model", "Model Selection", c("HSDM", "PSDM")),
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
+                          textOutput("selectedfile"),
                           textOutput("reject"),
                           textOutput("OutputConcentration"),
                           sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
@@ -1688,6 +1689,8 @@ server <- function(input, output, session) {
   output$AlkConv<-renderText("Bicarbonate is the common chemical used to measure alkalinity in this model, however, the user may have the pH of their water without the Bicarbonate specifications. If this is the case then the user can use this calculator to take their pH measurement and find the corresponding Bicarbonate concentrations.  ")
   output$bicarbion<-renderTable(bicarbion)
   
+  #output$selectedfile<-renderText(input$file1)
+  
   
   output$how2use2<-renderText("1) Use an Excel file to describe parameters of water treatment unit operation (examples provided). One can upload such file by clicking 'Browse' in the top left corner of the Input page.")
   output$how2use3<-renderText("2) Start with the data that is provided in the user interface and manipulate the data from there. Once the parameters have been decided ions can be added, either in the xlsx file or on the ions tab, as well as concentration points. When the user is satisfied with their settings, click 'run analysis' to begin the computation. Simulation time can take a few seconds to minutes depending on how many ions are added.")
@@ -1965,10 +1968,29 @@ server <- function(input, output, session) {
   #EFFLUENT TAB HANDLING#
   #------------------------------------------------------------------------------# 
   
-  effluentdat<-dataEditServer("edit-3", data="effluent.csv")
+  effluentdat<-dataEditServer("edit-3",read_args=list(colClasses=c("numeric")), data="effluent.csv")
   dataOutputServer("output-1", data=effluentdat)
   
+  #Put effluent data into plot data format
   effdata<-reactive({effluent_data_processor(iondat(), effluentdat())})
+  
+  #Make effluent time match input time
+  effdat_hours<-reactive({
+    effluentdata<-effdata()
+    time<-effluentdata['time']
+    if(input$timeunits2=='hr'){
+      newtime<-time
+    }
+    else{
+      newtime<-time*24
+    }
+    neweff<-cbind(newtime, effluentdata[,2:ncol(effluentdata)])
+    return(neweff)
+  })
+  
+
+
+  
   
   
   #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#             
@@ -2100,14 +2122,14 @@ server <- function(input, output, session) {
       outputcounterions$time <- counteriondata()$hours / (bv_conv / hour2sec) / 1e3
       outputions$time <- iondata()$hours / (bv_conv / hour2sec) / 1e3
 
-      outputeffluent$time<- effdata()$hours/ (bv_conv / hour2sec) / 1e3
+      outputeffluent$time<- effdat_hours()$time/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-cin_mgl_hours_prep()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
 
     } else {
       outputcounterions$time <- counteriondata()$hours / (time_conv[input$timeunits] / hour2sec)
       outputions$time <- iondata()$hours / (time_conv[input$timeunits] / hour2sec)
 
-      outputeffluent$time<- effdata()$hours/ (time_conv[input$timeunits] / hour2sec)
+      outputeffluent$time<- effdat_hours()$time/ (time_conv[input$timeunits] / hour2sec)
       outputinfluent$hours<-cin_mgl_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec) ## should this be $time?
     }
   })
@@ -2130,7 +2152,7 @@ server <- function(input, output, session) {
       outputcounterions$conc <- counteriondata()$conc / mass_conv[input$OCunits]
       outputions$conc <- iondata()$conc / mass_conv[input$OCunits]
 
-      outputeffluent$conc <- effdata()$conc/mass_conv[input$OCunits]
+      outputeffluent$conc <- effdat_hours()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- cin_mgl_hours_prep()$conc/mass_conv[input$OCunits]
     }
 
@@ -2175,7 +2197,7 @@ server <- function(input, output, session) {
 
   effluent_processed<-reactive({
     if(input$effluentdata==TRUE){
-      plot_data3<-effdata()
+      plot_data3<-effdat_hours()
       plot_data3$conc<-outputeffluent$conc
       plot_data3$hours<- outputeffluent$time
       plot_data3
