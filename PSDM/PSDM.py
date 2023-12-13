@@ -421,11 +421,18 @@ class PSDM():
                 if not done:
                     tmp_time = diff[diff<0.].index.values
                     if len(tmp_time) > 0:
-                        test = np.min(tmp_time)
-                        test_f = interp1d(xdata, diff)
-                        tmp = sp.optimize.root(test_f, test-1)
-                        breakthrough_time = tmp.x
-                        breakthrough_time = breakthrough_time[0]
+                        upper = diff[diff >= 0]#.iloc[-1]
+                        upper_x = upper.index[-1]
+                        upper_y = upper.iloc[-1]
+                        lower = diff[diff < 0]#.iloc[0]
+                        lower_x = lower.index[0]
+                        lower_y = lower.iloc[-1]
+                        
+                        # print(upper_x, upper_y, lower_x, lower_y)
+                        slope = (lower_y - upper_y) / (lower_x - upper_x)
+                        intercept = upper_y - slope * lower_x
+                        breakthrough_time = -intercept/slope
+                        
                         breakthrough_code = 'breakthrough'
                         done = True
                 
@@ -495,7 +502,7 @@ class PSDM():
                     num_vals = len(xdata_trunc)
                     f_effl = interp1d(xdata[:num_vals+1], yte[:num_vals+1], fill_value='extrapolate')
                 else:
-                    f_effl = interp1d(xdata, yte, fill_value='extrapoloate')
+                    f_effl = interp1d(xdata, yte, fill_value='extrapolate')
                 
                 try:
                     int_infl = quad(f_infl, 0, breakthrough_time, points=xdata)[0]
