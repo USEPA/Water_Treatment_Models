@@ -322,6 +322,7 @@ class PSDM():
         else:
             print('mass_transfer input must be a dictionary: {compound: {kf|dp|ds: value}}')
         
+        
 # =============================================================================
 # end __init__
 # =============================================================================
@@ -509,6 +510,9 @@ class PSDM():
                     int_effl = quad(f_effl, 0, breakthrough_time, points=xdata)[0]
                 except Exception as e:
                     print(e)
+                    # print(breakthrough_time)
+                    # print(f_infl(breakthrough_time), f_effl(breakthrough_time))
+                    # print(f_infl.x, f_infl.y, f_effl.x, f_effl.y)
                     int_infl = quad(f_infl, 0, breakthrough_time)[0]
                     int_effl = quad(f_effl, 0, breakthrough_time)[0]
                 qtmp = flow * self.t_mult * (int_infl - int_effl) * self.mass_mul
@@ -641,7 +645,7 @@ class PSDM():
         inf = self.data_df[self.influent][compound]
         eff = self.data_df[self.carbon][compound] 
         #convert cbo to molar values
-        cbo = inf * self.mass_mul / mw 
+        cbo = inf * self.mass_mul / mw  
         time = (inf.index * t_mult).values
         if inf.index[-1] < 10 and self.time_type == 'days':
             dstep = 15.
@@ -685,6 +689,7 @@ class PSDM():
         else:
             dp_v = self.mass_transfer[compound]['dp']
         
+        # @stopit.threading_timeoutable()
         def run(k_val, xn):
             nonlocal cinf
             nonlocal cout_f
@@ -710,7 +715,7 @@ class PSDM():
             
             
             if water_type != 'Organic Free':
-                ds_v /= 1e10 #1e6
+                ds_v /= 1e10 
 
             d = ds_v/dp_v
             
@@ -750,7 +755,6 @@ class PSDM():
                                     num=numb, endpoint=True) #increase the number of sites to check for ssq
             #set up time based influent data
             cinf = interp1d(time, cin.values, fill_value='extrapolate') 
-            # cinf = interp1d(time_dim, cin.values, fill_value = 'extrapolate') 
             cout_f = interp1d(time_dim, cout.values, fill_value='extrapolate')
             
             #initialize storage arrays/matrices
@@ -789,7 +793,6 @@ class PSDM():
                 
                 z_c = z/qte
                 z_c[qte<=0.] = 0.
-                # z[qte>0.] = z_c[qte>0.] # should be 1 for single component.
                 q0 = yt0 * xn/ym
 
                 cpore = z_c * q0**xni * interp(foulFA[idx:idx+2], extra) 
@@ -889,14 +892,14 @@ class PSDM():
                      index = ['Sc','Re','difl','kf','K','1/n','dp','ds','ssq','ebct','sf'])
         
         if self.optimize_flag:
-            with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer: #'-'+repr(round(best_val_xn,2))
-
+            with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer:#'-'+repr(round(best_val_xn,2))
+            
                 model_data.to_excel(writer, 'model_fit')
                 
                 inf.to_excel(writer, 'influent')
                 eff.to_excel(writer, 'effluent')
                 data_tmp.to_excel(writer, 'parameters')
-    
+
                 ti.sleep(1)
             
         return compound, best_val_k, best_val_xn, ssqs, model_data
@@ -947,7 +950,7 @@ class PSDM():
         inf = self.data_df[self.influent][compound]
         eff = self.data_df[self.carbon][compound] 
         #convert cbo to molar values
-        cbo = inf * self.mass_mul / mw #/ 1000. #(* self.mass_mult ????)
+        cbo = inf * self.mass_mul / mw
         time = (inf.index * t_mult).values
         if cbo.iloc[0] == 0.:
             cb0 = 1.
@@ -980,7 +983,6 @@ class PSDM():
         dp_v = (difl/(tortu))       #porosity not used in AdDesignS appendix, removed to match
         ds_base = 1. #set up for nonlocal
         
-        # @stopit.threading_timeoutable()
         def run(ds_mult):
             nonlocal cinf
             nonlocal cout_f
@@ -1061,7 +1063,7 @@ class PSDM():
                 cinfl = cinf(t)
                 fac = 1.
                 
-                z = ym * y0tmp[:nc,:mc] #* ym #updated ym should always be 1 for single comp.
+                z = ym * y0tmp[:nc,:mc] #updated ym should always be 1 for single comp.
                 qte = z
                 yt0 = xni * z
                 
@@ -1109,7 +1111,7 @@ class PSDM():
                 # defines interpolating function of predicted effluent
                 cp_tmp = y.y[-1]
                 cp_tmp[cp_tmp < 0.] = 0.#sets negative values to 0.
-                cp_tmp[cp_tmp > np.max(cin)*3.] = np.max(cin)*3. #sets the max to 3x cb0
+                cp_tmp[cp_tmp > np.max(cin) * 3.] = np.max(cin) * 3. #sets the max to 3x cb0
                 cp = interp1d(y.t, cp_tmp, fill_value='extrapolate') 
             except Exception:# as e:
                 t_temp = np.linspace(0, ttol, 20)
@@ -1140,7 +1142,7 @@ class PSDM():
         else: #assume test_range and xn_range are single values
             best_val_ds = self.test_range[0] * ds_base
             best_fit = run(best_val_ds)
-            min_val = 1e2 #run_fit(best_val_k, best_val_xn)
+            min_val = 1e2 
             ssqs = pd.Series(min_val, index=[best_val_ds])
         
         itp = np.arange(0., ttol+tstep, tstep) 
@@ -1148,12 +1150,13 @@ class PSDM():
                               best_fit(itp) * cb0 * mw / \
                               self.mass_mul, \
                               fill_value='extrapolate')
-            
-        with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer:
         
-            model_data = pd.DataFrame(output_fit(itp/tconv), \
-                                      columns = ['data'], \
-                                      index = itp/tconv/t_mult)
+        
+        model_data = pd.DataFrame(output_fit(itp/tconv), \
+                                  columns = ['data'], \
+                                  index = itp/tconv/t_mult)
+        
+        with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer:
             model_data.to_excel(writer, 'model_fit')
             
             inf.to_excel(writer, 'influent')
@@ -1438,6 +1441,7 @@ class PSDM():
             _, _, _, ssqs, _ = self.run_psdm_kfit(compound)
             
             if status_print:
+            # if True:
                 output = ssqs.values[0][0]
                 if output > 1e-3:
                     printer = np.round(output,3)
@@ -1527,6 +1531,7 @@ class PSDM():
             
             # increment k_range, assume best_xn is correct
             if pm > 0:
+                # print('Additional K-space Search')
                 if num==0:
                     #prevents div/zero error
                     num=1
@@ -1542,6 +1547,7 @@ class PSDM():
                     ssq = min_fun(x0, compound, k_val, q_val)
                     
                     if ssq < best_ssq:
+                        # best_xn = xn * 1
                         best_k_factor = pmk * 1
                         best_ssq = ssq * 1
                         decreasing = True
@@ -1575,7 +1581,6 @@ class PSDM():
                         
                 # finer step-size polish - End step
                 #search small 1/n range to see if it moved
-                # print('Entering Polishing Step')
                 stps = 6 #number of steps to try in 1/n range
                 new_xn_r = np.linspace(best_xn-stps*des_xn,
                                         best_xn+stps*des_xn,
@@ -1593,6 +1598,7 @@ class PSDM():
                 correct_direction = False
                 sign = 1
                 pmk = best_k_factor + sign * des_k # initiates xn
+                # count_check = 0
                 
                 while pmk <= max_k_factor and decreasing:
                     count = 0
@@ -1620,7 +1626,7 @@ class PSDM():
                     pmk = best_k_factor + sign * des_k # initiates xn
                     decreasing = True
                     
-                    while pmk >= min_k_factor and decreasing:
+                    while pmk >= min_k_factor and decreasing:# and pmk > 0.:
                         count = 0
                         for xn in new_xn_range:
                             x0 = [pmk, xn]
@@ -1675,7 +1681,6 @@ class PSDM():
             need to add save file handler. 
             currently not implimented
             '''
-            # writer = pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx')
             with pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx') as writer:
                 self.k_data.to_excel(writer, 'Sheet1')
         
@@ -1686,6 +1691,10 @@ class PSDM():
 
 #END RUN_ALL_SMART
     
+
+
+#### Begin run_psdm()
+
     def run_psdm(self):
         '''
         new run multi
@@ -1759,9 +1768,8 @@ class PSDM():
                     
         dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
         
+        self.mass_transfer_data = self.mass_transfer.copy()
         
-        
-        # @stopit.threading_timeoutable()
         def run():
             nonlocal cinf
             nonlocal cout_f
@@ -1793,6 +1801,11 @@ class PSDM():
             
             if water_type != 'Organic Free':
                 ds_v /= 1e10  #original code =1e-30, but this caused instability
+            
+            ## save input values for later use
+            self.mass_transfer_data.loc['kf'] = kf_v
+            self.mass_transfer_data.loc['dp'] = dp_v
+            self.mass_transfer_data.loc['ds'] = ds_v
             
             d = (ds_v/dp_v)[self.compounds]
             
@@ -1846,7 +1859,7 @@ class PSDM():
             TwoDSize = (self.num_comps, 1)
 
             ym_v = ym[compound_list].values
-            ym_vA = ym_v.reshape(ThreeDSize) #.__altshape
+            ym_vA = ym_v.reshape(ThreeDSize) 
             xni_v = xni[compound_list].values
             xni_vA = xni_v.reshape(ThreeDSize)
             xn_vval = xn_v[compound_list].values
@@ -1870,7 +1883,7 @@ class PSDM():
                 comp = compound_list[i]
                 cinf = interp1d(time,\
                                 cin[comp].values, \
-                                fill_value = 'extrapolate') #kind='cubic' 
+                                fill_value = 'extrapolate') 
                 
                 cinfA[i] = cinf(time_temp)
                 facA[i] = (1./tortu-d[comp])/(1.-d[comp])
@@ -1915,14 +1928,14 @@ class PSDM():
                 z2 = np.multiply(ym_vA, y0tmp[:,:nc,:mc])
                 z2[z2<0] = 0.
                 qte2 = np.tile(z2.sum(axis=0), ThreeDSize)  #total mass on carbon
-                qte2[qte2==0.] = 1e-30 ### set mass to very small number (avoid divide by zero)
+                qte2[qte2==0.] = 1e-30 ### set mass to very small number
                 yt0_2 = np.multiply(xni_vA, z2)
                 yt0_2 = np.tile(yt0_2.sum(axis=0), ThreeDSize) #liquid phase in equilibrium#yt0_c
                 z2 = np.divide(z2, qte2) 
                 z2[qte2 <= 0.] = 0. #z_c
                 
                 q0_2 = np.multiply(xn_ymA, yt0_2) 
-                
+ 
                 cpore2 = np.power(q0_2, xni_vA) 
                 cpore2 = np.multiply(z2, cpore2)
                 cpore2 = np.multiply(foul_fac, cpore2)
@@ -1944,7 +1957,7 @@ class PSDM():
                            
                 ww2 = np.matmul(wr_A[:,:nd].reshape((self.num_comps,1,nd)),
                                 bb2)
-                              
+                
                 ydot2[:,:nd,1:] = bb2[:,:,1:]
                 
                 num = (cinfl - cpore2[:,nc-1,0]).reshape(TwoDSize)
@@ -1996,7 +2009,6 @@ class PSDM():
             
             cp_df = pd.DataFrame(cp_tmp, index=time_index, columns=compound_list)
             cp_df = cp_df * cb0 * mw / self.mass_mul
-            # print(cp_df)
         
             if self.plot_output:
                 cp_df.plot.line()
@@ -2016,8 +2028,262 @@ class PSDM():
         best_fit = run()
         return best_fit
     #end multi_run
+##### end run_psdm()    
     
-    
+
+### Begin model_uncertainty()
+    def __reset_column_values(self):
+
+        ### just a deep copy???
+        # =============================================================================
+        #         Reset values in column object
+        # =============================================================================
+        self.L = self.L_bup * 1
+        self.diam = self.diam_bup * 1 
+        self.wt = self.wt_bup * 1
+        self.flrt = self.flrt_bup * 1
+        self.rhop = self.rhop_bup * 1
+        self.rhof = self.rhof_bup * 1
+        self.rad = self.rad_bup * 1
+        self.tortu = self.tortu_bup * 1 
+        self.psdfr = self.psdfr_bup * 1
+        self.epor = self.epor_bup * 1
+        
+        #calculate other fixed values
+        self.area = np.pi*(self.diam**2)/4.
+        self.bedvol = self.area * self.L
+        self.ebed = 1. - self.wt/(self.bedvol*self.rhop)
+        self.tau = self.bedvol * self.ebed * 60./self.flrt
+        self.sf = 0.245423867471 * self.flrt/self.area # gpm/ft**2
+        self.vs = self.flrt/(60.*self.area)
+        self.re = (2.*self.rad*self.vs*self.dw)/(self.ebed*self.vw)
+        
+        # #calculate Empty Bed Contact Time (EBCT)
+        self.ebct = self.area*self.L/self.flrt 
+        
+        self.k_data = self.k_data_bup.copy()
+        self.data_df = self.data_bup.copy()
+        self.compounds = self.compounds_bup
+        self.num_comps = self.num_comps_bup * 1
+        self.__y0shape = self.y0shape_bup 
+        self.__altshape = self.altshape_bup
+        self.jac_sparse = self.jac_sparse_bup #spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
+        self.mass_transfer = self.mass_transfer_bup.copy()  
+        
+        ## returns nothing, just resets class variables to originally calculated states for interative loop in model_uncertainty()
+
+    def model_uncertainty(self, single=True, capacity=10, k='None', qn='None', c0='None', mass='None', flrt='None', ds='None', dp='None', kf='None'):
+        idx=pd.IndexSlice 
+        
+            ## store initial values so they can be changed: backups flagged with _bup
+        self.k_data_bup = self.k_data.copy()
+        self.data_bup = self.data_df.copy()
+        self.compounds_bup = self.compounds
+        self.num_comps_bup = self.num_comps * 1
+        self.jac_sparse_bup = self.jac_sparse
+        self.y0shape_bup = self.__y0shape #(self.num_comps, self.nc+1, self.mc)
+        self.altshape_bup = self.__altshape #(self.num_comps, self.nc, self.mc)
+        self.mass_transfer_bup = self.mass_transfer.copy()
+        calced_mass_transfer = self.mass_transfer.copy()
+        
+            ### column values to reset later
+        self.L_bup = self.L * 1
+        self.diam_bup = self.diam * 1 
+        self.wt_bup = self.wt * 1 
+        self.flrt_bup = self.flrt * 1 
+        self.rhop_bup = self.rhop * 1 
+        self.rhof_bup = self.rhof * 1 
+        self.rad_bup = self.rad * 1
+        self.tortu_bup = self.tortu * 1 
+        self.psdfr_bup = self.psdfr * 1
+        self.epor_bup = self.epor * 1
+        
+
+        ## create results dataframe: self.results stores baseline results, without considered uncertainty
+        self.results = pd.DataFrame(index=np.linspace(0, self.duration, num=2000), columns=self.compounds_bup)
+        ### create uncertainty_results dataframe
+        multi_idx = [(i, j) for i in ['upper', 'lower'] for j in self.compounds_bup]
+        midx = pd.MultiIndex.from_tuples(multi_idx)
+        self.uncertainty_results = pd.DataFrame(index=self.results.index, columns=midx)
+        
+        
+        #### run PSDM model from inputs - no changes
+        if single:    ## run compounds as single compounds, default  
+            self.num_comps = 1
+            self.jac_sparse = spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
+            self.__y0shape = (self.num_comps, self.nc+1, self.mc)
+            self.__altshape = (self.num_comps, self.nc, self.mc)
+            
+            for comp in self.compounds_bup: ## run over all compounds
+                self.compounds = [comp]
+                
+                ## get influent/effluent data for single species
+                self.data_df = self.data_bup.transpose().loc[idx[:, comp], :].transpose()
+                
+                ## set k_data
+                self.k_data = pd.DataFrame(self.k_data_bup[comp].values, index=self.k_data_bup.index, columns=self.compounds) 
+                
+                temp_results = self.run_psdm() ## run simulation
+                self.results[comp] = temp_results[comp](self.results.index) ## store results in dataframe
+                
+                calced_mass_transfer[comp] = self.mass_transfer_data[comp]
+                #print(self.mass_transfer_data[comp])
+        else: ## run as multi-competitive
+        ## TODO: Still need to test this, but it should work...
+            temp_results = self.run_psdm() ## run simulation, returns dictionary of interpolating functions
+                
+            for comp in temp_results.keys(): ## store results in dataframe
+                self.results[comp] = temp_results[comp](self.results.index)
+        
+            calced_mass_transfer = self.mass_transfer_data.copy()
+        
+        # print(calced_mass_transfer)
+        
+        
+        ## begin uncertainty loop #######################################################################
+        
+        ### Create copy of base results to start uncertainty_results
+        for comp in self.compounds_bup:
+            # print(comp)
+            self.uncertainty_results.loc[self.results.index, ('upper', comp)] = self.results[comp] * 1
+            self.uncertainty_results.loc[self.results.index, ('lower', comp)] = self.results[comp] * 1
+       
+        test_uncertainty = [] ## initialize list, will be list of dictionaries 
+        
+        ### Inputs assume % reported as 10 for 10%, not 0.1
+        if capacity != 'None':
+            test_uncertainty.append({'k': 1 + capacity/100, '1/n': 1 - capacity/100}) ## Freundlich K and 1/n work in opposite directions
+            test_uncertainty.append({'k': 1 - capacity/100, '1/n': 1 + capacity/100})
+        
+        other_inputs = {'k': k, 'qn': qn, 'mass': mass, 'ds': ds, 'dp': dp, 'kf': kf, 'flrt': flrt}
+        for key, value in other_inputs.items():
+            
+            if value != 'None':
+                test_uncertainty.append({key: 1 + value/100})
+                test_uncertainty.append({key: 1 - value/100})
+        
+
+        for test in test_uncertainty:
+            self.__reset_column_values()
+            k_data_loop = self.k_data.copy()
+            self.mass_transfer = calced_mass_transfer.copy() ## this always fixes mass transfer to original system flowrates... TODO: is that a problem?
+            data = self.data_df
+            
+            for key in test.keys(): ## this should be a dictionary... 
+                
+                if key == 'k':
+                    k_data_loop.loc['K'] *= test[key]
+                
+                if key == '1/n':
+                    k_data_loop.loc['1/n'] *= test[key]
+                
+                if key == 'flrt': ## adjust flowrate
+                    self.flrt *= test[key]
+                    
+                if key == 'ds':  ## adjust surface diffusion coefficient
+                    self.mass_transfer.loc['ds'] *= test[key]
+                    ## This is only really relevant if fouling is not used. Otherwise, Ds becomes negligibly small
+                
+                if key == 'dp':  ## adjust pore diffusion coefficient
+                    self.mass_transfer.loc['dp'] *= test[key]
+                
+                if key == 'kf': ## adjust film transfer coefficient
+                    self.mass_transfer.loc['kf'] *= test[key]
+            
+                if key == 'mass': ## adjust mass of media
+                    self.wt *= test[key]
+                    
+                    volume = np.pi/4 * (self.diam**2) * self.L
+                    
+                    if self.wt/volume > self.rhof:
+                        self.L = self.wt / (np.pi/4 * self.diam**2 * self.rhof) ## may cause shift to EBCT, scaling will always expect base case as EBCT adjustment
+                        ## resize column to make sure apparent density doesn't exceed rhof
+                        
+                if key == 'C': ## adjust influent concentration
+                    data[self.influent] *= test[key] 
+                    self.data_df = data.copy()  # overwritten if "single=True", but used by competitive if not.
+                    self.k_data.loc['AveC'] *= test[key] ## adjust average C for molar K adjustment
+                
+                if key == 'qn':  ### adjust capicity (q's) impact on 1/n
+                    
+                    qs = self.k_data.loc['q'] * test[key]
+                    cs = self.k_data.loc['AveC']
+                    ks = self.k_data.loc['K']
+                    
+                    self.k_data.loc['1/n'] = np.log(qs / ks) / np.log(cs * self.mass_mul)
+        
+            ### calculate updated values if uncertainty has changed these values
+            #calculate other fixed values
+            self.area = np.pi*(self.diam**2)/4.
+            self.bedvol = self.area * self.L
+            self.ebed = 1. - self.wt/(self.bedvol*self.rhop)
+            self.tau = self.bedvol * self.ebed * 60./self.flrt
+            self.sf = 0.245423867471 * self.flrt/self.area # gpm/ft**2
+            self.vs = self.flrt/(60.*self.area)
+            self.re = (2.*self.rad*self.vs*self.dw)/(self.ebed*self.vw)
+            
+            #calculate Empty Bed Contact Time (EBCT)
+            self.ebct = self.area*self.L/self.flrt 
+            
+            
+            ## run uncertainty
+            if single:    ## run compounds as single compounds, default  
+                
+                self.num_comps = 1
+                self.jac_sparse = spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
+                self.__y0shape = (self.num_comps, self.nc+1, self.mc)
+                self.__altshape = (self.num_comps, self.nc, self.mc)
+                
+                for comp in self.compounds_bup: ## run over all compounds
+                    self.compounds = [comp]
+                    
+                    ## get influent/effluent data for single species
+                    self.data_df = data.transpose().loc[idx[:, comp], :].transpose()
+                    
+                    ## set k_data
+                    self.k_data = pd.DataFrame(k_data_loop[comp].values, index=k_data_loop.index, columns=self.compounds) 
+                    
+                    temp_results = self.run_psdm() ## run simulation
+                    
+                    
+                    ### figure out if this should change the uncertainty bounds
+                    lower = np.minimum(self.uncertainty_results['lower'][comp].values, temp_results[comp](self.results.index))
+                    
+                    upper = np.maximum(self.uncertainty_results['upper'][comp].values, temp_results[comp](self.results.index))
+                    
+                    self.uncertainty_results.loc[idx[:, ('lower', comp)]] = lower * 1
+                    self.uncertainty_results.loc[idx[:, ('upper', comp)]] = upper * 1 ## store results in dataframe
+                    
+            else: ## run as multi-competitive
+            ## TODO: Still need to test this, but it should work...
+            
+                self.k_data = k_data_loop.copy()
+                temp_results = self.run_psdm() ## run simulation, returns dictionary of interpolating functions
+                    
+                for comp in temp_results.keys(): ## store results in dataframe
+                    self.results[comp] = temp_results[comp](self.results.index)
+                   
+                    lower = np.minimum(self.uncertainty_results['lower'][comp].values, temp_results[comp](self.results.index))
+                    
+                    upper = np.maximum(self.uncertainty_results['upper'][comp].values, temp_results[comp](self.results.index))
+                    
+                    self.uncertainty_results['lower'][comp] = lower
+                    self.uncertainty_results['upper'][comp] = upper ## store results in dataframe
+            
+
+        ### end uncertainty loop ##########################################################################
+
+        
+        ## Final reset to ensure things are back to original state
+        self.__reset_column_values()
+
+        ### no value returned, saved as self.results and self.uncertainty_results
+        
+
+### end model_uncertainty()
+
+
+
     
 # =============================================================================
 #     NEW BELOW, may delete
@@ -2115,7 +2381,6 @@ class PSDM():
                                              )['ssq']
             
             if ~np.isclose(ssqs.min().min(), ssqs.max().max()):# np.floor(ssqs.values[0][0]):
-            
                 min_val = find_minimum_df(ssqs)
                 best_val_xn = min_val.columns[0]
                 best_val_k = min_val.index[0] * k_mult[best_val_xn]
