@@ -8,7 +8,6 @@ library(shinyjs)
 library(tidyr)
 library(DataEditR)
 library(colorBlindness)
-library(xlsx)
 
 
 #------------------------------------------------------------------------------#
