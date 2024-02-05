@@ -38,10 +38,11 @@ from copy import deepcopy
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import scipy as sp
+# import scipy as sp
 from scipy.integrate import quad, solve_ivp
 from scipy.interpolate import interp1d
 from scipy.stats import linregress
+from scipy.optimize import curve_fit
 import multiprocessing as mp
 import time as ti #time as a variable is used in code, so ti is used
 
@@ -51,6 +52,7 @@ from PSDM_functions import find_minimum_df, tortuosity, calc_solver_matrix
 from PSDM_functions import density, viscosity, recalc_k, generate_grid
 from PSDM_functions import interp 
 from PSDM_functions import process_input_data, process_input_file
+from PSDM_functions import logistic, filter_compounds
 
 def run_MP_helper(test_column, k, invN, compound, k_mult):
     mp.freeze_support()
@@ -138,7 +140,7 @@ class PSDM():
         self.nd = self.nc - 1
        
         #set up temperature dependant values
-        self.temp = kw.get('temp',20)
+        self.temp = kw.get('temp', 20)
         self.vw = viscosity(self.temp)
         self.dw = density(self.temp)
         
@@ -148,12 +150,13 @@ class PSDM():
             if self.time_type == 'days': #base units in minutes
                 self.t_mult = min_per_day
             elif self.time_type == 'hours':
-                self.t_mult = 60.
+                self.t_mult = 60. ## min_per_hour
             else:
-                self.t_mult = 1.
+                self.t_mult = 1. ## assumes minutes
         else:
             self.time_type = column_data.loc['time']
             self.t_mult = column_data.loc['t_mult']
+        
         # flow units    
         if 'flow_type' not in column_data.index:
             self.flow_type = kw.get('flow_type', 'ml') 
@@ -163,10 +166,11 @@ class PSDM():
             elif self.flow_type == 'ml':
                 self.flow_mult = 1e-3
             else:
-                self.flow_mult = 1.       
+                self.flow_mult = 1.   ## assumes liters    
         else:
             self.flow_type = column_data.loc['flow_type']
             self.flow_mult = column_data.loc['flow_mult']
+        
         # concentration units
         if 'units' not in column_data.index:
             self.conc_type = kw.get('conc_type', 'ng') 
@@ -175,9 +179,11 @@ class PSDM():
                 self.mass_mul = 1.
             elif self.conc_type == 'ng':
                 self.mass_mul = 1e-3
+            elif self.conc_type == 'mg':
+                self.mass_mul = 1e3
             else:
-                print('conc_type is invalid, ug/ng are valid options')
-                self.mass_mul = 1.        
+                print('conc_type is invalid, mg/ug/ng are valid options')
+                self.mass_mul = 1.        ## assumes ug provided
         else:
             self.conc_type = column_data.loc['units']
             self.mass_mul = column_data.loc['mass_mul']
@@ -236,29 +242,7 @@ class PSDM():
         # precalculate jacobian sparsity matrix
         self.jac_sparse = spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
         self.jac_sparse_single = spar_Jac(1, self.nc, self.nz, self.ne)
-
-        #calculate initial values 
-        #might need to add more here
-        k_data = kw.get('k_data', [])
-        if len(k_data) == 0:
-            self.k_data = pd.DataFrame(index=['K','1/n', 'q', 'brk','AveC'], \
-                                        columns=self.compounds)
-            for comp in self.compounds:
-                k, q, classifier, brk, aveC = self.__calculate_capacity(comp)
-                self.k_data[comp]=np.array([k, self.xn, q, brk, aveC])
-        else:
-            self.k_data = k_data
-            if self.brk_type=='force':
-                tmp_assume = self.brk_df[(self.brk_df['carbon']==self.carbon)&\
-                                         (self.brk_df['breakday']!=3000)]
-                impacted = tmp_assume['compound'].values
-                for comp in self.compounds:
-                    if comp in impacted:
-                        k, q, classifier, brk, aveC = self.__calculate_capacity(comp)
-                        self.k_data[comp]=np.array([k, self.xn, q, brk, aveC])
-            
-        self.k_data_orig = self.k_data
-        
+             
         self.water_type = kw.get('water_type','Organic Free')
         self.chem_type = kw.get('chem_type', 'halogenated alkenes')
         
@@ -268,7 +252,7 @@ class PSDM():
         #handling for multiprocessing
         self.processes = kw.get('mp', mp.cpu_count())
         
-        self.optimize_flag = kw.get('optimize',True)
+        self.optimize_flag = kw.get('optimize', False)
         if len(self.test_range)==1 and len(self.xn_range)==1:
             self.optimize_flag = False
         
@@ -288,7 +272,43 @@ class PSDM():
         max_time = np.max([self.max_days, self.duration]) #doesn't do anything at the moment for k_fit
         
         self.time_vals = np.linspace(0, max_time*self.t_mult, 500)
-        self.fouling_dict= self.__fouled_k_new(self.k_data.loc['K'], self.time_vals)
+        self.fouling_dict= self.__fouled_k_new(self.time_vals) ## removed self.k_data.loc['K'], 
+        
+        # calculate initial values 
+        # might need to add more here
+        k_data = kw.get('k_data', [])
+        self.k_data_input_type = type(k_data)
+
+        ## used in estimating K used in functions
+        self.k_by_xn_factor = {} ## relationship between K and 1/n for a calculated q, should be dictionary of interpolating functions
+        self.foul_mult_estimates = {comp: 1 for comp in self.compounds}  # creates list with 1x factor stored ## used to store estimate of fouling impact
+        
+        if len(k_data) == 0:
+            self.k_data = pd.DataFrame(index=['K','1/n', 'q', 'brk','AveC'], \
+                                        columns=self.compounds)
+            for comp in self.compounds:
+                k, q, classifier, brk, aveC, k_func, foul_mult_est = self.__calculate_capacity(comp)
+                self.k_data[comp] = np.array([k, self.xn, q, brk, aveC])
+                
+                self.k_by_xn_factor[comp] = k_func
+                self.foul_mult_estimates[comp] = foul_mult_est
+                
+        else:
+            self.k_data = k_data
+            if self.brk_type=='force':
+                tmp_assume = self.brk_df[(self.brk_df['carbon']==self.carbon)&\
+                                         (self.brk_df['breakday']!=3000)]
+                impacted = tmp_assume['compound'].values
+                for comp in self.compounds:
+                    if comp in impacted:
+                        k, q, classifier, brk, aveC, k_func, foul_mult_est = self.__calculate_capacity(comp)
+                        self.k_data[comp] = np.array([k, self.xn, q, brk, aveC])
+                        
+                        self.k_by_xn_factor[comp] = k_func
+                        
+                        self.foul_mult_estimates[comp] = foul_mult_est
+        
+        self.k_data_orig = self.k_data
         
         if False:
             plt.figure()
@@ -298,7 +318,7 @@ class PSDM():
                          label=key)
             plt.legend()
         
-        
+
         ### adding mass transfer keyword
         self.mass_transfer = pd.DataFrame(0.0, columns=self.compounds, index=['kf','dp','ds'])
         mass_transfer_data = kw.get('mass_transfer', 'None')
@@ -322,7 +342,8 @@ class PSDM():
         else:
             print('mass_transfer input must be a dictionary: {compound: {kf|dp|ds: value}}')
         
-        
+        self.__set_backups() ### set up backups
+
 # =============================================================================
 # end __init__
 # =============================================================================
@@ -360,9 +381,9 @@ class PSDM():
         rk4 = b1 * a4 #no factor of 100, in exponent (should there be b1?)
         return rk1, rk2, rk3, rk4
     
-    def __fouled_k_new(self, k_data, t):
-        #works on unconverted time
-        #only works on multiplier
+    def __fouled_k_new(self, t):
+        # works on unconverted time
+        # only works on multiplier
         if type(t) == np.ndarray:
             data_store = {}
             for comp in self.compounds:
@@ -378,147 +399,199 @@ class PSDM():
             return data_store
         
     def __calculate_capacity(self, compound):
-        flow = self.flrt * self.flow_mult
-        breakthrough_code = 'none'
-        carbon_mass = self.wt
-        infl = self.data_df[self.influent][compound]
-        infl[infl == 0] = 1e-3  ### prevents divide by zero error
-        effl = self.data_df[self.carbon][compound]
-        
-        breakthrough_time = self.duration
+        ## retunrs k, q_meas, breakthrough_code, breakthrough_time, aveC, k_function, foul_mult_est
         k = 0.
         q_meas = 0.
-        xdata = self.xdata
+        breakthrough_code = 'none'
+        breakthrough_time = self.duration
+        foul_mult_est = 1 ### estimates multiplier related to fouling
+        
+        flow_per_day = self.flrt * self.flow_mult * self.t_mult ## should return L/day
+        carbon_mass = self.wt   ## should be in grams
+                
+        xn_f_range = np.arange(0.15, 1.001, 0.01)  # sets up xn_range for returned interpolating function
+        times_to_test = np.arange(self.duration + 1) ## returns a list of days 
+        
+        k_function = interp1d(xn_f_range, np.ones(len(xn_f_range))) ## creates empty function so something will be returned
+        
+        ### get influent and effluent data
+        infl = self.data_df[self.influent, compound]
+        infl[infl == 0] = 1e-3  ### prevents divide by zero error
         aveC = infl.mean()              #calculates average influent concentration
         
-        if self.brk_type == 'calc':
-            donothing = False #set trigger for later process to False
-            if infl.sum() == 0:
-                print('No mass in influent for '+compound)
-                donothing = True
-            if effl.sum() == 0:
-                print('Insufficient data for breakthrough for '+compound)
-                donothing = False    
-            
-            diff = (infl-effl)#/infl
-            perc_diff = (infl-effl)/infl
+        effl = self.data_df[self.carbon, compound]
         
-            done = False
-            if not donothing:
-                yte = effl.values.astype('float64')
-                yti = infl.values.astype('float64')
-                
-                #check if there are already zeros (breakthrough point exact)
-                tmp_time = perc_diff[perc_diff==0.].index
-                if len(tmp_time) == 1:
-                    breakthrough_time = tmp_time.values[0]
-                    breakthrough_code = 'breakthrough'
-                    done = True
-                elif len(tmp_time) > 1:
-                    breakthrough_time = tmp_time.min()
-                    breakthrough_code = 'breakthrough'
-                    done = True
-                #check if there are transitions to negative (breakthrough in data, calculatable)
-                if not done:
-                    tmp_time = diff[diff<0.].index.values
-                    if len(tmp_time) > 0:
-                        upper = diff[diff >= 0]#.iloc[-1]
-                        upper_x = upper.index[-1]
-                        upper_y = upper.iloc[-1]
-                        lower = diff[diff < 0]#.iloc[0]
-                        lower_x = lower.index[0]
-                        lower_y = lower.iloc[-1]
-                        
-                        # print(upper_x, upper_y, lower_x, lower_y)
-                        slope = (lower_y - upper_y) / (lower_x - upper_x)
-                        intercept = upper_y - slope * lower_x
-                        breakthrough_time = -intercept/slope
-                        
-                        breakthrough_code = 'breakthrough'
-                        done = True
-                
-                #check to see if there is possible breakthrough within 15% of influent
-                #and minimal change in derivative
-                if not done:
-                    tmp_time = perc_diff[perc_diff < 0.1].index.values #
-                    if len(tmp_time) > 0:
-                        test = np.min(tmp_time)
-                        if test != np.max(xdata):
-                            tmp_diff = perc_diff[perc_diff.index>=test]
-                            if np.max(tmp_diff.values) < 0.15 and np.min(tmp_diff-tmp_diff.values[0])>=0.:
-                                breakthrough_code = 'implied'
-                                breakthrough_time = test
-                                done = True
-                
-                ### check for correlational agreement with values, to imply breakthrough
-                if not done:
-                    length = len(yte)
-                    corrv = np.array([np.corrcoef(yte[i:i+3],yti[i:i+3])[0,1] \
-                                    for i in range(length-2)])
-                    corrv[np.isnan(corrv)] = 0.        
-                    if corrv[-1] >= 0.95 and yte[-1] > 0.:
-                        for i in range(len(corrv)-1,0,-1):
-                            if corrv[i] >= 0.95:
-                                breakthrough_time = xdata[i]
-                                breakthrough_code = 'implied'
-                                done = True
-                            elif corrv[i] < 0.95:
-                                break
+        ## create interpolating functions for influent and effluent
+        f_inf = interp1d(infl.index, infl.values, fill_value='extrapolate')
+        f_eff = interp1d(effl.index, effl.values, fill_value='extrapolate')
         
+        xdata = self.xdata   ## can maybe get rid of
+        
+        donothing = False #set trigger for later process to False
+        if infl.sum() == 0:
+            print(f'No mass in influent for {compound}. Skipping.')
+            donothing = True
+              
+        brk_found = False
+        if self.brk_type == 'calc' and not donothing:
+            if effl.sum() == 0:  ## no Effluent breakthrough at all
+                print(f'Insufficient data to estimate breakthrough for {compound}. Returning minimum K estimate.')
+                breakthrough_code = 'minimum'
+                brk_found = True
+                
+                ## likely remove. duplicative
+                # infl_load, _ = quad(f_inf, 0, breakthrough_time)
+                # q = (infl_load) * flow_per_day * self.mass_mul / carbon_mass
+                
+                # aveC = np.mean(f_inf(times_to_test[times_to_test <= breakthrough_time]))
+                
+                # k = q / (aveC * self.mass_mul) ** self.xn
+                
+                # k_s = q / (aveC * self.mass_mul) ** xn_f_range
+                # k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
+            elif np.count_nonzero(effl.values) == 1:
+                ## if only one data point exceeds 0, may be able to estimate 
+                if effl.iloc[-1].values[0] > 0 and effl.iloc[-1].values[0]/aveC >= 0.25:
+                    ### if last value exceeds 25% of aveC, estimate line from last and second to last points???
+                    ### hope logistic function finds solution?
+                    pass
 
-                #try to estimate the breakthrough
-                if not done:                
-                    nZc = np.count_nonzero(yte)     #used to determine linear regression
-
-                    if nZc < len(yte):
-                        if yte[-(nZc+1)] != 0:
-                            nZc += 1 ## adds one more to non-zero value, if original nZc does not equal 0.
-                        x = xdata[-(nZc+1):].astype('float64')
-                        y = yte[-(nZc+1):].astype('float64')
-                    else:
-                        x = xdata[-(nZc):].astype('float64')
-                        y = yte[-(nZc):].astype('float64')
-                    
-
-                    
-                    m, b, *extra = linregress(x, y)
-                    
-                    if m > 0:
-                        intersection = (infl.mean() - b)/m
-                    else:
-                        intersection = self.duration
-                    
-                    breakthrough_time = intersection
-                    breakthrough_code = 'estimated'
-                    
-                    yti = np.append(yti, aveC)
-                    yte = np.append(yte, aveC)
-                    xdata = np.append(xdata, breakthrough_time)
-           
-            
-                f_infl = interp1d(xdata, yti, fill_value='extrapolate')
-               
-                if breakthrough_time <= np.max(xdata):
-                    xdata_trunc = xdata[xdata <= breakthrough_time]
-                    num_vals = len(xdata_trunc)
-                    f_effl = interp1d(xdata[:num_vals+1], yte[:num_vals+1], fill_value='extrapolate')
                 else:
-                    f_effl = interp1d(xdata, yte, fill_value='extrapolate')
+                    ## last point is zero or less than 25% of average C, means non-zero value is a middle value or unreliable way to estimate from this
+                    brk_found = True
+                    print(f'Insufficient data to estimate breakthrough for {compound}. Returning minimum K estimate.')
+                    breakthrough_code = 'minimum'
+                    
+            if effl.max() >= infl.min() and not brk_found:  ## suggests likely crossover/breakthrough
                 
+                for t_idx in times_to_test: ## searches days to find cross_over
+                    if not brk_found:
+                        if f_eff(t_idx) >= f_inf(t_idx):
+                            
+                            breakthrough_time = (t_idx - 1) * 1 #shifts breakthrough to previous day
+                            brk_found = True
+                           
+                            breakthrough_code = 'breakthrough'
+                
+                if not brk_found:
+                    ### if previous search fails, check if C > aveC
+                    for t_idx in times_to_test:
+                        if not brk_found:
+                            if f_eff(t_idx) >= aveC: ### must exceed 5% above average C. Replaces correlation finding.
+                                ### may cause issues with highly variable influent
+                                breakthrough_time = (t_idx - 1) * 1 #shifts breakthrough to previous day
+                                brk_found = True
+
+                                breakthrough_code = 'exceed_aveC, implied'
+                    
+            if not brk_found:
+                ## Try fitting to a simplified logistic function first
+                c_bound_low = np.min([0.99 * aveC, effl.values[0]])
+                c_bound_high = np.max([aveC, effl.values[0]])
                 try:
-                    int_infl = quad(f_infl, 0, breakthrough_time, points=xdata)[0]
-                    int_effl = quad(f_effl, 0, breakthrough_time, points=xdata)[0]
+                    params, pcov = curve_fit(logistic, effl.index, effl.values, 
+                                             p0=(aveC, 5, 0.1),
+                                             bounds=((c_bound_low, 0, 0),
+                                                     (c_bound_high, 1e3, 1)),
+                                             maxfev=10000
+                                             )
+                    
+                    breakthrough_time = np.round((params[1] + np.log(99)) / params[2], 0) ## rounds to nearest day, for 99% breakthrough relative to C0/AveC
+                    
+                    if breakthrough_time >= self.duration: ## rejects solution if breakthrough time doesn't exceed data duration (should have been caught)
+                        brk_found = True
+                        
+                        breakthrough_code = 'logisitc'
+                        
+                        ## add fictitous point at end for integration step
+                        infl.loc[breakthrough_time] = aveC
+                        effl.loc[breakthrough_time] = logistic(breakthrough_time, *params)
+                        
+                        # update interpolating functions
+                        f_inf = interp1d(infl.index, infl.values, fill_value='extrapolate')
+                        f_eff = interp1d(effl.index, effl.values, fill_value='extrapolate')
+                    elif breakthrough_time > 0.25 * self.duration:
+                        ### may need to change, checks if predicted breakthrough point not at very beginning
+                        brk_found = True
+                        breakthrough_code = 'logistic'
+
+                        
                 except Exception as e:
-                    print(e)
-                    # print(breakthrough_time)
-                    # print(f_infl(breakthrough_time), f_effl(breakthrough_time))
-                    # print(f_infl.x, f_infl.y, f_effl.x, f_effl.y)
-                    int_infl = quad(f_infl, 0, breakthrough_time)[0]
-                    int_effl = quad(f_effl, 0, breakthrough_time)[0]
-                qtmp = flow * self.t_mult * (int_infl - int_effl) * self.mass_mul
-                q_meas = qtmp/carbon_mass #ug/g
-                aveC = int_infl/breakthrough_time # recalculate only what is inside breakthrough
-                k = q_meas / ((aveC*self.mass_mul) ** self.xn) 
+                    print('Logistic search failed: ', e)
+                    
+                if not brk_found:
+                    ### Try linearization as final check
+                    try:
+                        ### Try linearization
+                        if effl.values[-1] > 0 and effl.values[-1]/aveC >= 0.25:
+                            ### if last value exceeds 25% of aveC, estimate line from last and second to last points???
+                            breakthrough_code = 'linear, single point'
+                            brk_found = True
+                            
+                            slope = effl.values[-1]/(effl.index[-1] - effl.index[-2])
+                            intercept = - effl.values[-1] * effl.index[-2] / (effl.index[-1] - effl.index[-2])
+                            
+                        else:
+                            ### use linearization function
+                            yte = effl.values  ## convenience variable
+                            
+                            nZc = np.count_nonzero(yte)
+                            
+                            if nZc < len(yte) and yte[-(nZc+1)] != 0: ## makes sure there is enough data to find non-zero before
+                                nZc += 1 ### adds another point to the linearization search area
+                            x = xdata[-(nZc+1):].astype('float64')
+                            y = yte[-(nZc+1):].astype('float64')
+                            
+                            slope, intercept, *extra = linregress(x, y)
+                            breakthrough_code = 'linear regression'
+                            brk_found = True
+                            
+                        breakthrough_time = np.round((aveC - intercept)/slope,0)
+                        
+                        ## add fictitous point at end for integration step
+                        infl.loc[breakthrough_time] = aveC
+                        effl.loc[breakthrough_time] = aveC
+                        
+                        # update interpolating functions
+                        f_inf = interp1d(infl.index, infl.values, fill_value='extrapolate')
+                        f_eff = interp1d(effl.index, effl.values, fill_value='extrapolate')
+                    
+                    except Exception as e:
+                        print('Linearization failed: ', e)
+                        
+            
+            if brk_found:  ## process breakthrough estimate
+                infl_load, _ = quad(f_inf, 0, breakthrough_time) ## influent loading, ignores error
+                effl_rem, _ = quad(f_eff, 0, breakthrough_time) ## effluent removal, ignores error
+        
+                ## calculate q, ug/g
+                q_meas = (infl_load - effl_rem) * flow_per_day * self.mass_mul / carbon_mass
+                
+                aveC = np.mean(f_inf(times_to_test[times_to_test <= breakthrough_time]))
+                
+                k = q_meas / (aveC * self.mass_mul) ** self.xn
+                
+                k_s = q_meas / (aveC * self.mass_mul) ** xn_f_range
+                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
+            
+            else:
+                print(f'WARNING: No Capacity Estimated for {compound}. Assuming data duration for capacity.')
+
+                infl_load, _ = quad(f_inf, 0, breakthrough_time) ## influent loading, ignores error
+                effl_rem, _ = quad(f_eff, 0, breakthrough_time) ## effluent removal, ignores error
+        
+                ## calculate q, ug/g
+                q_meas = (infl_load - effl_rem) * flow_per_day * self.mass_mul / carbon_mass
+                
+                aveC = np.mean(f_inf(times_to_test[times_to_test <= breakthrough_time]))
+                
+                k = q_meas / (aveC * self.mass_mul) ** self.xn
+                
+                k_s = q_meas / (aveC * self.mass_mul) ** xn_f_range
+                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
+
+
+            
                 
         elif self.brk_type == 'force':# and self.brk_df != None:
             brk_df = self.brk_df
@@ -551,7 +624,7 @@ class PSDM():
                 
                 int_infl = quad(f_infl, 0, breakthrough_time, points=xdata)[0]
                 int_effl = quad(f_effl, 0, breakthrough_time, points=xdata)[0]
-                qtmp = flow * self.t_mult * (int_infl - int_effl) * self.mass_mul
+                qtmp = flow_per_day * (int_infl - int_effl) * self.mass_mul
                 q_meas = qtmp/carbon_mass #ug/g
                 k = q_meas / ((aveC*self.mass_mul) ** self.xn) 
             
@@ -582,598 +655,85 @@ class PSDM():
                 qtmp = quad(f_infl, 0, intersection)[0] - \
                        quad(f_effl, 0, intersection)[0]
                         
-                q_meas = flow * self.t_mult * qtmp * self.mass_mul /\
+                q_meas = flow_per_day * qtmp * self.mass_mul /\
                          (carbon_mass) # ug/g
                 k = q_meas / ((aveC * self.mass_mul) ** self.xn) 
                 
             breakthrough_code = 'supplied'
-            
+        
+        
+        ## should return the averaged impact related to K reduction caused by fouling
+        foul_mult_est = 1/np.mean(self.fouling_dict[compound](np.arange(breakthrough_time)*self.t_mult))
+        
         # returns capacity in (ug/g)(L/ug)**(1/n)
-        return k, q_meas, breakthrough_code, breakthrough_time, aveC 
-    
+        return k, q_meas, breakthrough_code, breakthrough_time, aveC, k_function, foul_mult_est
+
+    def __set_backups(self):
+        ## store initial values so they can be changed: backups flagged with _bup
+        self.k_data_bup = self.k_data.copy()
+        self.data_bup = self.data_df.copy()
+        self.compounds_bup = self.compounds
+        self.num_comps_bup = self.num_comps * 1
+        self.jac_sparse_bup = self.jac_sparse
+        self.y0shape_bup = self.__y0shape #(self.num_comps, self.nc+1, self.mc)
+        self.altshape_bup = self.__altshape #(self.num_comps, self.nc, self.mc)
+        self.mass_transfer_bup = self.mass_transfer.copy()
+        
+            ### column values to reset later
+        self.L_bup = self.L * 1
+        self.diam_bup = self.diam * 1 
+        self.wt_bup = self.wt * 1 
+        self.flrt_bup = self.flrt * 1 
+        self.rhop_bup = self.rhop * 1 
+        self.rhof_bup = self.rhof * 1 
+        self.rad_bup = self.rad * 1
+        self.tortu_bup = self.tortu * 1 
+        self.psdfr_bup = self.psdfr * 1
+        self.epor_bup = self.epor * 1
+
+    def __reset_column_values(self):
+        ### just a deep copy???
+        # =============================================================================
+        #         Reset values in column object
+        # =============================================================================
+        self.L = self.L_bup * 1
+        self.diam = self.diam_bup * 1 
+        self.wt = self.wt_bup * 1
+        self.flrt = self.flrt_bup * 1
+        self.rhop = self.rhop_bup * 1
+        self.rhof = self.rhof_bup * 1
+        self.rad = self.rad_bup * 1
+        self.tortu = self.tortu_bup * 1 
+        self.psdfr = self.psdfr_bup * 1
+        self.epor = self.epor_bup * 1
+        
+        #calculate other fixed values
+        self.area = np.pi*(self.diam**2)/4.
+        self.bedvol = self.area * self.L
+        self.ebed = 1. - self.wt/(self.bedvol*self.rhop)
+        self.tau = self.bedvol * self.ebed * 60./self.flrt
+        self.sf = 0.245423867471 * self.flrt/self.area # gpm/ft**2
+        self.vs = self.flrt/(60.*self.area)
+        self.re = (2.*self.rad*self.vs*self.dw)/(self.ebed*self.vw)
+        
+        # #calculate Empty Bed Contact Time (EBCT)
+        self.ebct = self.area*self.L/self.flrt 
+        
+        self.k_data = self.k_data_bup.copy()
+        self.data_df = self.data_bup.copy()
+        self.compounds = self.compounds_bup
+        self.num_comps = self.num_comps_bup * 1
+        self.__y0shape = self.y0shape_bup 
+        self.__altshape = self.altshape_bup
+        self.jac_sparse = self.jac_sparse_bup #spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
+        self.mass_transfer = self.mass_transfer_bup.copy()  
+        
+        ## returns nothing, just resets class variables to originally calculated states for interative loop in model_uncertainty()
+
 # =============================================================================
 # End INIT and helper functions
 # =============================================================================
     
-    def run_psdm_kfit(self, compound):
-        '''
-        time: must be specified in minutes
-        best_vals: [Dp, Ds, kf]
-        flow rate assumed to be in 'ml/min' in column properties
-        '''
-        mp.freeze_support()
-        
-        #pull information out of solver_data/self
-        wr = self.wr
-        nc = self.nc
-        mc = self.mc
-        az = self.az
-        br = self.br
-        t_mult = self.t_mult
-        vw = self.vw        #viscosity
-        dw = self.dw        #density
-        epor = self.epor
-        rhop = self.rhop
-        ebed = self.ebed
-        tau = self.tau
-        rad = self.rad
-        molar_k_t = self.fouling_dict[compound] #multiplier for fouling
-        
-        water_type = self.water_type
-        
-        k_v = self.k_data[compound]['K']
-        q_v = self.k_data[compound]['q']
-        
-        mw = self.comp_df[compound]['MW']           #molecular weight
-        mol_vol = self.comp_df[compound]['MolarVol'] # Molar volume
-        
-        if self.time_type == 'days':
-            dstep = 0.25 * min_per_day
-        else:
-            dstep = 15.        
-        
-        #set up bindings for nonlocal varaibles
-        cinf = 1.
-        cout_f = 1.
-        tconv = 1.
-        time_dim = 1.
-        time_dim2 = 1.
-        ttol = 1.
-        tstep = 1.
-        ds_v = 1.
-                
-        inf = self.data_df[self.influent][compound]
-        eff = self.data_df[self.carbon][compound] 
-        #convert cbo to molar values
-        cbo = inf * self.mass_mul / mw  
-        time = (inf.index * t_mult).values
-        if inf.index[-1] < 10 and self.time_type == 'days':
-            dstep = 15.
-        elif self.time_type == 'min':
-            dstep = 1.
-            
-        if cbo.iloc[0] == 0.:
-            cb0 = 1.
-        else:
-            cb0 = cbo[0]
-        
-        cin = cbo/cb0
-        
-        try:
-            brk = self.k_data[compound]['brk']
-        except:
-            brk = np.max(inf.index.values)
-               
-        tortu = self.tortu                             # tortuosity
-        psdfr = self.psdfr                             # pore to surface diffusion ratio
-        nd = nc - 1
-        
-        difl = 13.26e-5/(((vw * 100.)**1.14)*(mol_vol**0.589)) #vb
-        sc = vw / (dw * difl)       #schmidt number
-        
-        #set film and pore diffusion
-        multi_p = difl/(2*rad) # multiplier used for kf calculation
-        if self.mass_transfer[compound]['kf'] == 0:
-            kf_v = kf_calc(multi_p, self.re, sc, ebed, corr='Chern and Chien')
-        else:
-            kf_v = self.mass_transfer[compound]['kf']
-            
-
-        if compound == 'Test':
-            kf_v = self.k_data['Test']['kf'] #will break
-            
-        cout = eff * self.mass_mul / mw / cb0 
-        
-        if self.mass_transfer[compound]['dp'] == 0.:
-            dp_v = (difl/(tortu))       #porosity not used in AdDesignS appendix, removed to match
-        else:
-            dp_v = self.mass_transfer[compound]['dp']
-        
-        # @stopit.threading_timeoutable()
-        def run(k_val, xn):
-            nonlocal cinf
-            nonlocal cout_f
-            nonlocal tconv
-            nonlocal time_dim
-            nonlocal time_dim2
-            nonlocal ttol
-            nonlocal tstep
-            nonlocal ds_v # for output
-            
-            aau = np.zeros(mc)
-            #==============================================================================
-            # #converts K to (umole/g)(L/umole)**(1/n), assumes units of (ug/g)(L/ug)**(1/n)
-            #==============================================================================
-            molar_k = k_val / mw / ((1. / mw) ** xn)  
-            xni = 1./xn
-            
-            
-            if self.mass_transfer[compound]['ds'] == 0.:
-                ds_v = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn)
-            else:
-                ds_v = self.mass_transfer[compound]['ds']
-            
-            
-            if water_type != 'Organic Free':
-                ds_v /= 1e10 
-
-            d = ds_v/dp_v
-            
-            qe = molar_k * cb0**xn 
-            qte = 1. * qe
-            
-            dgs = (rhop * qe * (1.-ebed) * 1000.)/(ebed * cb0)
-            dgp = epor * (1. - ebed)/(ebed) 
-            dg = dgs + dgp
-            dgt = dg
-            dg1 = 1. + dgt
-            dgI = 1.0/dg
-            edd = dgt/dg #dgt changed from dg1
-            
-            ym = qe/qte
-            
-            eds = ds_v*dgs*tau/(rad**2)
-            if eds < 1e-130:
-                eds = 1e-130
-            edp = dp_v*dgp*tau/(rad**2)
-            # from orthog(n)
-            beds = (eds + d*edp) * edd * br[:-1]
-            bedp = edp * (1. - d) * edd * br[:-1]
-            #depends on kf
-            st = kf_v * (1. -ebed) * tau/(ebed*rad)
-            stdv = st * dgt     # dgt changed from dg1
-            
-            #convert to dimensionless
-            tconv = 60./(tau*dg1)
-            self.tconv = tconv
-            tstep = dstep * tconv
-            ttol = time[-1] * tconv
-            time_dim = time * tconv
-            
-            numb = int(brk*3 + 1)
-            time_dim2 = np.linspace(0., brk * tconv * t_mult,\
-                                    num=numb, endpoint=True) #increase the number of sites to check for ssq
-            #set up time based influent data
-            cinf = interp1d(time, cin.values, fill_value='extrapolate') 
-            cout_f = interp1d(time_dim, cout.values, fill_value='extrapolate')
-            
-            #initialize storage arrays/matrices
-            n = (nc+1)*mc
-            y0 = np.zeros(n)
-            
-            #new array methods, create all arrays needed by diffun
-            time_temp = np.arange(0, time[-1] + self.t_mult * 10, 1)
-            cinfA = cinf(time_temp)
-            if water_type != 'Organic Free':
-                tortu = tortuosity(time_temp)
-            else:
-                tortu = np.ones(len(time_temp)) * self.tortu ## maybe?
-            facA = (1./tortu - d)/(1. - d)
-            foulFA = (1./molar_k_t(time_temp))**xni
-            
-            ydot_tmp = np.zeros((nc+1, mc))
-            self.ydot = ydot_tmp * 1.
-            
-            def diffun(t, y0):
-                nonlocal aau
-                nonlocal ydot_tmp
-
-                y0tmp = y0.reshape(ydot_tmp.shape)
-                ydot = ydot_tmp.copy()
-                
-                idx = int(np.floor(t/tconv)) # assumes daily index provided
-                extra = t/tconv - idx
-                
-                # #defines the influent concentration at time t
-                cinfl = interp(cinfA[idx: idx+2], extra) # 
-                
-                z = ym * y0tmp[:nc, :mc] #updated ym should always be 1 for single comp.
-                qte = z
-                yt0 = xni * z
-                
-                z_c = z/qte
-                z_c[qte<=0.] = 0.
-                q0 = yt0 * xn/ym
-
-                cpore = z_c * q0**xni * interp(foulFA[idx:idx+2], extra) 
-                cpore[np.logical_or.reduce((qte<=0.,\
-                                            yt0<=0,\
-                                            xni*np.log10(q0)<-20,\
-                                            ))] = 0.
-                cpore_tmp = cpore[nc-1]
-                cpore_tmp[cpore_tmp < 0.] = 0.
-                cbs = stdv*(y0tmp[nc]-cpore_tmp)
-                cbs[0] = 0. 
-                
-                bb = interp(facA[idx:idx+2], extra)*np.dot(bedp, cpore) +\
-                      np.dot(beds, y0tmp[:nc, :])
-                
-                ww = wr[:nd]@bb
-
-                ydot[:nd,1:] = bb[:, 1:]
-            
-                ydot[nc-1][0] = (stdv*dgI*(cinfl - cpore[nc-1][0]) - ww[0])/\
-                                wr[nc-1] #iii
-                ydot[nc-1][1:] = (cbs[1:]*dgI - ww[1:])/wr[nc-1]
-                
-                aau[1:] = (np.dot(az[1:,1:], y0tmp[-1, 1:]))
-                
-                ydot[-1,1:] = (-dgt*(az[:,0]*cinfl + aau) - 3.* cbs)[1:]  #dgt was changed from dg1  
-                ydot = ydot.reshape((nc+1)*(mc))
-                return ydot
-            
-            try:
-                y = solve_ivp(diffun,\
-                                (0, ttol),\
-                                y0, \
-                                method=self.solver,\
-                                jac_sparsity=self.jac_sparse_single,\
-                                max_step=tstep/3,\
-                                )
-                # defines interpolating function of predicted effluent
-                cp_tmp = y.y[-1]
-                cp_tmp[cp_tmp < 0.] = 0.#sets negative values to 0.
-                cp = interp1d(y.t, cp_tmp, fill_value='extrapolate') 
-                self.ydot = y.y * cb0 * mw / self.mass_mul
-                self.yt = y.t / tconv / t_mult
-            except Exception as e:
-                print(f"Error produced: {compound} - {e}")
-                t_temp = np.linspace(0, ttol, 20)
-                cp_tmp = np.ones(20) # need a better error position
-                cp = interp1d(t_temp, cp_tmp, fill_value='extrapolate')
-                ### below 2 lines are still causing issues with lead_lag code
-                self.yt = t_temp / tconv / t_mult
-                self.ydot = np.zeros(((nc+1)*(mc), len(self.yt))) ### should at least make them the same shape as expected
-            
-            ssq = ((cout_f(time_dim2)-cp(time_dim2))**2).sum()
-            return cp, ssq
-        
-        def run_fit(k_val, xn):
-            cp, ssq = run(k_val, xn)
-            return ssq
-        
-        if self.optimize_flag:
-            k_mult = {}
-            for xns in self.xn_range:
-                k_mult[xns] = recalc_k(k_v, q_v, self.xn, xns)
-                
-            ssqs = pd.DataFrame([[run_fit(i*k_mult[j],j)\
-                                  for j in self.xn_range] \
-                                  for i in self.test_range], \
-                                  index=self.test_range, \
-                                  columns=self.xn_range)
-            min_val = find_minimum_df(ssqs)
-            best_val_xn = min_val.columns[0]
-            best_val_k = min_val.index[0] * k_mult[best_val_xn]
-            best_fit, _ = run(best_val_k, best_val_xn)
-            min_val = min_val.values[0][0]
-            
-            with pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx') as writer:
-                ssqs.to_excel(writer, 'Sheet1')
-        
-        else: #assume test_range and xn_range are single values
-            best_val_xn = self.xn_range[0]
-            best_val_k = self.test_range[0]
-            best_fit, min_val = run(best_val_k, best_val_xn)
-            ssqs = pd.DataFrame(min_val, columns=[best_val_xn],\
-                                index=[best_val_k])
-        
-        itp = np.arange(0., time[-1]/t_mult, dstep/t_mult)
-        output_fit = interp1d(itp, \
-                              best_fit(itp*tconv*t_mult) * cb0 *\
-                              mw / self.mass_mul, \
-                              fill_value='extrapolate')
-        model_data = pd.DataFrame(output_fit(itp), \
-                                  columns = ['data'], \
-                                  index = itp)
-        
-        data_tmp = pd.Series([sc, self.re, difl, kf_v, best_val_k, best_val_xn,\
-                     dp_v, ds_v, min_val, self.ebct, self.sf], \
-                     index = ['Sc','Re','difl','kf','K','1/n','dp','ds','ssq','ebct','sf'])
-        
-        if self.optimize_flag:
-            with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer:#'-'+repr(round(best_val_xn,2))
-            
-                model_data.to_excel(writer, 'model_fit')
-                
-                inf.to_excel(writer, 'influent')
-                eff.to_excel(writer, 'effluent')
-                data_tmp.to_excel(writer, 'parameters')
-
-                ti.sleep(1)
-            
-        return compound, best_val_k, best_val_xn, ssqs, model_data
-    #end kfit
-    
-    #begin dsfit
-    def run_psdm_dsfit(self, compound):
-        '''
-        time: must be specified in minutes
-        flow rate assumed to be in 'ml/min' in column properties
-        '''
-        #pull information out of solver_data/self
-        wr = self.wr
-        nc = self.nc
-        mc = self.mc
-        az = self.az
-        br = self.br
-        t_mult = self.t_mult
-        vw = self.vw        #viscosity
-        dw = self.dw        #density
-        epor = self.epor
-        rhop = self.rhop
-        ebed = self.ebed
-        tau = self.tau
-        rad = self.rad
-        
-        k_val = self.k_data[compound]['K']
-        xn = self.k_data[compound]['1/n']
-        
-        mw = self.comp_df[compound]['MW']            #molecular weight
-        mol_vol = self.comp_df[compound]['MolarVol'] # Molar volume
-        
-        if self.time_type == 'days':
-            dstep = 0.25 * min_per_day
-        else:
-            dstep = 15.        
-        
-        #set up bindings for nonlocal varaibles
-        cinf = 1.
-        cout_f = 1.
-        tconv = 1.
-        time_dim = 1.
-        time_dim2 = 1.
-        ttol = 1.
-        tstep = 1.
-        ds_v = 1.
-                
-        inf = self.data_df[self.influent][compound]
-        eff = self.data_df[self.carbon][compound] 
-        #convert cbo to molar values
-        cbo = inf * self.mass_mul / mw
-        time = (inf.index * t_mult).values
-        if cbo.iloc[0] == 0.:
-            cb0 = 1.
-        else:
-            cb0 = cbo[0]
-        
-        cin = cbo/cb0
-        
-        try:
-            brk = self.k_data[compound]['brk']
-        except:
-            brk = np.max(inf.index.values)
-               
-        tortu = 1.0                             # tortuosity
-        psdfr = 5.0                             # pore to surface diffusion ratio
-        nd = nc - 1
-        
-        difl = 13.26e-5/(((vw * 100.)**1.14)*(mol_vol**0.589)) #vb
-        sc = vw / (dw * difl)       #schmidt number
-        
-        #set film and pore diffusion
-        multi_p = difl/(2*rad) # multiplier used for kf calculation
-        kf_v = kf_calc(multi_p, self.re, sc, ebed, corr='Chern and Chien')
-
-        if compound == 'Test':
-            kf_v = self.k_data['Test']['kf'] #will break
-            
-        cout = eff * self.mass_mul / mw / cb0 
-        
-        dp_v = (difl/(tortu))       #porosity not used in AdDesignS appendix, removed to match
-        ds_base = 1. #set up for nonlocal
-        
-        def run(ds_mult):
-            nonlocal cinf
-            nonlocal cout_f
-            nonlocal tconv
-            nonlocal time_dim
-            nonlocal time_dim2
-            nonlocal ttol
-            nonlocal tstep
-            nonlocal ds_v # for output
-            nonlocal ds_base
-            
-            aau = np.zeros(mc)
-            
-            #==============================================================================
-            # #converts K to (umole/g)(L/umole)**(1/n), assumes units of (ug/g)(L/ug)**(1/n)
-            #==============================================================================
-            molar_k = k_val / mw / ((1. / mw) ** xn)  
-            xni = 1./xn
-            
-            ds_base = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn) 
-            if self.optimize_flag:
-                ds_v = ds_base * ds_mult
-            else:
-                ds_v = ds_mult
-            
-            #multiplies ds by ds_mult, passed as argument
-            d = ds_v/dp_v
-            
-            qe = molar_k * cb0**xn 
-            qte = 1. * qe
-            
-            dgs = (rhop * qe * (1.-ebed) * 1000.)/(ebed * cb0)
-            dgp = epor * (1. - ebed)/(ebed) 
-            dg = dgs + dgp
-            dgt = dg
-            dg1 = 1. + dgt
-            dgI = 1.0/dg
-            edd = dg1/dg #dgt changed from dg1
-            
-            ym = qe/qte
-            
-            eds = ds_v*dgs*tau/(rad**2)
-            if eds < 1e-130:
-                eds = 1e-130
-            edp = dp_v*dgp*tau/(rad**2)
-            
-            # from orthog(n)
-            beds = (eds + d*edp) * edd * br[:-1]
-            bedp = edp * (1. - d) * edd * br[:-1]
-            
-            #depends on kf
-            st = kf_v * (1. -ebed) * tau/(ebed*rad)
-            stdv = st * dgt     # dgt changed from dg1
-            
-            #convert to dimensionless
-            tconv = 60./(tau*dg1)
-            tstep = dstep * tconv
-            ttol = time[-1] * tconv
-            time_dim = time * tconv
-            
-            numb = int(brk*2 + 1)
-            time_dim2 = np.linspace(0., brk * tconv * t_mult,\
-                                    num=numb, endpoint=True) #increase the number of sites to check for ssq
-            
-            #set up time based influent data
-            cinf = interp1d(time_dim, cin.values, fill_value='extrapolate') 
-            cout_f = interp1d(time_dim, cout.values, fill_value='extrapolate')
-            #initialize storage arrays/matrices
-            n = (nc+1)*mc
-            y0 = np.zeros(n)
-
-            def diffun(t, y0):
-                nonlocal aau
-                y0tmp = y0.reshape((nc+1,mc))
-                ydot = np.zeros(y0tmp.shape)
-                
-                #defines the influent concentration at time t
-                cinfl = cinf(t)
-                fac = 1.
-                
-                z = ym * y0tmp[:nc,:mc] #updated ym should always be 1 for single comp.
-                qte = z
-                yt0 = xni * z
-                
-                z_c = z/qte
-                z[qte>0.] = z_c[qte>0.] # should be 1 for single component.
-                q0 = yt0 * xn/ym
-                
-                q0[np.logical_not(np.isfinite(q0))] = 0.
-                z[np.logical_not(np.isfinite(z))] = 0.
-                
-                cpore = z * q0**xni 
-                cpore[np.logical_or.reduce((qte<=0.,\
-                                            yt0<=0,\
-                                            xni*np.log10(q0)<-20,\
-                                            cpore==np.nan
-                                            ))] = 0.
-                
-                cpore[np.isinf(cpore)] = 1.
-
-                cpore_tmp = cpore[nc-1]
-                cpore_tmp[cpore_tmp < 0.] = 0.
-                cbs = stdv*(y0tmp[nc]-cpore_tmp)
-                cbs[0] = 0. 
-                
-                bb = fac * np.dot(bedp, cpore) + np.dot(beds,y0tmp[:nc,:])
-                ww = np.dot(wr[:nd], bb)
-                ydot[:nd,:] = bb
-            
-                ydot[nc-1][0] = (stdv*dgI*(cinfl - cpore[nc-1][0]) - ww[0]) / wr[nc-1] #iii
-                ydot[nc-1][1:] = (cbs[1:]*dgI - ww[1:])/wr[nc-1]
-                
-                aau[1:] = (np.dot(az[1:,1:],y0tmp[-1,1:]))
-                
-                ydot[-1,1:] = (-dgt*(az[:,0]*cinfl + aau) - 3.* cbs)[1:]  #dgt was changed from dg1  
-                ydot = ydot.reshape((nc+1)*(mc))
-                return ydot
-            
-            try:
-                y = solve_ivp(diffun,\
-                                (0, ttol),\
-                                y0, \
-                                method=self.solver,\
-                                max_step=tstep/3,\
-                                )
-                # defines interpolating function of predicted effluent
-                cp_tmp = y.y[-1]
-                cp_tmp[cp_tmp < 0.] = 0.#sets negative values to 0.
-                cp_tmp[cp_tmp > np.max(cin) * 3.] = np.max(cin) * 3. #sets the max to 3x cb0
-                cp = interp1d(y.t, cp_tmp, fill_value='extrapolate') 
-            except Exception:# as e:
-                t_temp = np.linspace(0, ttol, 20)
-                cp_tmp = np.zeros(20)
-                cp = interp1d(t_temp, cp_tmp, fill_value='extrapolate')
-            return cp
-        
-        def run_fit(ds_mult):
-            #passes a ds_multiplier, rather than ds directly
-            cp = run(ds_mult)
-            ssq = ((cout_f(time_dim2)-cp(time_dim2))**2).sum()
-            return ssq
-        
-        if self.optimize_flag:
-            #reuse test_range
-            test_range = 10**(1-self.test_range)
-            ssqs = pd.Series([run_fit(i) for i in test_range], \
-                                  index=test_range)
-            min_val = ssqs[ssqs==ssqs.min()]
-            best_val_ds = min_val.index[0] * ds_base
-            
-            best_fit = run(min_val.index[0])
-            min_val = min_val.values[0]
-            
-            with pd.ExcelWriter('ssq_'+self.carbon+'-'+compound+'.xlsx') as writer:
-                ssqs.to_excel(writer, 'Sheet1')
-        
-        else: #assume test_range and xn_range are single values
-            best_val_ds = self.test_range[0] * ds_base
-            best_fit = run(best_val_ds)
-            min_val = 1e2 
-            ssqs = pd.Series(min_val, index=[best_val_ds])
-        
-        itp = np.arange(0., ttol+tstep, tstep) 
-        output_fit = interp1d(itp/tconv, \
-                              best_fit(itp) * cb0 * mw / \
-                              self.mass_mul, \
-                              fill_value='extrapolate')
-        
-        
-        model_data = pd.DataFrame(output_fit(itp/tconv), \
-                                  columns = ['data'], \
-                                  index = itp/tconv/t_mult)
-        
-        with pd.ExcelWriter(self.project_name+'_'+compound+'-'+self.carbon+'.xlsx') as writer:
-            model_data.to_excel(writer, 'model_fit')
-            
-            inf.to_excel(writer, 'influent')
-            eff.to_excel(writer, 'effluent')
-            
-            data_tmp = pd.Series([sc, self.re, difl, kf_v, self.k_data[compound]['K'],\
-                                  self.k_data[compound]['1/n'], dp_v, \
-                                  best_val_ds, min_val, self.ebct, self.sf], \
-                                  index = ['Sc','Re','difl','kf','K','1/n','dp',\
-                                           'ds','ssq','ebct','sf'])
-            data_tmp.to_excel(writer, 'parameters')
-            if self.optimize_flag:
-                ti.sleep(1)
-            
-        return compound, best_val_ds, ssqs, model_data, ds_base
-    #end dsfit
-            
     def run_all(self, plot=False, save_file=True, optimize='staged', 
                 init_grid=5, init_loop=3):
         '''
@@ -1200,6 +760,7 @@ class PSDM():
         and can be saved in script that calls this function.
 
         '''
+        ## TODO: Check this still functions with recent updates, 1/2024
         #forces single run to handle optimizing in this funciton, not run_psdm_kfit
         opt_flg = self.optimize_flag
         orig_test_range = self.test_range * 1.
@@ -1390,15 +951,20 @@ class PSDM():
         self.optimize_flag = opt_flg #resets to original value
 # end run_all()
 
-    def run_all_smart(self, plot=False, save_file=True, 
-                      file_name='PSDM_', pm=0, num=11, des_xn=0.025):
+    def run_all_smart(self, plot=False, 
+                      save_file=True, file_name='PSDM_', 
+                      pm=10, num=11, des_xn=0.025, 
+                      search_limit=50):
         '''
         Smart Optimizer for K & 1/n fitting.
-        Precalculates the effective fouling based on breakthrough time.
-        1. Performs one scan for range of 1/n (xn_range) at estimated fouled K.
-        2. Finds minimum for 1/n, then scans an additional K range (based on pm value).
-        3. If further minimization is found after step 2, then an additional small
-           K & 1/n polishing step is performed.
+        Starts with estimates for effective fouling, and attemps to find path 
+        to lowest ssq by following decreasing trends. 
+
+        Given limited data, the resulting K & 1/n values may be close to the 
+        "true" K & 1/n values, but should provide reasonable predictive value
+        for modeling performance. model_uncertainty function can be used
+        to predict sensitivity of model results to these paramaters. 
+        
         
         NOTE: No checking of files is done by this script. If files exist
         with the same filenames as those generated by the script, they will be
@@ -1421,6 +987,8 @@ class PSDM():
             Should be odd. This is used by np.linspace(1-pm, 1+pm, num)
         des_xn: float, optional
             defines grid size for 1/n search. The default is 0.025.
+        search_limit: int or float, optional
+            defines an upper limit for how many searches can occur. Default is 50.
 
         Returns
         -------
@@ -1428,272 +996,261 @@ class PSDM():
         Best K & 1/n values are stored to self.k_data
 
         '''
+        def get_ssq(k, k_factor, xn, compound, ssq_storage):
+            self.k_data.loc['K', compound] = k * k_factor * 1 
+            self.k_data.loc['1/n', compound] = xn * 1 
+            
+            if np.isnan(ssq_storage.loc[np.round(k_factor, 6), np.round(xn,3)]):
+                ## only runs if no ssq data is already available
+                ## prevents duplicative run_psdm_kfit calls
+                try:
+                    _, _, _, ssqs, _ = self.run_psdm_kfit(compound)
+
+                    # print(ssqs)
+                
+                    return ssqs.values[0][0]
+                except Exception as e:
+                    ## if error, return big number, won't become best_ssq
+                    print(e)
+                    return 1e20
+            else:
+                return ssq_storage.loc[np.round(k_factor,6), np.round(xn,3)]
+            
+        def get_base_k(compound, xn):
+            if compound in self.k_by_xn_factor.keys():
+                ## use precalcualted value from __calculate_capacity
+                return self.k_by_xn_factor[compound](xn)
+            else:
+                ## return K from k_data
+                return self.k_data[compound]['K']
         
-        def min_fun(x0, compound, k_val, q_val, status_print=False):
-            ''' x0 = [K, 1/n] '''
-            kfact, xns = x0
-            base_k = recalc_k(k_val, q_val, self.xn, xns)
-            self.optimize_flag = False
-            
-            self.test_range = np.array([kfact * base_k])
-            self.xn_range = np.array([xns])
-            
-            _, _, _, ssqs, _ = self.run_psdm_kfit(compound)
-            
-            if status_print:
-            # if True:
-                output = ssqs.values[0][0]
-                if output > 1e-3:
-                    printer = np.round(output,3)
-                else:
-                    printer = np.format_float_scientific(output, precision=3)
-                print(np.round(ssqs.index[0],3), '\t',
-                      np.round(ssqs.columns[0],3),'\t: ', 
-                      printer)
-            
-            return ssqs.values[0][0]
-        
+        def get_fouling_factor(compound):
+            if compound in self.foul_mult_estimates.keys():
+                ## use precalcualted value from __calculate_capacity
+                return self.foul_mult_estimates[compound]
+            else:
+                ## calculate estimate
+                brk_day = self.k_data[compound]['brk']
+                comp_fouling = self.fouling_dict[compound]
+                integral, _ = quad(comp_fouling, 0, brk_day) #ignore error from quad
+                return brk_day/integral
+
+        ## store some initial conditions
         opt_flg = self.optimize_flag
         orig_test_range = self.test_range * 1.
         orig_xn_range = np.round(self.xn_range * 1.,5)
+        orig_k_data_file_type = self.k_data_input_type
+        self.k_data_input_type = int
         self.optimize_flag = False
         
         file_name = file_name.replace(' ', '_') #removes spacing for underscore
         if file_name[-1] != '-' or file_name[-1] != '_':
             file_name += '_' #adds spacer underscore to filename
-        
-        for compound in self.compounds:
-            print(compound, ' running')
-            k_val = self.k_data[compound]['K']
-            q_val = self.k_data[compound]['q']
-            brk_day = self.k_data[compound]['brk'] * self.t_mult
             
-            comp_fouling = self.fouling_dict[compound]
-            integral, _ = quad(comp_fouling, 0, brk_day) #ignore error from quad
-            k_factor = brk_day/integral
+        for compound in self.compounds:  ## search all compounds
+            print(f'Running - {compound}')
+            k_val, q_val, brk_day = self.k_data[compound][['K', 'q', 'brk']]
             
-            #start in middle of range, xn=0.45
-            best_xn = 0.45
-            best_k_factor = k_factor * 1.
-            x0 = [k_factor, 0.45]
-            best_ssq = min_fun(x0, compound, k_val, q_val)
-            
-            #sets up bounds on searches
-            max_xn = np.max(orig_xn_range) + 1e-4 
-            min_xn = np.min(orig_xn_range) - 1e-4
-            perc_pm = pm/100.
-            max_k_factor = k_factor * (1 + perc_pm)
-            min_k_factor = k_factor * (1 - perc_pm)
-            
-            #test xn range
-            decreasing = True
-            correct_direction = False
-            sign = 1
-            xn = 0.45 + sign * des_xn # initiates xn
+            ## set starting conditions
+            best_xn = 0.45 ## reasonable starting point
+            best_k_factor = get_fouling_factor(compound)
+            base_k = get_base_k(compound, best_xn)
+            best_k = base_k * best_k_factor 
+
+            ## initially test increasing xn
             count = 0
-            while xn <= max_xn and decreasing:
-                x0 = [k_factor, xn]
-                ssq = min_fun(x0, compound, k_val, q_val)
-                
-                if ssq < best_ssq:
+            cases_tried = 0
+            scale_k = best_k_factor * pm / 100 / num
+            max_k = best_k_factor * (1 + pm/100)
+            min_k = best_k_factor * (1 - pm/100)
+            
+            #starter variables
+            xn = best_xn * 1
+            k_factor = get_fouling_factor(compound)
+            
+            ssq_storage = pd.DataFrame(index=np.round(np.arange(min_k, max_k+scale_k/2, scale_k),6),
+                                       columns=np.round(np.arange(0.2, 1+des_xn/2, des_xn),3))
+                        
+            best_ssq = get_ssq(base_k,  best_k_factor, best_xn, compound, ssq_storage)
+            ssq_storage.loc[np.round(best_k_factor,6), np.round(best_xn,3)] = best_ssq * 1
+            
+            ## set starting index locations
+            xn_idx = np.where(ssq_storage.columns == np.round(best_xn,3))[0][0]
+            k_idx = np.where(ssq_storage.index == np.round(best_k_factor,6))[0][0]
+            xn_idx_max = len(ssq_storage.columns) - 1 
+            k_idx_max = len(ssq_storage.index) - 1
+
+            ### attempt to get best starting location, assume initial guess at k is correct
+            xn_search_idx = np.round(np.linspace(0, xn_idx_max, num=5),0).astype(int) ## should return 0, three middle points, end for rough search.
+            
+            for xn_test in xn_search_idx:
+                xn = ssq_storage.columns[xn_test]
+                k_factor = ssq_storage.index[k_idx]
+                test_base_k = get_base_k(compound, xn)
+
+                test_ssq = get_ssq(test_base_k, k_factor, xn, compound, ssq_storage)
+
+                ssq_storage.loc[np.round(k_factor,6), np.round(xn,3)] = test_ssq * 1
+
+                if test_ssq < best_ssq:
                     best_xn = xn * 1
-                    #best_k_factor doesn't change
-                    best_ssq = ssq * 1
-                    decreasing = True
-                    count += 1
-                    correct_direction = True
-                    
-                if decreasing and ssq > best_ssq:
-                    decreasing = False
+                    best_k = k_factor * test_base_k * 1
+                    best_ssq = test_ssq * 1
+
+                    xn_idx = xn_test * 1 ### resets xn_idx to best starting location of group.
+
+            ### search from best starting location
+            shift_xn = 0
+            shift_k = 0
+            while cases_tried <= 5: 
+                ### tries to seach in 4 directions. Uses this information to search again
+
+                ## move central test location
+                xn_idx += shift_xn
+                k_idx += shift_k
+
+                ### get current location ssq
+                xn = ssq_storage.columns[xn_idx]
+                k_factor = ssq_storage.index[k_idx]
+                center_base_k = get_base_k(compound, xn)
                 
-                xn = np.round(xn + sign * des_xn, 4) #increment xn
-            
-            if not correct_direction:
-                sign = -1
-                xn = 0.45 + sign * des_xn # initiates xn
-                count = 0
-                decreasing = True
-                while xn >= min_xn and decreasing:
-                    x0 = [k_factor, xn]
-                    ssq = min_fun(x0, compound, k_val, q_val)
-                    
-                    if ssq < best_ssq:
-                        best_xn = xn * 1
-                        #best_k_factor doesn't change
-                        best_ssq = ssq * 1
-                        decreasing = True
-                        count += 1
-                        
-                    if decreasing and ssq > best_ssq:
-                        decreasing = False
-                    
-                    xn = np.round(xn + sign * des_xn, 4) #increment xn
-            
-            # increment k_range, assume best_xn is correct
-            if pm > 0:
-                # print('Additional K-space Search')
-                if num==0:
-                    #prevents div/zero error
-                    num=1
-                des_k = (max_k_factor - k_factor) / num
+                base_ssq = get_ssq(center_base_k,  k_factor, xn, compound, ssq_storage)
+                if np.isnan(ssq_storage.loc[np.round(k_factor,6), np.round(xn,3)]):
+                    ssq_storage.loc[np.round(k_factor,6), np.round(xn,3)] = base_ssq * 1
                 
-                decreasing = True
-                correct_direction = False
-                sign = 1
-                pmk = best_k_factor + sign * des_k # initiates xn
-                count = 0
-                while pmk <= max_k_factor and decreasing:
-                    x0 = [pmk, best_xn]
-                    ssq = min_fun(x0, compound, k_val, q_val)
-                    
-                    if ssq < best_ssq:
-                        # best_xn = xn * 1
-                        best_k_factor = pmk * 1
-                        best_ssq = ssq * 1
-                        decreasing = True
-                        count += 1
-                        correct_direction = True
-                        
-                    if decreasing and ssq > best_ssq:
-                        decreasing = False
-                    
-                    pmk += sign * des_k
-                
-                if not correct_direction:
-                    sign = -1
-                    pmk = best_k_factor + sign * des_k # initiates xn
-                    count = 0
-                    decreasing = True
-                    while pmk >= min_k_factor and decreasing:# and pmk > 0:
-                        x0 = [pmk, best_xn]
-                        ssq = min_fun(x0, compound, k_val, q_val)
-                        
-                        if ssq < best_ssq:
-                            best_k_factor = pmk * 1
-                            best_ssq = ssq * 1
-                            decreasing = True
-                            count += 1
-                            
-                        if decreasing and ssq > best_ssq:
-                            decreasing = False
-                        
-                        pmk += sign * des_k
-                        
-                # finer step-size polish - End step
-                #search small 1/n range to see if it moved
-                stps = 6 #number of steps to try in 1/n range
-                new_xn_r = np.linspace(best_xn-stps*des_xn,
-                                        best_xn+stps*des_xn,
-                                        2*stps+1)
-                new_xn_range = [i for i in new_xn_r if (i <= np.max(orig_xn_range) and i >= np.min(orig_xn_range))]
-                
-                #currently this creates standard incriment of 0.01 or half
-                #of des_k, but should this just be des_k/10.
-                if des_k > 0.01:
-                    des_k = 0.01
+                if base_ssq < best_ssq:
+                    best_xn = xn * 1
+                    best_k = k_factor * center_base_k * 1
+                    best_ssq = base_ssq * 1
+
+                ### try shifting to the right (xn)
+                if xn_idx < xn_idx_max:
+                    right_xn = ssq_storage.columns[xn_idx + 1]
+                    right_base_k = get_base_k(compound, right_xn)
+
+                    right_ssq = get_ssq(right_base_k,  k_factor, right_xn, compound, ssq_storage)
+                    if np.isnan(ssq_storage.loc[np.round(k_factor,6), np.round(right_xn,3)]):
+                        ssq_storage.loc[np.round(k_factor,6), np.round(right_xn,3)] = right_ssq * 1
+
+                    if right_ssq < best_ssq:
+                        best_xn = right_xn * 1
+                        best_k = k_factor * right_base_k * 1
+                        best_ssq = right_ssq * 1
                 else:
-                    des_k /= 2.
-                
-                decreasing = True
-                correct_direction = False
-                sign = 1
-                pmk = best_k_factor + sign * des_k # initiates xn
-                # count_check = 0
-                
-                while pmk <= max_k_factor and decreasing:
-                    count = 0
+                    right_ssq = 1e20 ### right_ssq not available, make huge
 
-                    for xn in new_xn_range:
-                        x0 = [pmk, xn]
-                        ssq = min_fun(x0, compound, k_val, q_val)
+                ### try shifting to the left
+                if xn_idx >= 1:
+                    left_xn = ssq_storage.columns[xn_idx - 1]
+                    left_base_k = get_base_k(compound, left_xn)
 
-                        if ssq < best_ssq:
-                            best_xn = xn * 1
-                            best_k_factor = pmk * 1
-                            best_ssq = ssq * 1
-                            decreasing = True
-                            count += 1
-                            correct_direction = True
-                            
-                        if decreasing and ssq > best_ssq and count==0:
-                            # it means that no 1/n value caused the ssq to decrease
-                            decreasing = False
+                    left_ssq = get_ssq(left_base_k,  k_factor, left_xn, compound, ssq_storage)
+                    if np.isnan(ssq_storage.loc[np.round(k_factor,6), np.round(left_xn,3)]):
+                        ssq_storage.loc[np.round(k_factor,6), np.round(left_xn,3)] = left_ssq * 1
+
+                    if left_ssq < best_ssq:
+                        best_xn = left_xn * 1
+                        best_k = k_factor * left_base_k * 1
+                        best_ssq = left_ssq * 1
+                else:
+                    left_ssq = 1e20 ### left_ssq not available, make huge
+
+                ## Decide where to move next (xn)
+                if right_ssq <= base_ssq and xn_idx + 1 <= xn_idx_max:
+                    shift_xn = 1
+                elif left_ssq <= base_ssq and xn_idx - 1 >= 0:
+                    shift_xn = -1
+                else:
+                    ## can't move in xn direction
+                    shift_xn = 0
+
+                ### try shifting up (k)
+                if k_idx < k_idx_max:
+                    upper_k_factor = ssq_storage.index[k_idx + 1]
+
+                    upper_ssq = get_ssq(center_base_k,  upper_k_factor, xn, compound, ssq_storage)
+                    if np.isnan(ssq_storage.loc[np.round(upper_k_factor,6), np.round(xn,3)]):
+                        ssq_storage.loc[np.round(upper_k_factor,6), np.round(xn,3)] = upper_ssq * 1
+
+                    if upper_ssq < best_ssq:
+                        best_xn = xn * 1
+                        best_k = upper_k_factor * center_base_k * 1
+                        best_ssq = upper_ssq * 1
+                else:
+                    upper_ssq = 1e20 ### upper_ssq not available, make huge
+
+                ### try shifting up (k)
+                if k_idx >= 1:
+                    lower_k_factor = ssq_storage.index[k_idx - 1]
+
+                    lower_ssq = get_ssq(center_base_k,  lower_k_factor, xn, compound, ssq_storage)
+                    if np.isnan(ssq_storage.loc[np.round(lower_k_factor,6), np.round(xn,3)]):
+                        ssq_storage.loc[np.round(lower_k_factor,6), np.round(xn,3)] = lower_ssq * 1
+
+                    if lower_ssq < best_ssq:
+                        best_xn = xn * 1
+                        best_k = lower_k_factor * center_base_k * 1
+                        best_ssq = lower_ssq * 1
+                else:
+                    lower_ssq = 1e20 ### lower_ssq not availabale, make huge
+
+                ## Decide where to move next (K)
+                if upper_ssq <= base_ssq and k_idx + 1 <= k_idx_max:
+                    shift_k = 1
+                elif lower_ssq <= base_ssq and k_idx - 1 >= 0:
+                    shift_k = -1
+                else:
+                    ## can't move in K direction
+                    shift_k = 0
+                
+
+                ### if ready to end loop, save results
+                if base_ssq == best_ssq:
+                    ### if the central location is the best, break the loop
                     
-                    pmk += sign * des_k
-                
-                if not correct_direction:
-                    sign = -1
-                    pmk = best_k_factor + sign * des_k # initiates xn
-                    decreasing = True
+                    self.ssq_storage = ssq_storage 
                     
-                    while pmk >= min_k_factor and decreasing:# and pmk > 0.:
-                        count = 0
-                        for xn in new_xn_range:
-                            x0 = [pmk, xn]
-                            ssq = min_fun(x0, compound, k_val, q_val)
+                    # print('Best', best_xn, best_k)
+                    self.k_data.loc['1/n', compound] = best_xn * 1
+                    self.k_data.loc['K', compound] = best_k * 1
 
-                            if ssq < best_ssq:
-                                best_xn = xn * 1
-                                best_k_factor = pmk * 1
-                                best_ssq = ssq * 1
-                                decreasing = True
-                                count += 1
-                                
-                            if decreasing and ssq > best_ssq and count==0:
-                                decreasing = False
-                        
-                        pmk += sign * des_k
-           
-            #convert back to best_k
-            best_k = best_k_factor * recalc_k(k_val, q_val, self.xn, best_xn)
-            
-            print(f"K: {best_k:.3f} -- 1/n: {best_xn:.3f}")
-            self.k_data[compound]['K'] = best_k * 1
-            self.k_data[compound]['1/n'] = best_xn * 1
-            
-            if plot: 
-                inf = self.data_df[self.influent][compound]
-                eff = self.data_df[self.carbon][compound]
-                
-                plt.plot(inf.index, inf.values, marker='.', ls=':', 
-                         color='silver', 
-                         markerfacecolor='None', label='influent') #empty circle
-                plt.plot(eff.index, eff.values, marker='+', ls='None', 
-                         color='grey', label='effluent')
-                
-                #re-run best fit... 
-                self.test_range = np.array([best_k])
-                self.xn_range = np.array([best_xn])
-                _, _, _, _, md = self.run_psdm_kfit(compound)
-                
-                plt.plot(md.index, md.values, ls='-',marker='None',color='black',
-                         label='model')
-                
-                plt.title(f"{compound}\nK: {best_k:.3f} - 1/n: {best_xn:.3f}")
-                plt.xlabel('Time (days)')
-                plt.ylabel('Concentration (ng/L)')
-                plt.legend()
-                plt.savefig(file_name+compound+'.png',dpi=300)
-                plt.close()
-            
+                    self.k_data_bup = self.k_data.copy() ### reset backup as well
+                    cases_tried = 10
+
+                elif shift_k == 0 and shift_xn == 0:
+                    ## predicting no movement, break loop, 
+                    ## may only get triggered on edges(?) but just in case
+                    self.ssq_storage = ssq_storage 
+
+                    # print('Best alt', best_xn, best_k)
+                    self.k_data.loc['1/n', compound] = best_xn * 1
+                    self.k_data.loc['K', compound] = best_k * 1
+
+                    self.k_data_bup = self.k_data.copy() ### reset backup as well
+                    
+                    cases_tried = 10
+
+
+
         if save_file:
-            '''
-            need to add save file handler. 
-            currently not implimented
-            '''
             with pd.ExcelWriter('best_fits-'+self.project_name+'.xlsx') as writer:
-                self.k_data.to_excel(writer, 'Sheet1')
-        
+                self.k_data.to_excel(writer, 'Sheet1')            
+                        
         #reset original values
-        self.optimize_flag = opt_flg
+        # self.optimize_flag = opt_flg
         self.test_range = orig_test_range * 1.
-        self.xn_range = orig_xn_range * 1.
+        self.xn_range = orig_xn_range * 1. 
+        self.k_data_input_type = orig_k_data_file_type
+        self.__reset_column_values()
+      
 
 #END RUN_ALL_SMART
     
 
 
-#### Begin run_psdm()
+# =============================================================================
+# #### Begin run_psdm()
+# =============================================================================
 
     def run_psdm(self):
         '''
@@ -1743,7 +1300,7 @@ class PSDM():
         time_dim2 = 1.
         ttol = 1.
         tstep = 1.
-        ds_v = 1. #### need to add in user input mass transfer ###TODO!
+        ds_v = 1. 
                 
         inf = self.data_df[self.influent]
         
@@ -1998,7 +1555,7 @@ class PSDM():
                             y0, \
                             method=self.solver,\
                             jac_sparsity=self.jac_sparse,\
-                            max_step=tstep/3.,\
+                            # max_step=tstep/3.,\
                             )
             
             # defines interpolating function of predicted effluent
@@ -2027,77 +1584,187 @@ class PSDM():
         
         best_fit = run()
         return best_fit
-    #end multi_run
-##### end run_psdm()    
     
+##### end run_psdm()    
 
-### Begin model_uncertainty()
-    def __reset_column_values(self):
+    def run_psdm_kfit(self, compound):
+        ## now uses run_psdm()
+        idx=pd.IndexSlice     
+        
+        mp.freeze_support()
+        k = 1
+        xn = 1 
+        ssqs = 1
+        results = 1
+        
+        # print(self.data_df)
 
-        ### just a deep copy???
-        # =============================================================================
-        #         Reset values in column object
-        # =============================================================================
-        self.L = self.L_bup * 1
-        self.diam = self.diam_bup * 1 
-        self.wt = self.wt_bup * 1
-        self.flrt = self.flrt_bup * 1
-        self.rhop = self.rhop_bup * 1
-        self.rhof = self.rhof_bup * 1
-        self.rad = self.rad_bup * 1
-        self.tortu = self.tortu_bup * 1 
-        self.psdfr = self.psdfr_bup * 1
-        self.epor = self.epor_bup * 1
+        self.num_comps = 1
+        self.jac_sparse = spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
+        self.__y0shape = (self.num_comps, self.nc+1, self.mc)
+        self.__altshape = (self.num_comps, self.nc, self.mc)
         
-        #calculate other fixed values
-        self.area = np.pi*(self.diam**2)/4.
-        self.bedvol = self.area * self.L
-        self.ebed = 1. - self.wt/(self.bedvol*self.rhop)
-        self.tau = self.bedvol * self.ebed * 60./self.flrt
-        self.sf = 0.245423867471 * self.flrt/self.area # gpm/ft**2
-        self.vs = self.flrt/(60.*self.area)
-        self.re = (2.*self.rad*self.vs*self.dw)/(self.ebed*self.vw)
+        self.compounds = [compound]
+            
+        ## get influent/effluent data for single species
+        self.data_df = self.data_bup.transpose().loc[idx[:, compound], :].transpose()
         
-        # #calculate Empty Bed Contact Time (EBCT)
-        self.ebct = self.area*self.L/self.flrt 
+        # self.data_df = filter_compounds(self.data_df, [compound], self.carbon, self.influent)
+        f_eff = interp1d(self.data_df.index, self.data_df[self.carbon, compound], fill_value='extrapolate')
         
-        self.k_data = self.k_data_bup.copy()
-        self.data_df = self.data_bup.copy()
-        self.compounds = self.compounds_bup
-        self.num_comps = self.num_comps_bup * 1
-        self.__y0shape = self.y0shape_bup 
-        self.__altshape = self.altshape_bup
-        self.jac_sparse = self.jac_sparse_bup #spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
-        self.mass_transfer = self.mass_transfer_bup.copy()  
+        ssq_xs = np.arange(self.k_data[compound]['brk']) ## only consider through breakthrough, old: np.max(self.data_df.index))
         
-        ## returns nothing, just resets class variables to originally calculated states for interative loop in model_uncertainty()
+        ssqs = pd.DataFrame(index=self.test_range, columns=self.xn_range)
+        
+        if len(self.test_range) == 1 and len(self.xn_range) == 1:
+            self.optimize_flag = False
+        
+        ## testing optimized loop 
+        if self.optimize_flag:
+            ### should this if be removed, run_all and run_all_smart basically handle this now
+            
+            if compound not in self.k_by_xn_factor.keys():
+                ### hopefully not really used
+                k_mult = {}
+                for xns in self.xn_range:
+                    k_mult[xns] = recalc_k(self.k_data[compound]['K'], 
+                                           self.k_data[compound]['q'],
+                                           self.k_data[compound]['1/n'],
+                                           xns)
+            else:
+                ### use precalculated k_multipliers
+                k_mult = {i: self.k_by_xn_factor[compound](i) for i in self.xn_range}
+            
+            for i in self.test_range:
+                for xn in self.xn_range:
+                    self.k_data.loc['1/n', compound] = xn
+                    self.k_data.loc['K', compound] = k_mult[xn] * i
+                    
+                    results = self.run_psdm()
+                    
+                    ssq = ((results[compound](ssq_xs) - f_eff(ssq_xs))**2).sum() ## returns sum of squares for assumed daily data with linear interpolated effluent
+                    ssqs.loc[i, xn] =ssq
+           
+        else:
+            # print(self.k_data_input_type)
+            if self.k_data_input_type == list:
+                if len(self.test_range) == 1 and len(self.xn_range) == 1:
+                    ### This means nothing was input and input occured through test_range and xn_range
+                    self.k_data.loc['1/n', compound] = self.xn_range[0]
+                    self.k_data.loc['K', compound] = self.test_range[0]
+                    
+                    results = self.run_psdm()
+                    
+                    ssq = ((results[compound](ssq_xs) - f_eff(ssq_xs))**2).sum() ## returns sum of squares for assumed daily data with linear interpolated effluent
+                    ssqs.loc[self.test_range[0], self.xn_range[0]] = ssq
+                    
+                    results = pd.DataFrame(results[compound].y, index=results[compound].x,
+                                           columns=[compound])
+                
+                else:
+                    ### try without changing K & 1/n?
+                    results = self.run_psdm()
+                   
+                    ssq = ((results[compound](ssq_xs) - f_eff(ssq_xs))**2).sum() ## returns sum of squares for assumed daily data with linear interpolated effluent
+                   
+                    k = self.k_data[compound]['K']
+                    xn = self.k_data[compound]['1/n']
+                    ssqs = pd.DataFrame(ssq, index=[xn],
+                                            columns=[k])
+                   
+                    results = pd.DataFrame(results[compound].y, index=results[compound].x,
+                                           columns=[compound])
+                   
+            else:
+                ## This should mean that a k_data DataFrame was input, can just run
+                results = self.run_psdm()
+                
+                ssq = ((results[compound](ssq_xs) - f_eff(ssq_xs))**2).sum() ## returns sum of squares for assumed daily data with linear interpolated effluent
+                
+                k = self.k_data[compound]['K']
+                xn = self.k_data[compound]['1/n']
+                ssqs = pd.DataFrame(ssq, index=[xn],
+                                    columns=[k])
+                
+                results = pd.DataFrame(results[compound].y, index=results[compound].x,
+                                       columns=[compound])
+                
+        
+        ### END, cleanup
+        self.__reset_column_values()
 
+        return compound, k, xn, ssqs, results
+        ## end run_psdm_kfit()
+        
+    def run_psdm_dsfit(self, compound):
+        idx=pd.IndexSlice     
+        ## replacement of run_psdm_dsfit() that uses run_psdm() ### TODO: Need to test
+        mp.freeze_support()
+ 
+        ssqs = 1
+        results = 1
+
+        ## always makes it a single case
+        self.num_comps = 1
+        self.jac_sparse = spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
+        self.__y0shape = (self.num_comps, self.nc+1, self.mc)
+        self.__altshape = (self.num_comps, self.nc, self.mc)
+        
+        self.compounds = [compound]
+            
+        ## get influent/effluent data for single species
+        self.data_df = self.data_bup.transpose().loc[idx[:, compound], :].transpose()
+        
+        # self.data_df = filter_compounds(self.data_df, [compound], self.carbon, self.influent)
+        f_eff = interp1d(self.data_df.index, self.data_df[self.carbon, compound], fill_value='extrapolate')
+
+        mol_vol = self.k_data[compound]['MolarVol']
+        mw = self.k_data[compound]['MW']
+        molar_k = self.k_data[compound]['K'] / mw / ((1. / mw) ** self.k_data[compound]['1/n'])
+
+        cb0 = self.data_df[self.influent, compound][0] * self.mass_mul / mw
+
+        difl = 13.26e-5/(((self.vw * 100.)**1.14)*(mol_vol**0.589)) #vb
+        ds_base = self.epor * difl * cb0 * self.psdfr / (1e3 * self.rhop * cb0**self.k_data[compound]['1/n'])
+
+        # tests = self.test_range
+        tests = np.linspace(1e-10, 1, num=30)
+
+        ssqs = pd.Series(index=tests) ## only consider test range in ds direction
+        best_ssq = 1e20 ## big initial value
+        best_factor = 1
+
+        ### Ds fit only used for fitting, so ignore self.optimize_flag
+        for factor in tests: ### need to swap out
+            self.mass_transfer.loc['ds', compound] = factor * ds_base
+            ### generally test_range should be something like np.linspace(1e-4, 1, num=20), where Ds is likely to be lower than predicted
+            results = self.run_psdm()
+                    
+            ssq = ((results[compound](ssq_xs) - f_eff(ssq_xs))**2).sum() ## returns sum of squares for assumed daily data with linear interpolated effluent
+            ssqs.loc[factor] =ssq
+
+            if ssq < best_ssq:
+                best_ssq = ssq * 1
+                best_factor = factor * 1
+                results_out = pd.DataFrame(results[compound].y, index=results[compound].x,
+                                       columns=[compound])
+
+
+
+        # print(self.mass_transfer)
+                
+        
+        ### END, cleanup
+        self.__reset_column_values()
+
+        return compound, best_val_ds, ssqs, results_out, ds_base
+        ## end run_psdm_dsfit
+
+    ### Begin model_uncertainty()
     def model_uncertainty(self, single=True, capacity=10, k='None', qn='None', c0='None', mass='None', flrt='None', ds='None', dp='None', kf='None'):
         idx=pd.IndexSlice 
         
-            ## store initial values so they can be changed: backups flagged with _bup
-        self.k_data_bup = self.k_data.copy()
-        self.data_bup = self.data_df.copy()
-        self.compounds_bup = self.compounds
-        self.num_comps_bup = self.num_comps * 1
-        self.jac_sparse_bup = self.jac_sparse
-        self.y0shape_bup = self.__y0shape #(self.num_comps, self.nc+1, self.mc)
-        self.altshape_bup = self.__altshape #(self.num_comps, self.nc, self.mc)
-        self.mass_transfer_bup = self.mass_transfer.copy()
-        calced_mass_transfer = self.mass_transfer.copy()
-        
-            ### column values to reset later
-        self.L_bup = self.L * 1
-        self.diam_bup = self.diam * 1 
-        self.wt_bup = self.wt * 1 
-        self.flrt_bup = self.flrt * 1 
-        self.rhop_bup = self.rhop * 1 
-        self.rhof_bup = self.rhof * 1 
-        self.rad_bup = self.rad * 1
-        self.tortu_bup = self.tortu * 1 
-        self.psdfr_bup = self.psdfr * 1
-        self.epor_bup = self.epor * 1
-        
+        self.__set_backups()
 
         ## create results dataframe: self.results stores baseline results, without considered uncertainty
         self.results = pd.DataFrame(index=np.linspace(0, self.duration, num=2000), columns=self.compounds_bup)
@@ -2106,6 +1773,7 @@ class PSDM():
         midx = pd.MultiIndex.from_tuples(multi_idx)
         self.uncertainty_results = pd.DataFrame(index=self.results.index, columns=midx)
         
+        calced_mass_transfer = self.mass_transfer.copy()
         
         #### run PSDM model from inputs - no changes
         if single:    ## run compounds as single compounds, default  
@@ -2122,7 +1790,7 @@ class PSDM():
                 
                 ## set k_data
                 self.k_data = pd.DataFrame(self.k_data_bup[comp].values, index=self.k_data_bup.index, columns=self.compounds) 
-                
+
                 temp_results = self.run_psdm() ## run simulation
                 self.results[comp] = temp_results[comp](self.results.index) ## store results in dataframe
                 
@@ -2137,8 +1805,6 @@ class PSDM():
         
             calced_mass_transfer = self.mass_transfer_data.copy()
         
-        # print(calced_mass_transfer)
-        
         
         ## begin uncertainty loop #######################################################################
         
@@ -2151,9 +1817,11 @@ class PSDM():
         test_uncertainty = [] ## initialize list, will be list of dictionaries 
         
         ### Inputs assume % reported as 10 for 10%, not 0.1
+        compare_bounds = False
         if capacity != 'None':
             test_uncertainty.append({'k': 1 + capacity/100, '1/n': 1 - capacity/100}) ## Freundlich K and 1/n work in opposite directions
             test_uncertainty.append({'k': 1 - capacity/100, '1/n': 1 + capacity/100})
+            compare_bounds = True
         
         other_inputs = {'k': k, 'qn': qn, 'mass': mass, 'ds': ds, 'dp': dp, 'kf': kf, 'flrt': flrt}
         for key, value in other_inputs.items():
@@ -2161,6 +1829,7 @@ class PSDM():
             if value != 'None':
                 test_uncertainty.append({key: 1 + value/100})
                 test_uncertainty.append({key: 1 - value/100})
+                compare_bounds = True
         
 
         for test in test_uncertainty:
@@ -2225,7 +1894,6 @@ class PSDM():
             #calculate Empty Bed Contact Time (EBCT)
             self.ebct = self.area*self.L/self.flrt 
             
-            
             ## run uncertainty
             if single:    ## run compounds as single compounds, default  
                 
@@ -2245,14 +1913,14 @@ class PSDM():
                     
                     temp_results = self.run_psdm() ## run simulation
                     
-                    
                     ### figure out if this should change the uncertainty bounds
-                    lower = np.minimum(self.uncertainty_results['lower'][comp].values, temp_results[comp](self.results.index))
-                    
-                    upper = np.maximum(self.uncertainty_results['upper'][comp].values, temp_results[comp](self.results.index))
-                    
-                    self.uncertainty_results.loc[idx[:, ('lower', comp)]] = lower * 1
-                    self.uncertainty_results.loc[idx[:, ('upper', comp)]] = upper * 1 ## store results in dataframe
+                    if compare_bounds:
+                        ## only check if uncertainty is modeled
+                        lower = np.minimum(self.uncertainty_results['lower'][comp].values, temp_results[comp](self.results.index))
+                        upper = np.maximum(self.uncertainty_results['upper'][comp].values, temp_results[comp](self.results.index))
+                        
+                        self.uncertainty_results.loc[idx[:, ('lower', comp)]] = lower * 1
+                        self.uncertainty_results.loc[idx[:, ('upper', comp)]] = upper * 1 ## store results in dataframe
                     
             else: ## run as multi-competitive
             ## TODO: Still need to test this, but it should work...
@@ -2262,15 +1930,15 @@ class PSDM():
                     
                 for comp in temp_results.keys(): ## store results in dataframe
                     self.results[comp] = temp_results[comp](self.results.index)
-                   
-                    lower = np.minimum(self.uncertainty_results['lower'][comp].values, temp_results[comp](self.results.index))
                     
-                    upper = np.maximum(self.uncertainty_results['upper'][comp].values, temp_results[comp](self.results.index))
-                    
-                    self.uncertainty_results['lower'][comp] = lower
-                    self.uncertainty_results['upper'][comp] = upper ## store results in dataframe
+                    if compare_bounds:
+                        ## only check if uncertainty is modeled
+                        lower = np.minimum(self.uncertainty_results['lower'][comp].values, temp_results[comp](self.results.index))
+                        upper = np.maximum(self.uncertainty_results['upper'][comp].values, temp_results[comp](self.results.index))
+                        
+                        self.uncertainty_results['lower'][comp] = lower
+                        self.uncertainty_results['upper'][comp] = upper ## store results in dataframe
             
-
         ### end uncertainty loop ##########################################################################
 
         
@@ -2284,19 +1952,13 @@ class PSDM():
 
 
 
+
+
     
 # =============================================================================
 #     NEW BELOW, may delete
 # =============================================================================
-    
-    # def __run_MP_helper(self, k, invN, compound, k_mult):
-    #     mp.freeze_support()
-    #     self.test_range = np.array([k])
-    #     self.xn_range = np.array([invN])
-    #     compound, best_val_k, best_val_xn, ssqs, model_data = self.run_psdm_kfit(compound)
-    #     print(ssqs)
-    #     return k, invN, ssqs, compound, k_mult
-        
+      
     
     def run_all_MP(self, plot=False, save_file=False):
         '''
@@ -2436,6 +2098,8 @@ class PSDM():
         self.xn_range = orig_xn_range
         self.test_range = orig_test_range
         self.optimize_flag = opt_flg #resets to original value
+
+    
     
 # =============================================================================
 # END OF PSDM CLASS
