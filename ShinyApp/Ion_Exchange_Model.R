@@ -1543,10 +1543,10 @@ ui<-fluidPage(
                             h4("Ion List"),
                             dataEditUI("edit-1"),
                             br(), br(),
-                            h4("Concentration Points"),
+                            h4("Influent Concentration Points"),
                             dataEditUI("edit-2"),
                             br(), br(),
-                            h4("Effluent Data"),
+                            h4("Effluent Concentration Points"),
                             dataEditUI("edit-3")
                             
                             ),
