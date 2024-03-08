@@ -1569,19 +1569,24 @@ ui<-fluidPage(
                               column(4, offset=1,
                                      selectInput("alkunits", "Concentration Units", c("meq", "mg/L")),
                                      
-                                     div(style ="
-                                              margin-top:2em",
-                                         h5("Bicarbonate Concentration (meq)")),
-                                     div(style ="
-                                              margin-top:-1em",
-                                         textOutput("bicarbcin"))),
+                                     # div(style ="
+                                     #          margin-top:2em",
+                                         h5("Bicarbonate Concentration (meq)"),
+                                     # div(style ="
+                                     #          margin-top:-1em",
+                                         textOutput("bicarbcin"), br()),
+                          
+                            
+                              
+                              
                               column(4, offset=1,
-                                     div(style ="
-                                              margin-top:2em",
-                                         h5("Bicarbonate Concentration (mg/L)")),
-                                     div(style ="
-                                              margin-top:-1em",
-                                         textOutput("bicarbcinmgl"))),
+                                     # div(style ="
+                                     #          margin-top:2em",
+                                         h5("Bicarbonate Concentration (mg/L)"),
+                                   
+                                     # div(style ="
+                                     #          margin-top:-1em",
+                                         textOutput("bicarbcinmgl")),
                               br()
                               
                             )#fluid row
