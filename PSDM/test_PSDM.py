@@ -10,7 +10,7 @@ Created on Thu Apr 11 15:40:42 2019
 import numpy as np
 import pandas as pd
 import PSDM
-import pylab as plt
+import matplotlib.pyplot as plt
 plt.close()
 from scipy import interpolate
 
@@ -40,12 +40,12 @@ plot_line = np.arange(np.max(Cout_5.index.values/1440))
 
 #transform input data into appropriate data structures
 column_prop = input_data.transpose()[['epor','diam', 'L','wt','rhop','rhof','flrt','rad','influentID']].transpose()
-tortu = pd.DataFrame([1,5],columns=['Test'],index=['tortu','psdfr'])
-column_prop = column_prop.append(tortu) #needs tortuosity
+column_prop.loc['tortu'] = 1
+column_prop.loc['psdfr'] = 5
 test_data = input_data.transpose()[['MW','MolarVol']].transpose()
 data_store = input_data.transpose()[['K','kf','dp','1/n']].transpose()
-data = pd.DataFrame(1, columns=data_store.columns, index=['q'])
-data_store = data_store.append(data) #adds q, which is used by class_psdm
+data_store.loc['q'] = 1
+data_store.loc['brk'] = 100
 data_store.columns = pd.MultiIndex.from_tuples([('Test','Test')])
 
 xn = data_store['Test']['Test']['1/n']

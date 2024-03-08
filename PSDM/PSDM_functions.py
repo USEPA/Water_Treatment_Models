@@ -1024,7 +1024,9 @@ def generate_grid(grid_num_xn, grid_num_k,\
 
 
 
-
+def logistic(t, c0, a, b):
+    ## Returns Logistic form function
+    return c0 / (1 + np.exp(a - b * t))
 
 
 

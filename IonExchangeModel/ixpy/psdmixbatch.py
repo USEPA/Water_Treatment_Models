@@ -44,38 +44,70 @@ class PSDMIXbatch:
                                         self.ions['mw'].to_dict(),
                                         self.ions['valence'].to_dict())
         
-    def save_results(self, file_name, **kwarg):
-        # TODO: fix time column output to have correct heading
-        if 'time' in kwarg.keys():
-            time_factor, _, _ = conv_time('s', kwarg['time'], '', '')
-        else:
-            time_factor = 1.0
-        
-        tmp_df = pd.DataFrame(data=self.u_result[0, :, :].T, 
-                              index=self.result.t * time_factor,
-                              columns=self.ions.index.tolist())
-        
-        save_df = tmp_df.copy(deep=True)
-
-        if 'concentration' in kwarg.keys():
+    def save_results(self, output_file_name, **kwargs):
+        '''
+        Returns:
+            generate and write a *.xlsx file in the parent directory;
+            sheet_name = Cout;
             
-            save_df, _, _ = conv_database(save_df, 
-                                   dict(zip(self.ions.index.tolist(), ['meq']*self.ions.shape[1])),
-                                   dict(zip(self.ions.index.tolist(), [kwarg['concentration']]*self.ions.shape[1])),
-                                   conv_conc,
-                                   self.ions['mw'].to_dict(),
-                                   self.ions['valence'].to_dict())
-        else:
-            save_df = save_df
-
-        if 'comps' in kwarg.keys():
-            comps = kwarg['comps']
-        else:
-            comps = self.ions.index.tolist()
+            *** convert results from solver() to the requested uints; ***
+            *** convert results from solver() to the input units if units are not specified; ***
+            
+        Parameters:
+            output_file_name : file name as string;
+            period : string;
+            units : string; 
+            
+            *** takes units from the input file if units are not specified; ***
+        '''
         
-        save_df[comps].to_excel(file_name, index=True, header=True)
-    
+        period = kwargs.get('period', 'hours')
+        units = kwargs.get('units', None)
+        
+        Cin_dict = self.ions.to_dict('index')
+        u_Cin2 = {}
+        val2 = {}
+        MW2 = {}
+        for c in Cin_dict.keys():
+            u_Cin2[c] = Cin_dict[c]['units']
+            val2[c] = Cin_dict[c]['valence']
+            MW2[c] = Cin_dict[c]['mw']
+        u_Cout2 = {}
+        if units == None:
+            u_Cout2 = u_Cin2
+        else:
+            for c in Cin_dict.keys():
+                u_Cout2[c] = units
+        
+        u_Cin2 = {}
+        for c in Cin_dict.keys():
+            u_Cin2[c] = 'meq'
+            
+        temp_t = pd.Series(self.result.t)
+        tmp_u = self.u_result[0, :, :]
+        
+        period_factor, u_in, u_out = conv_time('sec',period,'time', period)            
+        idx = pd.Index(temp_t * period_factor, name = period)
+        
+        df_c = pd.DataFrame(tmp_u.T, index = idx, columns = self.names)
+        
+        tmp_df = df_c.copy(deep=True)
 
+        C_out3, u_Cin2, u_Cout2 = conv_database(tmp_df, u_Cin2, u_Cout2, \
+                                    conv_conc, MW2, val2)       
+        
+        col_name = C_out3.columns.tolist()
+        
+        new_col_name = []
+        for n in col_name:
+            new_col_name.append( n + ' ('+ u_Cout2[n] + '/L)')           
+
+        C_out3.columns = new_col_name
+        saved_name = output_file_name
+        C_out3.to_excel(output_file_name, sheet_name = 'Cout', float_format='%.8f')        
+
+        return saved_name
+    
         
     def solve(self, t_eval=None):
         """ Returns (t, u)
