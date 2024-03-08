@@ -1334,7 +1334,13 @@ ui<-fluidPage(
       background-color: #0e6cb6;
         border-color: #030033;
     }
-
+  
+    .navbar-nav > li > a, .navbar-brand {
+      padding-top:15px !important; 
+      padding-bottom:0 !important;
+      height: 25px;
+    }
+    .navbar {min-height:25px !important;}
 
 
     .navbar-default .navbar-nav > li > a {
@@ -1498,12 +1504,12 @@ ui<-fluidPage(
                                      div(style ="
                                                margin-top:-0.33em", 
                                          selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2"))),
-                                     div(style ="
-                                               margin-top:-0.33em",          
-                                         selectInput("DiameterUnits","Diameter Units",c("cm", "m", "in", "ft"))),
-                                     div(style ="
-                                               margin-top:-0.33em", 
-                                         selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))))),
+                                     # div(style ="
+                                     #           margin-top:-0.01em",          
+                                         selectInput("DiameterUnits","Diameter Units",c("cm", "m", "in", "ft")),
+                                     # div(style ="
+                                     #           margin-top:-1em", 
+                                         selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
                             
                             
                             # column(3,
