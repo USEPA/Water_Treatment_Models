@@ -1823,7 +1823,7 @@ class PSDM():
             test_uncertainty.append({'k': 1 - capacity/100, '1/n': 1 + capacity/100})
             compare_bounds = True
         
-        other_inputs = {'k': k, 'qn': qn, 'mass': mass, 'ds': ds, 'dp': dp, 'kf': kf, 'flrt': flrt}
+        other_inputs = {'k': k, 'qn': qn, 'mass': mass, 'ds': ds, 'dp': dp, 'kf': kf, 'flrt': flrt, 'C': c0}
         for key, value in other_inputs.items():
             
             if value != 'None':
