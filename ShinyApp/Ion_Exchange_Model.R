@@ -2312,14 +2312,14 @@ server <- function(input, output, session) {
   
   fig<-reactive({create_plotly(counterion_data_processed(), effluent_processed(), cindat_converter_counter())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
-                                             legend=list(orientation='h', y=1),
+                                             legend=list(orientation='h', y=1), hovermode='x unified',
                                              xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
                                              yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
                                                         exponentformat='e', gridcolor = 'ffff'))})
   
   bonusfig<-reactive({create_plotly2(ion_data_processed(), effluent_processed(), cindat_converter_ion())})
   ionfigure<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
-                                           legend=list(orientation='h', y=1),
+                                           legend=list(orientation='h', y=1), hovermode='x unified',
                                            xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
                                            yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
                                                       exponentformat='e', gridcolor = 'ffff'))})
