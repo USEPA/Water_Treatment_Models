@@ -12,8 +12,8 @@ The Granular Activated Carbon Modeling Tool is used to model a _________________
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
 2. Excel (recommended)
-3. Files: Ion_Exchange_Model.R, config.xlsx
-4. Optional: example.xlsx
+3. Files: GACapp.R, config.xlsx
+4. Optional: Example_TCE.xlsx
 
 ## Excel-based Input File
 The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny GAC app looks for sheetnames of "Properties", "Kdata", "columnSpecs", "data", "data_variable" (optional) and "data_optimize" (optional). If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth and fifth optional sheet "data_variable", which represents varying influent and effluent concentration. There is also "data_optimize" which ___________. These pages do not need to be present when the file is ran and is not required to exist in the excel sheet.
@@ -87,7 +87,6 @@ The parameters tab is used to describe the physical constraints of the resin cha
 
 |  Input        				|Variable  | Description    |
 |---            				|---       |---            |
-|Resin Capacity 				|     Q    | Resin capacity is a measurement of the total capacity of anions that can be absorbed by a volume of resin. This capacity is expressed in molar quantity per unit volume (meq/L, molar equivalent per liter). The value is determined experimentally by titration. It is usually reported by the manufacturer.  [Read More](https://pubs.acs.org/doi/10.1021/acsestwater.2c00572)    |
 |Bead Radius    				|     rb   | Bead radius is the measurement of the distance of the bead resin from the center to the surface.              |        
 |Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent.     |              
 |Bead Porosity | EPOR | The bead porosity is the measure of the bead volume occupied by a solvent, usually water. The factor is between 0 and 1, where 0 represents a bead absent of a solvent and 1 is a bead where all the available space is filled with a solvent. A well packed bead will typically have and EPOR of 0.2. |
