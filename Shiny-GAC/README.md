@@ -57,7 +57,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 ![Adjust](DocumentPics/IonsTab.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
+6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 3 total chemicals with 2 concentration points takes about 10-30 seconds.
 
 ![Run](DocumentPics/Slide5.PNG)
 
@@ -80,7 +80,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ### Column Parameters
 
-The Column Parameters tab (Input>Column Parameters) is used to describe the resin characteristics and column specifications. Some of these parameters, like Resin Capacity, can be nontrivial to measure so appropriate references are provided where a user can find additional information. This information is located in the "params" tab in the Excel-based input files.
+The Column Parameters tab (Input>Column Parameters) is used to describe the resin characteristics and column specifications. Some of these parameters, like tortuosity, can be nontrivial to measure so appropriate references are provided where a user can find additional information.
 
 The parameters tab is used to describe the physical constraints of the resin characteristics and column specifications. Some of these measurements, like Resin Capacity, can be nontrivial to measure so we have tried to supply a source where the user can find the information if they do not have it already.
 
