@@ -285,19 +285,21 @@ influent_organizer<-function(influent){
 
 
 
-process_output<-function(dat){
+process_output<-function(dat, inf){
   
   if(nrow(dat)>1){
-    outputdata<-dat
-    outputdata_time<-rownames(dat)
+    
+    timelength<-inf[nrow(inf), 1]
+    outputdata_time<-seq(0, timelength, 0.25)
+    
     outputdata_organized<-gather(dat)
     totaldat<-cbind(outputdata_time, outputdata_organized)
     colnames(totaldat)<-c("hours","name","conc")
-    
+
     return(totaldat)
   }
-  
-  
+
+
   else{
     totaldat<-dat
   }
@@ -825,8 +827,9 @@ server <- function(input, output, session) {
     
   })
   
+  #observe({print(out())})
  # computed_data_output<-reactive({process_output(out())})
-  
+  computed_data<-reactive({process_output(out(), infdat())})
   
   
   effdat_plot<-reactive({effluent_data_processor(effdat())})
@@ -851,12 +854,12 @@ server <- function(input, output, session) {
     # calculating kBV
     if (input$timeunits == "Bed Volumes (x1000)") {
       bv_conv <- get_bv_in_sec(input)
-      #outputchemicals$time <- computed_data_output()$hours / (bv_conv / hour2sec) / 1e3
+      outputchemicals$time <- computed_data()$hours/ (bv_conv / hour2sec) / 1e3
       outputeffluent$hours<- effdat_plot()$hours/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
       
     } else {
-      #outputchemicals$time <- computed_data_output()$hours / (time_conv[input$timeunits] / hour2sec)
+      outputchemicals$time <- computed_data()$hours * (time_conv[input$timeunits] / hour2sec)
       outputeffluent$hours<- effdat_plot()$hours/ (time_conv[input$timeunits]) #/ hour2sec)
       outputinfluent$hours<-influent_plot()$hours/ (time_conv[input$timeunits])# / hour2sec) ## should this be $time?
     }
@@ -874,7 +877,7 @@ server <- function(input, output, session) {
       outputeffluent$conc<- effluentcc0()$conc
       outputinfluent$conc <- influentcc0()$conc#influentcc04()$conc
     } else {
-      #outputchemicals$conc <- computed_data_output()$conc / mass_conv[input$OCunits]
+      outputchemicals$conc <- computed_data()$conc / mass_conv[input$OCunits]
       outputeffluent$conc <- effdat_plot()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- influent_plot()$conc/mass_conv[input$OCunits]
     }
@@ -882,17 +885,17 @@ server <- function(input, output, session) {
   })
   
   
-  # computational_processed<-reactive({
-  #   if(input$computeddata==TRUE){
-  #     plotdata<-computed_data_output()
-  #     plotdata$conc<-outputchemicals$conc
-  #     plotdata$hours<-outputchemicals$hours
-  #     plotdata
-  #   }
-  #   else{
-  #     plotdata<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
-  #   }
-  # })
+  computational_processed<-reactive({
+    if(input$computeddata==TRUE){
+      plotdata<-computed_data_output()
+      plotdata$conc<-outputchemicals$conc
+      plotdata$hours<-outputchemicals$hours
+      plotdata
+    }
+    else{
+      plotdata<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+    }
+  })
   
   
   effluent_processed<-reactive({
@@ -925,17 +928,17 @@ server <- function(input, output, session) {
   
   # observe({print(influent_processed())})
   # observe({print(effluent_processed())})
-  observe({print(process_output(out()))})
+  #observe({print(process_output(out()))})
   #observe({print(out())})
 
 
-  fig<-reactive({create_plotly(process_output(out()), effluent_processed(), influent_processed())})
+  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                              legend=list(orientation='h', y=1), hovermode='x unified',
                                              xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
                                              yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
                                                         exponentformat='e', gridcolor = 'ffff'))})
-  
+
   output$Plot<-renderPlotly(
     counterionfigure())
 
