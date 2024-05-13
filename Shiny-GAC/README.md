@@ -12,8 +12,8 @@ The Granular Activated Carbon Modeling Tool is used to model a _________________
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
 2. Excel (recommended)
-3. Files: Ion_Exchange_Model.R, config.xlsx
-4. Optional: example.xlsx
+3. Files: GACapp.R, config.xlsx
+4. Optional: Example_TCE.xlsx
 
 ## Excel-based Input File
 The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny GAC app looks for sheetnames of "Properties", "Kdata", "columnSpecs", "data", "data_variable" (optional) and "data_optimize" (optional). If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth and fifth optional sheet "data_variable", which represents varying influent and effluent concentration. There is also "data_optimize" which ___________. These pages do not need to be present when the file is ran and is not required to exist in the excel sheet.
@@ -57,7 +57,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 ![Adjust](DocumentPics/IonsTab.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
+6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 3 total chemicals with 2 concentration points takes about 10-30 seconds.
 
 ![Run](DocumentPics/Slide5.PNG)
 
@@ -80,24 +80,28 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ### Column Parameters
 
-The Column Parameters tab (Input>Column Parameters) is used to describe the resin characteristics and column specifications. Some of these parameters, like Resin Capacity, can be nontrivial to measure so appropriate references are provided where a user can find additional information. This information is located in the "params" tab in the Excel-based input files.
+The Column Parameters tab (Input>Column Parameters) is used to describe the resin characteristics and column specifications. Some of these parameters, like tortuosity, can be nontrivial to measure so appropriate references are provided where a user can find additional information.
 
 The parameters tab is used to describe the physical constraints of the resin characteristics and column specifications. Some of these measurements, like Resin Capacity, can be nontrivial to measure so we have tried to supply a source where the user can find the information if they do not have it already.
 
+| Input                        | Description | Units |
+|---                           |---          |---    |
+|Carbon ID                     |             |N/A    |
+|radius                        |Bead radius is the measurement of the distance of the bead resin from the center to the surface. | cm, m, mm, in, ft |
+|Bead Porosity | The bead porosity is the measure of the bead volume occupied by a solvent, usually water. The factor is between 0 and 1, where 0 represents a bead absent of a solvent and 1 is a bead where all the available space is filled with a solvent. A well packed bead will typically have and EPOR of 0.2. | N/A|
+|psdfr                          |            |N/A    |
+|particle density               | Mass per unit volume of bead particle. | g/ml |
+|apparent density               | Mass per unit volume of bead particle measured within a medium. | g/ml|
+|length                         |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor.| m, cm, mm, in, ft|
+|weight                         | Weight of carbon. | lb, kg, g |
+|flowrate                       | The average flow rate through the column. HSDM only considers and average or steady-state condition, not variable flow. | gpm, cm^3/s, m^3/s, ft^3/s, mL/s, L/min, mL/min, mgd |
+|diameter                     | The diameter of a cylindrical column.  | cm, mm, m, ft, in |
+|tortuosity                   | Parameter of flow between curve and length. | N/A |
+|units                        | Influent and Effluent Concentrations | ug, ng, mg |
+|time                         | The units for time in the corresponding "data" sheet in the Excel-based files or "Concentration Points" table under Input>Ion's tab. |
 
-|  Input        				|Variable  | Description    |
-|---            				|---       |---            |
-|Resin Capacity 				|     Q    | Resin capacity is a measurement of the total capacity of anions that can be absorbed by a volume of resin. This capacity is expressed in molar quantity per unit volume (meq/L, molar equivalent per liter). The value is determined experimentally by titration. It is usually reported by the manufacturer.  [Read More](https://pubs.acs.org/doi/10.1021/acsestwater.2c00572)    |
-|Bead Radius    				|     rb   | Bead radius is the measurement of the distance of the bead resin from the center to the surface.              |        
-|Bed Porosity   				|     EBED | The bed porosity is the measure of a bed volume occupied by a solvent, usually water. This factor is between 0 and 1, where 0 represents a bed absent of a particular solvent and 1 is a bed where all the available space is filled with solvent.     |              
-|Bead Porosity | EPOR | The bead porosity is the measure of the bead volume occupied by a solvent, usually water. The factor is between 0 and 1, where 0 represents a bead absent of a solvent and 1 is a bead where all the available space is filled with a solvent. A well packed bead will typically have and EPOR of 0.2. |
-|Length         				|     L    |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor. |        
-|Velocity  					|     v    | The linear velocity, or superficial velocity, represents the distance an average water particle travels over a given period of time. HSDM only considers an average of steady-state condition, not variable flow.     |    
-|Diameter 				|     diam    |  The diameter of a cylindrical column.             |        
-|Flow Rate 					|	flrt   | The average flow rate through the column. HSDM only considers and average or steady-state condition, not variable flow. |       
-|Radial Collocation Points		|	nr   | Number of grid points in the radial direction used to model transport inside the resin beads (Default nr=7). Can be used to adjust numerical convergence.               |        
-|Axial Collocation Points		|	nz   | Number of grid points in the axial direction used to model transport through the column (Default nz=13). Can be used to adjust numerical convergence.                |        
-|Time                         | time |  The units for time in the corresponding "Cin" sheet in the Excel-based files or "Concentration Points" table under Input>Ion's tab. 
+
+
 
 ### Ions Tab
 
