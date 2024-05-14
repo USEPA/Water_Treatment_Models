@@ -44,32 +44,29 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ![Import File](DocumentPics/Slide1.PNG)
 
-3. Click the drop down selector named "Model Selection" to chose between "HSDM" and "PSDM"
 
-![Model Selection](DocumentPics/modelselector.PNG)
-
-4. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
+3. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
 
 ![Inputs](DocumentPics/Slide2.PNG)
 
-5. (Optional) In the ions tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
+4. (Optional) In the ions tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
 
 ![Adjust](DocumentPics/IonsTab.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 3 total chemicals with 2 concentration points takes about 10-30 seconds.
+5.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 3 total chemicals with 2 concentration points takes about 10-30 seconds.
 
 ![Run](DocumentPics/Slide5.PNG)
 
-7.	Switch to the Output tab (There should be a loading “spinner” to let you know it’s running)
+6.	Switch to the Output tab (There should be a loading “spinner” to let you know it’s running)
 
 ![waiting](DocumentPics/Slide6.PNG)
 
-8.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
+7.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
 
 ![plot](DocumentPics/Slide7.PNG)
 
-9. The user can use the check boxes on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
+8. The user can use the check boxes on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
 
 ![plottraces](DocumentPics/Slide8.PNG)
 
