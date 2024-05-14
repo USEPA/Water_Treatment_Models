@@ -13,7 +13,7 @@ import PSDM
 
 
 
-def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz): ## need fouling passed from R as well
+def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz, water_type='Organic Free', chem_type='halogenated alkenes'): ## need fouling passed from R as well
     ## convert from R to Python need
     column_info = pd.Series(columndata['value'].values, index=columndata['name'])
     
@@ -64,6 +64,8 @@ def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz): ## need foul
                                k_data=kdata_updated,
                                nr=int(nr),
                                nz=int(nz),
+                               water_type=water_type,
+                               chem_type=chem_type
                                )
                                
 
@@ -79,7 +81,7 @@ def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz): ## need foul
     except Exception as e:
         return e
       
-
+    output_data['time'] = output_data.index
     return output_data
 
 

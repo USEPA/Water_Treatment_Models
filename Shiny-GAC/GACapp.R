@@ -285,18 +285,22 @@ influent_organizer<-function(influent){
 
 
 
-process_output<-function(dat, inf){
+process_output<-function(dat){
   
   if(nrow(dat)>1){
     
-    timelength<-inf[nrow(inf), 1]
-    outputdata_time<-seq(0, timelength, 0.25)
+    #timelength<-inf[nrow(inf), 1]
+    #outputdata_time<-seq(0, timelength, 0.25)
+    # outputdata_time<-dat['time']
+    # 
+    # outputdata_organized<-gather(dat)
+    # totaldat<-cbind(outputdata_time, outputdata_organized)
+    # colnames(totaldat)<-c("hours","name","conc")
     
-    outputdata_organized<-gather(dat)
-    totaldat<-cbind(outputdata_time, outputdata_organized)
-    colnames(totaldat)<-c("hours","name","conc")
+    dat2<-dat%>%pivot_longer(!time, names_to="name", values_to="conc")
+    colnames(dat2)<-c("hours", "name", "conc")
 
-    return(totaldat)
+    return(dat2)
   }
 
 
@@ -780,6 +784,11 @@ server <- function(input, output, session) {
     return(unique(flowv))
   })
   
+  diamvec<-reactive({
+    diamv<-c(filter(columnSpecs(), name=='diameter')$units, diametervector)
+    return(unique(diamv))
+  })
+  
   
   observe({
     updateSelectInput(session, "rbunits", choices=radiusvector())
@@ -787,6 +796,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "timeunits2", choices=timevec())
     updateSelectInput(session, "wunits", choices=weightvec())
     updateSelectInput(session, "FlowrateUnits", choices=flowvec())
+    updateSelectInput(session, "DiameterUnits", choices=diamvec())
   })
   
   
@@ -827,9 +837,13 @@ server <- function(input, output, session) {
     
   })
   
-  #observe({print(out())})
+  # print("out")
+  # observe({print(out())})
  # computed_data_output<-reactive({process_output(out())})
-  computed_data<-reactive({process_output(out(), infdat())})
+  computed_data<-reactive({process_output(out())})
+  # 
+  # print("computed data")
+  #observe({print(computed_data())})
   
   
   effdat_plot<-reactive({effluent_data_processor(effdat())})
@@ -854,16 +868,18 @@ server <- function(input, output, session) {
     # calculating kBV
     if (input$timeunits == "Bed Volumes (x1000)") {
       bv_conv <- get_bv_in_sec(input)
-      outputchemicals$time <- computed_data()$hours/ (bv_conv / hour2sec) / 1e3
+      outputchemicals$hours <- computed_data()$hours/ (bv_conv / hour2sec) / 1e3
       outputeffluent$hours<- effdat_plot()$hours/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
       
     } else {
-      outputchemicals$time <- computed_data()$hours * (time_conv[input$timeunits] / hour2sec)
+      outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])# / hour2sec)
       outputeffluent$hours<- effdat_plot()$hours/ (time_conv[input$timeunits]) #/ hour2sec)
       outputinfluent$hours<-influent_plot()$hours/ (time_conv[input$timeunits])# / hour2sec) ## should this be $time?
     }
   })
+  
+  #observe({print(computed_data()$hours)})
   
   #observe({print( get_bv_in_sec(input))})
   
@@ -887,7 +903,7 @@ server <- function(input, output, session) {
   
   computational_processed<-reactive({
     if(input$computeddata==TRUE){
-      plotdata<-computed_data_output()
+      plotdata<-computed_data()
       plotdata$conc<-outputchemicals$conc
       plotdata$hours<-outputchemicals$hours
       plotdata
@@ -896,6 +912,8 @@ server <- function(input, output, session) {
       plotdata<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
     }
   })
+  
+  observe({print(outputchemicals$hours)})
   
   
   effluent_processed<-reactive({
@@ -929,6 +947,7 @@ server <- function(input, output, session) {
   # observe({print(influent_processed())})
   # observe({print(effluent_processed())})
   #observe({print(process_output(out()))})
+  #observe({print(computational_processed())})
   #observe({print(out())})
 
 
