@@ -86,9 +86,6 @@ volumetric_conv <- c("cm^3/s"=cm2cm*min2sec, "m^3/s"=min2sec*m2cm^3, "ft^3/s"=mi
                      "mL/s"=min2sec*cm2cm, "L/min"=l2ml, "mL/min"=1,
                      "gpm"=gal2ml, "mgd"=1e6 * gal2ml)
 
-# volumetric_conv<-c("cm^3/s"=cm3s2gpm, "m^3/s"=m3s2gpm, "ft^3/s"=ft3s2gpm,
-#                    "mL/s"=mLs2gpm, "L/min"=Lmin2gpm, "mL/min"=mLmin2gpm,
-#                    "gpm"=1, "mgd"=mgd2gpm)
 
 time_conv <- c("Hours"=hour2day, "Days"=day2day, "Months"=month2day, "Years"=year2day,
                "hr"=hour2day, "day"=day2day, "month"=month2day, "year"=year2day)
@@ -98,7 +95,6 @@ kL_conv <- c("ft/s"=ft2cm, "m/s"=m2cm, "cm/s"=cm2cm, "in/s"=in2cm,
              "m/hr"=mph2cmps)
 ds_conv <- c("ft^2/s"=ft2ps2cm2ps, "m^2/s"=m2ps2cm2ps, "cm^2/s"=cm2cm,
              "in^2/s"=in2ps2cm2ps)
-#weight_conv<-c("kg"=kg2lb, "g"=g2lb, "lb"=1)
 
 mass_conv <- c("meq"=1, "meq/L"=1, "mg"=1, "ug"=1e-3, "ng"=1e-6, "mg/L"=1, "ug/L"=1e-3, "ng/L"=1e-6) ### changed
 
@@ -289,13 +285,6 @@ process_output<-function(dat){
   
   if(nrow(dat)>1){
     
-    #timelength<-inf[nrow(inf), 1]
-    #outputdata_time<-seq(0, timelength, 0.25)
-    # outputdata_time<-dat['time']
-    # 
-    # outputdata_organized<-gather(dat)
-    # totaldat<-cbind(outputdata_time, outputdata_organized)
-    # colnames(totaldat)<-c("hours","name","conc")
     
     dat2<-dat%>%pivot_longer(!time, names_to="name", values_to="conc")
     colnames(dat2)<-c("hours", "name", "conc")
@@ -348,6 +337,10 @@ create_plotly<-function(frame1, frame2, frame3){
 
 
 read_in_files(input, paste0("config.xlsx"))
+
+
+
+
 
 
 
@@ -652,15 +645,8 @@ server <- function(input, output, session) {
   columnSpecs<-reactiveVal(read.csv(paste(file_direc, "columnSpecs.csv", sep='')))
   Kdata<-reactiveVal(read.csv(paste(file_direc,"Kdata.csv", sep='')))
   
-  # 
-  #   
-  #   dat_influent<-reactiveVal(read.csv(paste(file_direc, 'dat_influent.csv', sep='')))
-  #   dat_effluent<-reactiveVal(read.csv(paste(file_direc, 'dat_effluent.csv', sep='')))
-  #   influent_data<-reactive({dat_influent()})
-  #   effluent_data<-reactive({dat_effluent()})
-  #   observe({influent_data()})
-  #   observe({effluent_data()})
-  #   
+ 
+
   
   test_df<-data.frame(C=c('v','flrt','diam'))
   flags<-reactive({test_df$C %in% columnSpecs()$name}) ##flags are in order [1] velocity [2] flowrate and [3] diameter
@@ -763,11 +749,10 @@ server <- function(input, output, session) {
   
   lengthvec<-reactive({
     lenvec<-c(filter(columnSpecs(), name=='length')$units, lengthvector)
-    #print(filter(columnSpecs(), name=='length')$units)
     return(unique(lenvec))
   })
   
-  #observe({print(lengthvec())})
+  
   
   weightvec<-reactive({
     wvec<-c(filter(columnSpecs(), name=='weight')$units, weightvector)
@@ -818,7 +803,6 @@ server <- function(input, output, session) {
   
   ##Column_data_converted = column_info
   column_data_converted<-reactive({column_data(input)})
-  #observe({print(column_data_converted())})
   ##chem_data = properties
   chem_data<-reactive({properties()})
   ##compounds = compounds (column names)
@@ -832,31 +816,24 @@ server <- function(input, output, session) {
   
   observeEvent(input$run_button, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv()))
-    
-    #print(rownames(out()))
-    
   })
   
-  # print("out")
-  # observe({print(out())})
- # computed_data_output<-reactive({process_output(out())})
   computed_data<-reactive({process_output(out())})
-  # 
-  # print("computed data")
-  #observe({print(computed_data())})
+ 
+  
+  
   
   
   effdat_plot<-reactive({effluent_data_processor(effdat())})
   
   influent_plot<-reactive({
-    
     dat<-influent_chemical_renamer(infdat())
     influent_organizer(dat)
-    
     })
  
   
-  #observe({print(influent_plot())})
+  
+
   
   outputeffluent<-reactiveValues()
   outputinfluent<-reactiveValues()
@@ -879,9 +856,6 @@ server <- function(input, output, session) {
     }
   })
   
-  #observe({print(computed_data()$hours)})
-  
-  #observe({print( get_bv_in_sec(input))})
   
   observe({
     ### convert y-axis/mass units for graphing
@@ -944,12 +918,7 @@ server <- function(input, output, session) {
     }
   })
   
-  # observe({print(influent_processed())})
-  # observe({print(effluent_processed())})
-  #observe({print(process_output(out()))})
-  #observe({print(computational_processed())})
-  #observe({print(out())})
-
+ 
 
   fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
