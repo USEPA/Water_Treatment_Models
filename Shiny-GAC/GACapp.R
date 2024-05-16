@@ -96,7 +96,7 @@ kL_conv <- c("ft/s"=ft2cm, "m/s"=m2cm, "cm/s"=cm2cm, "in/s"=in2cm,
 ds_conv <- c("ft^2/s"=ft2ps2cm2ps, "m^2/s"=m2ps2cm2ps, "cm^2/s"=cm2cm,
              "in^2/s"=in2ps2cm2ps)
 
-mass_conv <- c("meq"=1, "meq/L"=1, "mg"=1, "ug"=1e-3, "ng"=1e-6, "mg/L"=1, "ug/L"=1e-3, "ng/L"=1e-6) ### changed
+mass_conv <- c("meq"=1000, "meq/L"=1000, "mg"=1000, "ug"=1, "ng"=1e-3, "mg/L"=1000, "ug/L"=1, "ng/L"=1e-3) ### changed
 
 lengthvector<-c("cm", "m", "mm", "in", "ft")
 velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")
@@ -300,6 +300,8 @@ process_output<-function(dat){
 }
 
 
+
+
 get_bv_in_sec <- function(input) {
   #get number of seconds per bv
   if (input$veloselect == 'Linear') {
@@ -308,7 +310,6 @@ get_bv_in_sec <- function(input) {
     Vv = input$Fv * volumetric_conv[input$FlowrateUnits]/(pi/4 * ((input$Dv * length_conv[input$DiameterUnits])**2))
   }
   
-  # print(input)
   
   ## divide converted length by velocity to get BV in seconds
   return(input$Lv*length_conv[input$LengthUnits]/Vv)
@@ -334,6 +335,59 @@ create_plotly<-function(frame1, frame2, frame3){
   return(counterionfig)
   
 }
+
+
+cc0_conv_ngl<-function(concdata, dataoutput){
+  
+  if(nrow(dataoutput)>1){
+    df<-concdata
+    output<-dataoutput[, colnames(dataoutput)[colnames(dataoutput) != 'time']]
+    output_time<-dataoutput['time']
+  
+    c0_values<-df[1,2:ncol(df)]
+  
+    output_in_cc0_dat<-mapply('/', output, c0_values)
+    output_in_cc0<-cbind(output_time, output_in_cc0_dat)
+    colnames(output_in_cc0)<-colnames(concdata)
+    return(output_in_cc0)
+  }
+  
+  else{
+    output_in_cc0<-data.frame(time=c(NA),name=c(NA),conc=c(NA))
+    return(output_in_cc0)
+  }
+}  
+  
+  
+c_points_cc0<-function(concdata, effluent){
+  
+  if(nrow(effluent)>1){
+    
+    df<-concdata
+    c0_values<-df[1,2:ncol(df)]
+    
+    effluentdata<-effluent
+    just_effluent_conc<-effluentdata[, colnames(effluentdata)[colnames(effluentdata) != 'time']]
+    effluent_time<-effluentdata['time']
+    
+    effluent_cc0<-mapply('/',just_effluent_conc, c0_values)
+    effluent_cc0_df<-cbind(effluent_time, effluent_cc0)
+    
+    colnames(effluent_cc0_df)<-colnames(concdata)
+    
+    return(effluent_cc0_df)
+    
+  }
+  
+  else{
+    effluent_cc0_df<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+    return(effluent_cc0_df)
+  }
+  
+}
+  
+  
+
 
 
 read_in_files(input, paste0("config.xlsx"))
@@ -699,7 +753,6 @@ server <- function(input, output, session) {
       updateRadioButtons(session, "veloselect", selected="Volumetric")
     }
     else{
-      #print("Warning: No flow data provided, defaults used")
     }
     
   })
@@ -707,7 +760,6 @@ server <- function(input, output, session) {
   observe({
     toggleState("Vv", condition=input$veloselect!="Volumetric")
     toggleState("Fv", condition=input$veloselect!="Linear")
-    #toggleState("Dv", condition=input$veloselect!="Linear")
   })
   
   CarbonID<-reactive({filter(columnSpecs(), name=="carbonID")$value})
@@ -832,7 +884,29 @@ server <- function(input, output, session) {
     })
  
   
+  computed_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
+  cc0data_ngl<-reactive({cc0_conv_ngl(infdat(), out())})
+  observe({computed_data_cc0(process_output(cc0data_ngl()))})
   
+  effluent_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
+  effluentcc0data<-reactive({c_points_cc0(infdat(), effdat())})
+  observe({effluent_data_cc0(process_output(effluentcc0data()))})
+  
+  influent_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
+  influentcc0data<-reactive({c_points_cc0(infdat(), infdat())})
+  observe({influent_data_cc0(process_output(influentcc0data()))})
+  
+  observe({print(influent_data_cc0())})
+  
+  # print("cc0datangl")
+  # observe({print(cc0data_ngl())})
+  # print("effluentcc0data")
+  # observe({print(effluentcc0data())})
+  # #observe({print(effluentcc0data())})
+  # 
+  # observe({print(computed_data_cc0())})
+  # observe({print(out())})
+  #observe({print(cc0data_ngl())})
 
   
   outputeffluent<-reactiveValues()
@@ -863,9 +937,9 @@ server <- function(input, output, session) {
       ## just replicates the returned data
       #outputcounterions$conc <-  counteriondatacc0()$conc
       #outputions$conc<-iondatacc0()$conc
-      
-      outputeffluent$conc<- effluentcc0()$conc
-      outputinfluent$conc <- influentcc0()$conc#influentcc04()$conc
+      outputchemicals$conc<-computed_data_cc0()$conc
+      outputeffluent$conc<- effluent_data_cc0()$conc
+      outputinfluent$conc <-influent_data_cc0()$conc#influentcc04()$conc
     } else {
       outputchemicals$conc <- computed_data()$conc / mass_conv[input$OCunits]
       outputeffluent$conc <- effdat_plot()$conc/mass_conv[input$OCunits]
@@ -887,7 +961,7 @@ server <- function(input, output, session) {
     }
   })
   
-  observe({print(outputchemicals$hours)})
+  
   
   
   effluent_processed<-reactive({
