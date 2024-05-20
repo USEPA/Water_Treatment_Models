@@ -108,9 +108,25 @@ weightvector<-c("kg", "g", "lb")
 
 weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.204)
 
-
-
-
+foul_params=list('water'=list('Organic Free'=list(1.,0.,0.,0.),
+                        'Rhine'=list(0.35, -6.15e-8, 0.65, -8.93e-5),
+                        'Portage'=list(0.510,-9.21e-7, 0.490, -2.80e-5),
+                        'Karlsruhe'=list(0.65, -6.71e-7, 0.35, -1.00e-4),
+                        'Wausau'=list(0.83, -9.12e-7, 0.17, -2.65e-4),
+                        'Houghton'=list(0.66, -1.55e-7, 0.34, -7.29e-5)
+                        ),
+              'chemical'=list('halogenated alkanes'=list(1.2, -0.2),
+                           'halogenated alkanes QSPR'=list(1.22, -.012),
+                           'halogenated alkenes'=list(1.0, 0.0),
+                           'trihalo-methanes'=list(1.0, 0.0),
+                           'aromatics'=list(0.9, 0.1),
+                           'nitro compounds'=list(0.75, 0.25),
+                           'chlorinated hydrocarbon'=list(0.59, 0.41),
+                           'phenols'=list(0.65, 0.35),
+                           'PNAs'=list(0.32, 0.68),
+                           'pesticides'=list(0., 0.05),
+                           'PFAS'=list(0.82, 0.12)))
+#print(foul_params$water$Rhine)
 
 read_in_files<-function(input, file){
   
@@ -410,6 +426,28 @@ ui <- fluidPage(
                         sidebarPanel(
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                           
+                          selectInput("WFouling", "Water Fouling", list(
+                                                                 'Organic Free',
+                                                                 'Rhine',
+                                                                 'Portage',
+                                                                 'Karlsruhe',
+                                                                 'Wausau',
+                                                                 'Houghton')),
+                          
+                          selectInput("CFouling", "Chemical Fouling", list(
+                                                                           'halogenated alkanes',
+                                                                           'halogenated alkanes QSPR',
+                                                                           'halogenated alkenes',
+                                                                           'trihalo-methanes',
+                                                                           'aromatics',
+                                                                           'nitro compounds',
+                                                                           'chlorinated hydrocarbon',
+                                                                           'phenols',
+                                                                           'PNAs',
+                                                                           'pesticides',
+                                                                           'PFAS')),
+                          
+                          
                           sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
                           sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
                           
@@ -417,7 +455,7 @@ ui <- fluidPage(
                           
                           actionButton("run_button", "Run Analysis", icon=icon("play")),
                           
-                          br(),
+                          br(), br(),
                           
                           actionButton("Stop", "Stop App", icon=icon("square"), 
                                        style="color: #000000; background-color: #ff0000; border-color: #e60000")
@@ -863,11 +901,14 @@ server <- function(input, output, session) {
   Carbons<-reactive({CarbonID()})
   
   
+ 
+  
+  
   
   out<-reactiveVal(data.frame(NA))
   
   observeEvent(input$run_button, {
-    out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv()))
+    out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
   })
   
   computed_data<-reactive({process_output(out())})
@@ -896,17 +937,6 @@ server <- function(input, output, session) {
   influentcc0data<-reactive({c_points_cc0(infdat(), infdat())})
   observe({influent_data_cc0(process_output(influentcc0data()))})
   
-  observe({print(influent_data_cc0())})
-  
-  # print("cc0datangl")
-  # observe({print(cc0data_ngl())})
-  # print("effluentcc0data")
-  # observe({print(effluentcc0data())})
-  # #observe({print(effluentcc0data())})
-  # 
-  # observe({print(computed_data_cc0())})
-  # observe({print(out())})
-  #observe({print(cc0data_ngl())})
 
   
   outputeffluent<-reactiveValues()
@@ -935,8 +965,6 @@ server <- function(input, output, session) {
     ### convert y-axis/mass units for graphing
     if(input$OCunits=="c/c0"){
       ## just replicates the returned data
-      #outputcounterions$conc <-  counteriondatacc0()$conc
-      #outputions$conc<-iondatacc0()$conc
       outputchemicals$conc<-computed_data_cc0()$conc
       outputeffluent$conc<- effluent_data_cc0()$conc
       outputinfluent$conc <-influent_data_cc0()$conc#influentcc04()$conc
