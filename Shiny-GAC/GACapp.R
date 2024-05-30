@@ -435,9 +435,9 @@ ui <- fluidPage(
                                                                  'Houghton')),
                           
                           selectInput("CFouling", "Chemical Fouling", list(
+                                                                           'halogenated alkenes',
                                                                            'halogenated alkanes',
                                                                            'halogenated alkanes QSPR',
-                                                                           'halogenated alkenes',
                                                                            'trihalo-methanes',
                                                                            'aromatics',
                                                                            'nitro compounds',
