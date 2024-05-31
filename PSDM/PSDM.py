@@ -1453,9 +1453,6 @@ class PSDM():
             #initialize storage arrays/matrices
             n = self.num_comps * (nc+1)*mc
             y0 = np.zeros(n)
-            # yt0 = np.zeros(self.__altshape)
-            # z = np.zeros(self.__altshape)
-            # q0 = np.zeros(self.__altshape)
             aau = np.zeros((self.num_comps, mc))
             aau2 = np.zeros((self.num_comps, mc))
 

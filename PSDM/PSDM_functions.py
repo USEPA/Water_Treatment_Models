@@ -807,6 +807,7 @@ def recalc_k(orig_k, q, xn_old, xn_new):
 def interp(array, delta):
     #assumes delta between array of 1
     #array is a [0, 1] dimensional array
+    
     return (array[1]-array[0]) * delta + array[0]
 
 def calc_Jac(ff, u0, hh):

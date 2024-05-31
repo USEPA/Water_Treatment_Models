@@ -453,11 +453,19 @@ class LLobj():
             for i in range(loops+1):
                 raw_df2 = raw_data_new.copy()
                 
+                ## built interpolating function for later use
+                results_function = interp1d(results.index,
+                                            results.values.T[0],
+                                            # fill_value='extrapolate'
+                                            )
+
+                idx_ref = raw_df2[raw_df2.index < swap_days].index
                 if i == 0:
-                    raw_df2[self.influentID, comp].loc[:swap_days] = results['data'][:swap_days].values
+                    raw_df2.loc[idx_ref,(self.influentID, comp)] = results_function(np.arange(0, swap_days, 0.25))
                 else:
                     # creates the first half of time as the effluent from the second column, replicating lead/lag
-                    raw_df2[self.influentID, comp].loc[:swap_days] = results['data'][swap_days:2*swap_days].values
+                    raw_df2.loc[idx_ref, (self.influentID, comp)] = results_function(np.arange(swap_days, 2 * swap_days, 0.25))
+
                 
                 column = PSDM.PSDM(self.column_info,
                                    self.chem_properties,
@@ -480,11 +488,15 @@ class LLobj():
                     ## save final results
                     
                     ## should data_store just be stored to self.? ### TODO: XXX
-                    data_store['mid'][comp] = results.loc[swap_days*2].values[0]
-                    data_store['effluent results'][comp] = results.loc[0:swap_days]  ## should this just be saved as a dataframe, might be cleaner
-                    data_store['effluent'][comp] = results.loc[swap_days].values[0]
-                    results.index = results.index - swap_days
-                    data_store['mid results'][comp] = results.loc[0:swap_days] ## should this just be saved as a dataframe, might be cleaner
+                    results_function = interp1d(results.index,
+                                            results.values.T[0],
+                                            # fill_value='extrapolate'
+                                            )
+                    data_store['mid'][comp] = results_function(2 * swap_days) 
+                    data_store['effluent results'][comp] = pd.DataFrame(results_function(np.arange(0, swap_days, 0.25)), index=np.arange(0, swap_days, 0.25)) ## should this just be saved as a datafram?, might be cleaner
+                    data_store['effluent'][comp] = results_function(swap_days)
+                    # results.index = results.index - swap_days
+                    data_store['mid results'][comp] = pd.DataFrame(results_function(np.arange(swap_days, 2 * swap_days, 0.25)), index=np.arange(0, swap_days, 0.25)) ## should this just be saved as a dataframe, might be cleaner
                     
                     ############# NOT YET IMPLIMENTED ### NEEDED????
                     ### if we want mid point from lag vessel, need to revisit
@@ -566,11 +578,11 @@ class LLobj():
             data_df2 = raw_data_new.copy()
             for comp in converted_df:
                 if i == 0: ## first pass
-                    data_df2[comp].loc[:swap_days] = converted_df[comp][:swap_days].values
+                    data_df2.loc[:swap_days, comp] = converted_df[comp][:swap_days].values
                 else:
                     if testing:
                         print(converted_df[comp][swap_days:2*swap_days+1])
-                    data_df2[comp].loc[:swap_days] = converted_df[comp][swap_days:2*swap_days].values
+                    data_df2.loc[:swap_days, comp] = converted_df[comp][swap_days:2*swap_days].values
         
             self.ix_data['Cin'] = data_df2.copy()
 
@@ -705,8 +717,9 @@ class LLobj():
             column.test_range = np.array([self.k_data[comp]['K']])
            
             _, _, _, _, results = column.run_psdm_kfit(comp) ## run the model
-        
-            data_store['mid results'][comp] = results.values * 1
+            
+            
+            data_store['mid results'][comp] = np.interp(data_store['mid results'].index, results.index, results.values.T[0])#results.values * 1
             data_store['mid'][comp] = results.values[-1][0]
         
         ix_data = pd.DataFrame(0, index=tvals2,
@@ -793,11 +806,6 @@ class LLobj():
         
         self._check_both() ## set up what is available in GAC/IX data
 
-
-        
-                
-
-
         ### consolidate self.shared compounds and compounds (only consider what is shared)
         use_compounds = list(set(compounds + self.shared_compounds))
         ### set up input tuple
@@ -858,11 +866,12 @@ class LLobj():
             raw_data_new[self.influentID, comp] = converted_df[comp]
         
         if testing:
-            print(raw_data_new.plot.line())
+            raw_data_new.plot.line()
             print(self.k_data)
         
         ## RUN GAC LAG
         for comp in use_compounds:
+            # print(comp, compounds, raw_data_new['influent', comp])
             column = PSDM.PSDM(self.column_info,
                                self.chem_properties,
                                raw_data_new,
@@ -880,8 +889,14 @@ class LLobj():
            
             _, _, _, _, results = column.run_psdm_kfit(comp) ## run the model
 
+     
             data_store['effluent'][comp] = results.values[-1][0]
-            data_store['effluent results'][comp] = results.values
+            
+            data_store['effluent results'][comp] = np.interp(data_store['effluent results'].index, 
+                                                             results.index,
+                                                             results.values.T[0])
+            
+        print(data_store['effluent results'])
 
         return data_store
     

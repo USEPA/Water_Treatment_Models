@@ -39,9 +39,9 @@ print('\nTesting\n')
 print('x'*30,'\n')
 
 
-test_gac_gac = False
-test_ix_ix = False
-test_gac_ix = False
+test_gac_gac = False #True #False#True #False
+test_ix_ix = False #True #False
+test_gac_ix = False #True #True #False
 test_ix_gac = True
 
 ### Generic Testing
@@ -49,7 +49,7 @@ test_ix_gac = True
 if test_gac_gac:
     
     
-    fn = srt_dir + '/examples/Example_TCE.xlsx'
+    fn = srt_dir + '/Example_TCE.xlsx'
 
     # =============================================================================
     # READ IN Chemical Property Information
@@ -146,7 +146,7 @@ if test_gac_gac:
 
 ### Test IX
 if test_ix_ix: 
-    ix_fn = 'test_iex/lag_iex.xlsx'
+    ix_fn = 'test_LL/lag_iex.xlsx'
     
     LL_ix = LLobj(ix_filename=ix_fn, ix_nr=10, ix_nz=15)
     
@@ -232,7 +232,7 @@ if test_gac_ix or test_ix_gac:
         
         plt.figure()
         for comp in results2['effluent results'].columns:#['PFHxA']:#'PFHpA', 'PFHxS', 'PFBA']:
-            # plt.figure()
+
             plt.plot(results2['mid results'].index,
                      results2['mid results'][comp].values,
                      label=f"IX-Lead: {comp}",
