@@ -233,13 +233,15 @@ if test_gac_ix or test_ix_gac:
         plt.figure()
         for comp in results2['effluent results'].columns:#['PFHxA']:#'PFHpA', 'PFHxS', 'PFBA']:
 
-            plt.plot(results2['mid results'].index,
+            p = plt.plot(results2['mid results'].index,
                      results2['mid results'][comp].values,
                      label=f"IX-Lead: {comp}",
                      ls=':')
+            color = p[0].get_color()
             plt.plot(results2['effluent results'].index,
                      results2['effluent results'][comp].values,
-                     label=f"GAC-Lag: {comp}")
+                     label=f"GAC-Lag: {comp}",
+                     color=color)
         
         plt.legend()
 
