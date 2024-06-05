@@ -840,11 +840,11 @@ def calculate_replacement_interval(data, uncertainty_data='None'):
 
             inter_results = calculate_replacement_interval(pd.DataFrame(uncertainty_data[uncertainty_type]))
 
-            if uncertainty_type == 'lower': ### not sure why the upper/lower lines are reversed, done to put min/max in understandable order
+            if uncertainty_type == 'lower': ### need to reverse, because upper line should occur earlier and result in lower replacement interval value
                 replacement_interval['upper'] = inter_results['predicted']
             else:
                 replacement_interval['lower'] = inter_results['predicted']
-            # print(inter_results)
+           
         
         for comp in replacement_interval.index:
             if type(replacement_interval.loc[comp]['note']) != str:
