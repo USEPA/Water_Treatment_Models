@@ -759,7 +759,7 @@ def analyze_all_ds(PSDM_obj):
 def calculate_replacement_interval(data, uncertainty_data='None'):
     ''' 
     Function to calculate the replacement interval using US regulatory MCLs.
-    Assumes removal before first day of predicted breakthrough (i.e., does not consider annualized average).
+    Assumes removal before first day of predicted breakthrough above an MCL (i.e., does not consider annualized average).
 
     PFOA, PFOS <= 4 ppt (ng/L)
     PFHxS, PFNA, GenX (HFPO-DA) <= 10 ppt 
