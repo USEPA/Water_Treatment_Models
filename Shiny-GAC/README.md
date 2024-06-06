@@ -11,9 +11,10 @@ The Granular Activated Carbon Modeling Tool is used to model a _________________
 
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
-2. Excel (recommended)
-3. Files: GACapp.R, config.xlsx
-4. Optional: Example_TCE.xlsx
+2. Python (At least version 3.9.7)
+3. Excel (recommended)
+4. Files: GACapp.R, config.xlsx
+5. Optional: Example_TCE.xlsx
 
 ## Excel-based Input File
 The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny GAC app looks for sheetnames of "Properties", "Kdata", "columnSpecs", "data", "data_variable" (optional) and "data_optimize" (optional). If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth and fifth optional sheet "data_variable", which represents varying influent and effluent concentration. There is also "data_optimize" which ___________. These pages do not need to be present when the file is ran and is not required to exist in the excel sheet.
@@ -32,6 +33,33 @@ The input for the Excel-based input file must be formatted like the one shown in
 </figure>
 
 &nbsp;
+
+## Set Up
+
+In order for the tool to work the user must point their R Studio to a Python Interpreter
+
+1. Open RStudio
+
+<figure>
+    <img src="DocumentPics/selecttool.PNG"
+         alt="Excel Input">
+</figure>
+
+2. Select the "Tools" tab at the top of the page and then select "Global Variables"
+
+<figure>
+    <img src="DocumentPics/selectglobal.PNG"
+         alt="Excel Input">
+</figure>
+
+3. Go to the Python tab in Global Variables, then select 'Browse' and select the file where Python is installed locally.
+
+<figure>
+    <img src="DocumentPics/pythonselect.PNG"
+         alt="Excel Input">
+</figure>
+
+4. Click "Ok" then "Apply"
 
 
 ## Quick Start
