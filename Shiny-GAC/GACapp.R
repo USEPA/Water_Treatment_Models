@@ -426,7 +426,11 @@ ui <- fluidPage(
                         sidebarPanel(
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                           
-                          selectInput("WFouling", "Water Fouling", list(
+                          h4("Fouling"),
+                          
+                     
+                          
+                          selectInput("WFouling", "Water Type", list(
                                                                  'Organic Free',
                                                                  'Rhine',
                                                                  'Portage',
@@ -434,7 +438,7 @@ ui <- fluidPage(
                                                                  'Wausau',
                                                                  'Houghton')),
                           
-                          selectInput("CFouling", "Chemical Fouling", list(
+                          selectInput("CFouling", "Chemical Type", list(
                                                                            'halogenated alkenes',
                                                                            'halogenated alkanes',
                                                                            'halogenated alkanes QSPR',
@@ -446,7 +450,7 @@ ui <- fluidPage(
                                                                            'PNAs',
                                                                            'pesticides',
                                                                            'PFAS')),
-                          
+                          br(),
                           
                           sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
                           sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
