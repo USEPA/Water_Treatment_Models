@@ -88,7 +88,8 @@ volumetric_conv <- c("cm^3/s"=cm2cm*min2sec, "m^3/s"=min2sec*m2cm^3, "ft^3/s"=mi
 
 
 time_conv <- c("Hours"=hour2day, "Days"=day2day, "Months"=month2day, "Years"=year2day,
-               "hr"=hour2day, "day"=day2day, "month"=month2day, "year"=year2day)
+               "hr"=hour2day, "day"=day2day, "month"=month2day, "year"=year2day,
+               "hours"=hour2day, "days"=day2day, "hrs"=hour2day)
 
 kL_conv <- c("ft/s"=ft2cm, "m/s"=m2cm, "cm/s"=cm2cm, "in/s"=in2cm, 
              "m/min"=mpmin2cmps, "ft/min"=ftpmin2cmps, "m/h"=mph2cmps,
@@ -297,7 +298,7 @@ influent_organizer<-function(influent){
 
 
 
-process_output<-function(dat){
+process_output<-function(dat, input){
   
   if(nrow(dat)>1){
     
@@ -313,6 +314,19 @@ process_output<-function(dat){
     totaldat<-dat
   }
   
+}
+
+output_conv<-function(dat, input){
+  
+  if(nrow(dat)>1){
+    dat$conc<-dat$conc*mass_conv[input$conc_units]
+  }
+  
+  else{
+    dat<-dat
+  }
+  
+  return(dat)
 }
 
 
@@ -401,14 +415,12 @@ c_points_cc0<-function(concdata, effluent){
   }
   
 }
-  
-  
 
+
+  
 
 
 read_in_files(input, paste0("config.xlsx"))
-
-
 
 
 
@@ -872,7 +884,7 @@ server <- function(input, output, session) {
   observe({
     updateSelectInput(session, "rbunits", choices=radiusvector())
     updateSelectInput(session, "LengthUnits", choices=lengthvec())
-    updateSelectInput(session, "timeunits2", choices=timevec())
+    updateSelectInput(session, "tunits2", choices=timevec())
     updateSelectInput(session, "wunits", choices=weightvec())
     updateSelectInput(session, "FlowrateUnits", choices=flowvec())
     updateSelectInput(session, "DiameterUnits", choices=diamvec())
@@ -905,49 +917,54 @@ server <- function(input, output, session) {
   Carbons<-reactive({CarbonID()})
   
   
- 
-  
+  # eff_dat_converted<-reactive({input_conc_convert(input, effdat())})
+  # observe({print(eff_dat_converted())})
+  # observe({print(effdat())})
+  # inf_dat_converted<-reactive({input_conc_convert(input, infdat())})
+  # observe({print(inf_dat_converted())})
   
   
   out<-reactiveVal(data.frame(NA))
-  
+
   observeEvent(input$run_button, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
   })
-  
-  computed_data<-reactive({process_output(out())})
- 
-  
-  
-  
-  
+
+  computed_data_prep<-reactive({process_output(out())})
+  computed_data<-reactive({output_conv(computed_data_prep(), input)})
+  observe({print(computed_data())})
+
+
+
+
+
   effdat_plot<-reactive({effluent_data_processor(effdat())})
-  
+
   influent_plot<-reactive({
     dat<-influent_chemical_renamer(infdat())
     influent_organizer(dat)
     })
- 
-  
+
+
   computed_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   cc0data_ngl<-reactive({cc0_conv_ngl(infdat(), out())})
   observe({computed_data_cc0(process_output(cc0data_ngl()))})
-  
+
   effluent_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   effluentcc0data<-reactive({c_points_cc0(infdat(), effdat())})
   observe({effluent_data_cc0(process_output(effluentcc0data()))})
-  
+
   influent_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   influentcc0data<-reactive({c_points_cc0(infdat(), infdat())})
   observe({influent_data_cc0(process_output(influentcc0data()))})
-  
 
-  
+
+
   outputeffluent<-reactiveValues()
   outputinfluent<-reactiveValues()
   outputchemicals<-reactiveValues()
-  
-  
+
+
   observe({
     ## convert time units for graphing
     # calculating kBV
@@ -956,15 +973,15 @@ server <- function(input, output, session) {
       outputchemicals$hours <- computed_data()$hours/ (bv_conv / hour2sec) / 1e3
       outputeffluent$hours<- effdat_plot()$hours/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
-      
+
     } else {
       outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])# / hour2sec)
       outputeffluent$hours<- effdat_plot()$hours/ (time_conv[input$timeunits]) #/ hour2sec)
       outputinfluent$hours<-influent_plot()$hours/ (time_conv[input$timeunits])# / hour2sec) ## should this be $time?
     }
   })
-  
-  
+
+
   observe({
     ### convert y-axis/mass units for graphing
     if(input$OCunits=="c/c0"){
@@ -977,10 +994,10 @@ server <- function(input, output, session) {
       outputeffluent$conc <- effdat_plot()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- influent_plot()$conc/mass_conv[input$OCunits]
     }
-    
+
   })
-  
-  
+
+
   computational_processed<-reactive({
     if(input$computeddata==TRUE){
       plotdata<-computed_data()
@@ -992,10 +1009,10 @@ server <- function(input, output, session) {
       plotdata<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
     }
   })
-  
-  
-  
-  
+
+
+
+
   effluent_processed<-reactive({
     if(input$effluentdata==TRUE){
       plot_data3<-effdat_plot()
@@ -1008,9 +1025,9 @@ server <- function(input, output, session) {
       plot_data3
     }
   })
-  
 
-  
+
+
   influent_processed<-reactive({
     if(input$influentdata==TRUE){
       plot_data4<-influent_plot()
@@ -1023,8 +1040,8 @@ server <- function(input, output, session) {
       plot_data4
     }
   })
-  
- 
+
+
 
   fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
