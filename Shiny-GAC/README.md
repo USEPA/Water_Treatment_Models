@@ -208,13 +208,7 @@ A note on selection of flow convention: The entry field for the two conventions 
 
 
 ## References
-ACS EST Water 2023, 3, 2, 576–587
-Publication Date:January 19, 2023
-https://doi.org/10.1021/acsestwater.2c00572
 
-Environ. Sci. Technol. 2021, 55, 8, 5001–5011
-Publication Date:March 22, 2021
-https://doi.org/10.1021/acs.est.1c00769
 
 ## Development Team
 David Colantonio
