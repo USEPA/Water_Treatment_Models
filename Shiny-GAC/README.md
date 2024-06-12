@@ -20,15 +20,24 @@ The Granular Activated Carbon Modeling Tool is used to model a _________________
 The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny GAC app looks for sheetnames of "Properties", "Kdata", "columnSpecs", "data", "data_variable" (optional) and "data_optimize" (optional). If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth and fifth optional sheet "data_variable", which represents varying influent and effluent concentration. There is also "data_optimize" which ___________. These pages do not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
-    <img src="DocumentPics/excelsheet.PNG"
+    <img src="DocumentPics/Properties.png"
          alt="Excel Input">
 </figure>
 
 <figure>
-     <img src="DocumentPics/excelsheet2.PNG"
+     <img src="DocumentPics/Kdata.png"
          alt="Excel Input">
-     <figcaption>The Excel file consists of three sheets: parameters of the system, the list of ions that the user is interested in along with their properties, and the list of concentrations for the ions at a given time. Each tab is broken down in detail in the features section of this document.
-    * Dp and Dp_units are provided in example input files. These are required for PSDM modeling but will be ignored for HSDM modeling.
+</figure>
+
+<figure>
+    <img src="DocumentPics/columnSpecs.png"
+         alt="Excel Input">
+</figure>
+
+<figure>
+    <img src="DocumentPics/data.png"
+         alt="Excel Input">
+    <figcaption>The Excel file consists of four sheets: the first is the properties of each chemical the user is interested in, the second is the 'k data' of each of those ions. The number of ions must be the same for both propertes and k data. Third is the column specifications of the GAC apparatus. The fourth is a list of the influent and effluent points of each of the chemicals lsited in properties and k data tab. Each tab is broken down in detail in the features section of this document.
     </figcaption>
 </figure>
 
@@ -160,7 +169,7 @@ The Ions tab contains information about the ions to be simulated. The Ions tab s
 
 The Concentration Points table (stored in Excel-based files in the "data" sheet) represents time series of concentrations in the system over time (conc_units for an ion defines the concentration units for each column). NOTE: The duration of a simulation is specified by the largest time/last row in the Time column. Times in this table should be specified in ascending order, and a minimum of two (2) rows are needed to run a simulation (time 0, and run duration). If concentrations are the same in all rows, the simulation has a constant concentration, but variable concentrations can be modeled (where linear interpolation is used between points). Time units for the times in this table is specified on the "Input>Column Parameters" tab as time (day or hr). This data can be plotted as well by simply clicking the "Influent Data" button on the 'Output' page.
 
-The effluent data represents the results from a previous experiment or results from a previous model. This data does not need to be present for the model to run. If the user would like to see this data on the plot, the data must be presentwith the influent in the 'data' sheet. When the analysis has been ran, the user can toggle on the "effluent data" button on the left hand side to see the data ploted. The units that the effluent data is in is represented by the time units as well i nthe column parameters. Whatever unit corresponds to the chemical in the 'concentration units' selection will be converted to the 'Output Units' on the output page. Moreover, if the user wants to plot the effluent data then the chemical the user wishes to plot must exist in both the 'ions' page, the 'cin page', and the 'effluent page'.
+The effluent data represents the results from a previous experiment or results from a previous model. This data does not need to be present for the model to run. If the user would like to see this data on the plot, the data must be presentwith the influent in the 'data' sheet. When the analysis has been ran, the user can toggle on the "effluent data" button on the left hand side to see the data ploted. The units that the effluent data is in is represented by the time units as well in the column parameters. Whatever unit corresponds to the chemical in the 'concentration units' selection will be converted to the 'Output Units' on the output page. Moreover, if the user wants to plot the effluent data then the chemical must exist in both the 'ions' page, the 'cin page', and the 'effluent page'.
 
 ### Output
 The Output tab provides a graphical output of results after a simulation is completed. The units for time and concentration can be adjusted via the dropdown menus in the left-hand column.
