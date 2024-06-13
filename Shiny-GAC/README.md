@@ -54,7 +54,7 @@ In order for the tool to work the user must point their R Studio to a Python Int
          alt="Excel Input">
 </figure>
 
-2. Select the "Tools" tab at the top of the page and then select "Global Variables"
+2. Select the "Tools" tab at the top of the page and then select "Global Options"
 
 <figure>
     <img src="DocumentPics/selectglobal.PNG"
