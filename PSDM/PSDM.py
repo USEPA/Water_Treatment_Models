@@ -247,7 +247,7 @@ class PSDM():
         self.chem_type = kw.get('chem_type', 'halogenated alkenes')
         
         self.test_range = kw.get('test_range', np.linspace(1, 5, 41))
-        self.xn_range = kw.get('xn_range', np.arange(0.20, 0.95, 0.05))
+        self.xn_range = kw.get('xn_range', np.arange(0.25, 1.01, 0.05))
         
         #handling for multiprocessing
         self.processes = kw.get('mp', mp.cpu_count())
