@@ -7,6 +7,8 @@ library(DataEditR)
 library(tidyr)
 library(stringr)
 library(colorBlindness)
+library(shinyWidgets)
+library(writexl)
 
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -127,7 +129,6 @@ foul_params=list('water'=list('Organic Free'=list(1.,0.,0.,0.),
                            'PNAs'=list(0.32, 0.68),
                            'pesticides'=list(0., 0.05),
                            'PFAS'=list(0.82, 0.12)))
-#print(foul_params$water$Rhine)
 
 read_in_files<-function(input, file){
   
@@ -284,6 +285,17 @@ influent_chemical_renamer<-function(influent){
 }
 
 
+fitted_chemical_renamer<-function(fitted_data){
+  
+  for(chemical in 1:nrow(fitted_data)){
+    fitted_data[chemical,'name']<-paste(fitted_data[chemical,'name'],'fitted',sep="_")
+  }
+  
+  return(fitted_data)
+  
+}
+
+
 influent_organizer<-function(influent){
   
   cindat_organized<-tidyr::gather(influent[2:ncol(influent)])
@@ -315,6 +327,7 @@ process_output<-function(dat, input){
   }
   
 }
+
 
 output_conv<-function(dat, input){
   
@@ -348,19 +361,24 @@ get_bv_in_sec <- function(input) {
 
 
 
-create_plotly<-function(frame1, frame2, frame3){
+create_plotly<-function(frame1, frame2, frame3,frame4){
   
   
   #Create a subset of data that 
   counterionframe<-frame1
   counterioneff<-frame2
   counterioninfluent<-frame3
+  fitframe<-frame4
   
   
   #Using the curated data, plot
   counterionfig<-plot_ly(counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name, colors=SteppedSequential5Steps)%>%
     add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
-    add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')
+    add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')%>%
+    add_trace(data=fitframe, x=~hours,y=~conc,line = list(color=SteppedSequential5Steps, width = 4,  dash='dot'))
+  
+  options(warn = -1)
+                
   
   return(counterionfig)
   
@@ -700,11 +718,29 @@ ui <- fluidPage(
                           selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
                           selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
                           
+                          br(),
+                          
                           checkboxInput("computeddata", "Computed Data", TRUE),
                           checkboxInput("effluentdata", "Effluent Data", FALSE),
                           checkboxInput("influentdata", "Influent Data", FALSE),
                           
-                          downloadButton("save_button", "Save Data")
+                          br(),
+                          
+                          HTML(paste0("<h5>","<strong>", "Effluent Fitting", "</strong>", "</h5>")),
+                          
+                          
+                          sliderInput("xn", "Step Size of 1/n",0, 0.1, 0.01),
+                          sliderInput("pm", "Range of K to test +/- %",0, 50, 30,step=5),
+                          
+                          actionButton('fitting', 'Fit Data'),
+                          br(), br(), br(),
+                          
+
+                          downloadButton("save_button", "Save Data"),
+                          
+                          actionButton("Stop2", "Stop App", icon=icon("square"), 
+                                       style="color: #000000; background-color: #ff0000; border-color: #e60000")
+                          
                         ),
                         
                         mainPanel(
@@ -713,6 +749,8 @@ ui <- fluidPage(
                             plotlyOutput("Plot")),#Counterions
                           br(),
                           textOutput("CounterIonPlot"),
+                          
+                          plotlyOutput('Plot2'),
                           
                         )))
              
@@ -744,6 +782,10 @@ server <- function(input, output, session) {
   })
   
   observeEvent(input$Stop,{
+    stopApp()
+  })
+  
+  observeEvent(input$Stop2,{
     stopApp()
   })
   
@@ -917,14 +959,9 @@ server <- function(input, output, session) {
   Carbons<-reactive({CarbonID()})
   
   
-  # eff_dat_converted<-reactive({input_conc_convert(input, effdat())})
-  # observe({print(eff_dat_converted())})
-  # observe({print(effdat())})
-  # inf_dat_converted<-reactive({input_conc_convert(input, infdat())})
-  # observe({print(inf_dat_converted())})
   
-  
-  out<-reactiveVal(data.frame(NA))
+  #out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
+  out<-reactiveVal(data.frame(Trichloroethylene=c(0,0), time=c(0,0)))
 
   observeEvent(input$run_button, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
@@ -932,12 +969,27 @@ server <- function(input, output, session) {
 
   computed_data_prep<-reactive({process_output(out())})
   computed_data<-reactive({output_conv(computed_data_prep(), input)})
-  observe({print(computed_data())})
+  
+  
 
+  out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
+  output_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
+  kdata_fit<-reactiveVal()
+        
+  
+  observeEvent(input$fitting,{
+    out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
+    output_fit(process_output(out_fit()[[1]]))
+  })
+  
+  
+  fit_data_prep<-reactive({output_conv(output_fit(), input)})
+  fit_data<-reactive({fitted_chemical_renamer(fit_data_prep())})
+  
+  #observe({print(fit_data())})
+  
 
-
-
-
+  
   effdat_plot<-reactive({effluent_data_processor(effdat())})
 
   influent_plot<-reactive({
@@ -947,7 +999,7 @@ server <- function(input, output, session) {
 
 
   computed_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
-  cc0data_ngl<-reactive({cc0_conv_ngl(infdat(), out())})
+  cc0data_ngl<-eventReactive(input$run_button,{cc0_conv_ngl(infdat(), out())})
   observe({computed_data_cc0(process_output(cc0data_ngl()))})
 
   effluent_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
@@ -959,10 +1011,10 @@ server <- function(input, output, session) {
   observe({influent_data_cc0(process_output(influentcc0data()))})
 
 
-
   outputeffluent<-reactiveValues()
   outputinfluent<-reactiveValues()
   outputchemicals<-reactiveValues()
+  outputfit<-reactiveValues()
 
 
   observe({
@@ -973,11 +1025,13 @@ server <- function(input, output, session) {
       outputchemicals$hours <- computed_data()$hours/ (bv_conv / hour2sec) / 1e3
       outputeffluent$hours<- effdat_plot()$hours/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
-
+      outputfit$hours<-fit_data()$hours / (bv_conv / hour2sec) / 1e3
+      
     } else {
       outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])# / hour2sec)
       outputeffluent$hours<- effdat_plot()$hours/ (time_conv[input$timeunits]) #/ hour2sec)
       outputinfluent$hours<-influent_plot()$hours/ (time_conv[input$timeunits])# / hour2sec) ## should this be $time?
+      outputfit$hours<-fit_data()$hours/ (time_conv[input$timeunits])
     }
   })
 
@@ -989,10 +1043,12 @@ server <- function(input, output, session) {
       outputchemicals$conc<-computed_data_cc0()$conc
       outputeffluent$conc<- effluent_data_cc0()$conc
       outputinfluent$conc <-influent_data_cc0()$conc#influentcc04()$conc
+      outputfit$conc<-fit_data()$conc
     } else {
       outputchemicals$conc <- computed_data()$conc / mass_conv[input$OCunits]
       outputeffluent$conc <- effdat_plot()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- influent_plot()$conc/mass_conv[input$OCunits]
+      outputfit$conc<-fit_data()$conc/mass_conv[input$OCunits]
     }
 
   })
@@ -1009,8 +1065,6 @@ server <- function(input, output, session) {
       plotdata<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
     }
   })
-
-
 
 
   effluent_processed<-reactive({
@@ -1040,10 +1094,24 @@ server <- function(input, output, session) {
       plot_data4
     }
   })
+  
+  
 
+  effluent_fit_processed<-reactive({
+    if(input$fitting==TRUE){
+      plot_data5<-fit_data()
+      plot_data5$conc<-outputfit$conc
+      plot_data5$hours<-outputfit$hours
+      plot_data5
+    }
+    else{
+      plot_data5<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+    }
+  })
+  
+ 
 
-
-  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})
+  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed(), effluent_fit_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                              legend=list(orientation='h', y=1), hovermode='x unified',
                                              xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
@@ -1052,7 +1120,31 @@ server <- function(input, output, session) {
 
   output$Plot<-renderPlotly(
     counterionfigure())
-
+  
+  
+  outputconcentrations<-reactive({rbind(influent_processed(), effluent_processed())})
+  foulingdata<-reactive({data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling))})
+  
+  
+  
+  output$save_button<-downloadHandler(
+    filename=function() {
+      paste("data-", Sys.Date(), ".xlsx", sep="")
+    },
+    content=function(file){
+      sheets<-list("Properties"=chem_data(), 
+                   "Kdata"=kdat(), 
+                   "columnSpecs"=column_data_converted(), 
+                   "data"=outputconcentrations(), 
+                   "Model Results"=computational_processed(),
+                   'Fit Data'=effluent_fit_processed(),
+                   'Fouling Data'=foulingdata())
+      write_xlsx(sheets, file)
+    }
+  )
+ 
+  
+ 
 }
 
 shinyApp(ui, server)
