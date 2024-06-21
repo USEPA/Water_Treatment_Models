@@ -405,6 +405,7 @@ cc0_conv_ngl<-function(concdata, dataoutput){
     return(output_in_cc0)
   }
 }  
+
   
   
 c_points_cc0<-function(concdata, effluent){
@@ -975,10 +976,12 @@ server <- function(input, output, session) {
   out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
   output_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
   kdata_fit<-reactiveVal()
+  out_fit_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
         
   
   observeEvent(input$fitting,{
     out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
+    out_fit_cc0(out_fit()[[1]])
     output_fit(process_output(out_fit()[[1]]))
   })
   
@@ -986,9 +989,6 @@ server <- function(input, output, session) {
   fit_data_prep<-reactive({output_conv(output_fit(), input)})
   fit_data<-reactive({fitted_chemical_renamer(fit_data_prep())})
   
-  #observe({print(fit_data())})
-  
-
   
   effdat_plot<-reactive({effluent_data_processor(effdat())})
 
@@ -1009,7 +1009,14 @@ server <- function(input, output, session) {
   influent_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   influentcc0data<-reactive({c_points_cc0(infdat(), infdat())})
   observe({influent_data_cc0(process_output(influentcc0data()))})
-
+  
+  fitted_data_cc0<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
+  fittedcc0<-eventReactive(input$fitting, {cc0_conv_ngl(infdat(), out_fit_cc0())})
+  observe({fitted_data_cc0(process_output(fittedcc0()))})
+  
+  # observe({print(out_fit_cc0())})
+  observe({print(fitted_data_cc0())})
+  
 
   outputeffluent<-reactiveValues()
   outputinfluent<-reactiveValues()
@@ -1043,7 +1050,7 @@ server <- function(input, output, session) {
       outputchemicals$conc<-computed_data_cc0()$conc
       outputeffluent$conc<- effluent_data_cc0()$conc
       outputinfluent$conc <-influent_data_cc0()$conc#influentcc04()$conc
-      outputfit$conc<-fit_data()$conc
+      outputfit$conc<-fitted_data_cc0()$conc
     } else {
       outputchemicals$conc <- computed_data()$conc / mass_conv[input$OCunits]
       outputeffluent$conc <- effdat_plot()$conc/mass_conv[input$OCunits]
