@@ -619,7 +619,7 @@ ui <- fluidPage(
                                                 inputId = "Fv",
                                                 label="Flow Rate",
                                                 value = 500, 
-                                                decimalPlaces = 0,
+                                                decimalPlaces = 2,
                                                 digitGroupSeparator = ",",
                                                 decimalCharacter = ".")),
                                        column(3,
@@ -799,7 +799,7 @@ server <- function(input, output, session) {
  
 
   
-  test_df<-data.frame(C=c('v','flrt','diam'))
+  test_df<-data.frame(C=c('v','flowrate','diam'))
   flags<-reactive({test_df$C %in% columnSpecs()$name}) ##flags are in order [1] velocity [2] flowrate and [3] diameter
   
   velocity<-reactiveVal()
@@ -838,7 +838,7 @@ server <- function(input, output, session) {
       updateNumericInput(session, "Dv", value=diameter())
       
       
-      flowrate2(c(filter(columnSpecs(), name=='flrt')$units, flowratevector))
+      flowrate2(c(filter(columnSpecs(), name=='flowrate')$units, flowratevector))
       flowrate3(unique(flowrate2()))
       
       diameter2(c(filter(columnSpecs(), name=='diam')$units, diametervector))
@@ -967,6 +967,9 @@ server <- function(input, output, session) {
   observeEvent(input$run_button, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
   })
+  
+  observe({print(column_data_converted())})
+  observe({print(infdat())})
 
   computed_data_prep<-reactive({process_output(out())})
   computed_data<-reactive({output_conv(computed_data_prep(), input)})
@@ -1014,8 +1017,6 @@ server <- function(input, output, session) {
   fittedcc0<-eventReactive(input$fitting, {cc0_conv_ngl(infdat(), out_fit_cc0())})
   observe({fitted_data_cc0(process_output(fittedcc0()))})
   
-  # observe({print(out_fit_cc0())})
-  observe({print(fitted_data_cc0())})
   
 
   outputeffluent<-reactiveValues()
@@ -1036,9 +1037,9 @@ server <- function(input, output, session) {
       
     } else {
       outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])# / hour2sec)
-      outputeffluent$hours<- effdat_plot()$hours/ (time_conv[input$timeunits]) #/ hour2sec)
-      outputinfluent$hours<-influent_plot()$hours/ (time_conv[input$timeunits])# / hour2sec) ## should this be $time?
-      outputfit$hours<-fit_data()$hours/ (time_conv[input$timeunits])
+      outputeffluent$hours<- effdat_plot()$hours* (time_conv[input$timeunits]) #/ hour2sec)
+      outputinfluent$hours<-influent_plot()$hours* (time_conv[input$timeunits])# / hour2sec) ## should this be $time?
+      outputfit$hours<-fit_data()$hours* (time_conv[input$timeunits])
     }
   })
 
@@ -1059,6 +1060,8 @@ server <- function(input, output, session) {
     }
 
   })
+  
+  observe({print(mass_conv[input$OCunits])})
 
 
   computational_processed<-reactive({
