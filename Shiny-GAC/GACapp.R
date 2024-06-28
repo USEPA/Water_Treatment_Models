@@ -753,7 +753,16 @@ ui <- fluidPage(
                           
                           plotlyOutput('Plot2'),
                           
-                        )))
+                        ))),
+             
+             tabPanel('Fitted Data',
+                      
+                      
+                      shinycssloaders::withSpinner(
+                        uiOutput('FitK')),
+                      actionButton('Use', 'Use Data')
+                      
+                      )
              
   )
   
@@ -975,15 +984,21 @@ server <- function(input, output, session) {
 
   out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
   output_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
-  kdata_fit<-reactiveVal()
+  kdata_fit<-reactiveVal(data.frame(Chemical=c(NA, NA, NA, NA, NA)))
   out_fit_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
-
+  
+  kdataframe<-data.frame(name=c('K', '1/n', 'q', 'brk', 'AveC'))
 
   observeEvent(input$fitting,{
     out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
     out_fit_cc0(out_fit()[[1]])
+    kdata_fit(out_fit()[[2]])
     output_fit(process_output(out_fit()[[1]]))
+    kdata_formatted<-cbind(kdataframe, kdata_fit())
+    output$FitK<-renderTable({kdata_formatted})
   })
+
+  
 
 
   fit_data_prep<-reactive({output_conv(output_fit(), input)})
@@ -1117,7 +1132,7 @@ server <- function(input, output, session) {
 
 
 
-  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed(), effluent_fit_processed())})
+  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})#, effluent_fit_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                              legend=list(orientation='h', y=1), hovermode='x unified',
                                              xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
