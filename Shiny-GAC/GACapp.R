@@ -361,21 +361,21 @@ get_bv_in_sec <- function(input) {
 
 
 
-create_plotly<-function(frame1, frame2, frame3,frame4){
+create_plotly<-function(frame1, frame2, frame3){#,frame4){
   
   
   #Create a subset of data that 
   counterionframe<-frame1
   counterioneff<-frame2
   counterioninfluent<-frame3
-  fitframe<-frame4
+ # fitframe<-frame4
   
   
   #Using the curated data, plot
   counterionfig<-plot_ly(counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name, colors=SteppedSequential5Steps)%>%
     add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
-    add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')%>%
-    add_trace(data=fitframe, x=~hours,y=~conc,line = list(color=SteppedSequential5Steps, width = 4,  dash='dot'))
+    add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')#%>%
+    #add_trace(data=fitframe, x=~hours,y=~conc,line = list(color=SteppedSequential5Steps, width = 4,  dash='dot'))
   
   options(warn = -1)
                 
@@ -730,8 +730,8 @@ ui <- fluidPage(
                           HTML(paste0("<h5>","<strong>", "Effluent Fitting", "</strong>", "</h5>")),
                           
                           
-                          sliderInput("xn", "Step Size of 1/n",0, 0.1, 0.01),
-                          sliderInput("pm", "Range of K to test +/- %",0, 50, 30,step=5),
+                          sliderInput("xn", "Step Size of 1/n",0.01, 0.1, 0.01),
+                          sliderInput("pm", "Range of K to test +/- %",1, 50, 30,step=5),
                           
                           actionButton('fitting', 'Fit Data'),
                           br(), br(), br(),
@@ -799,7 +799,7 @@ server <- function(input, output, session) {
  
 
   
-  test_df<-data.frame(C=c('v','flowrate','diam'))
+  test_df<-data.frame(C=c('v','flowrate','diameter'))
   flags<-reactive({test_df$C %in% columnSpecs()$name}) ##flags are in order [1] velocity [2] flowrate and [3] diameter
   
   velocity<-reactiveVal()
@@ -831,8 +831,6 @@ server <- function(input, output, session) {
   }
     else if(flags()[2] & flags()[3]){
       
-      flowrate(filter(columnSpecs(), name=='flrt')$value)
-      diameter(filter(columnSpecs(), name=='diam')$value)
       
       updateNumericInput(session, "Fv", value=flowrate())
       updateNumericInput(session, "Dv", value=diameter())
@@ -841,7 +839,7 @@ server <- function(input, output, session) {
       flowrate2(c(filter(columnSpecs(), name=='flowrate')$units, flowratevector))
       flowrate3(unique(flowrate2()))
       
-      diameter2(c(filter(columnSpecs(), name=='diam')$units, diametervector))
+      diameter2(c(filter(columnSpecs(), name=='diameter')$units, diametervector))
       diameter3(unique(diameter2()))
       
       updateSelectInput(session, "FlowrateUnits", choices=flowrate3())
@@ -962,37 +960,36 @@ server <- function(input, output, session) {
   
   
   #out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
-  out<-reactiveVal(data.frame(Trichloroethylene=c(0,0), time=c(0,0)))
+  out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
 
   observeEvent(input$run_button, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
   })
   
-  observe({print(column_data_converted())})
-  observe({print(infdat())})
 
   computed_data_prep<-reactive({process_output(out())})
   computed_data<-reactive({output_conv(computed_data_prep(), input)})
-  
-  
+ 
+
+
 
   out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
   output_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
   kdata_fit<-reactiveVal()
   out_fit_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
-        
-  
+
+
   observeEvent(input$fitting,{
     out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
     out_fit_cc0(out_fit()[[1]])
     output_fit(process_output(out_fit()[[1]]))
   })
-  
-  
+
+
   fit_data_prep<-reactive({output_conv(output_fit(), input)})
   fit_data<-reactive({fitted_chemical_renamer(fit_data_prep())})
-  
-  
+
+
   effdat_plot<-reactive({effluent_data_processor(effdat())})
 
   influent_plot<-reactive({
@@ -1004,7 +1001,7 @@ server <- function(input, output, session) {
   computed_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   cc0data_ngl<-eventReactive(input$run_button,{cc0_conv_ngl(infdat(), out())})
   observe({computed_data_cc0(process_output(cc0data_ngl()))})
-
+ 
   effluent_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   effluentcc0data<-reactive({c_points_cc0(infdat(), effdat())})
   observe({effluent_data_cc0(process_output(effluentcc0data()))})
@@ -1012,11 +1009,10 @@ server <- function(input, output, session) {
   influent_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   influentcc0data<-reactive({c_points_cc0(infdat(), infdat())})
   observe({influent_data_cc0(process_output(influentcc0data()))})
-  
+
   fitted_data_cc0<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
   fittedcc0<-eventReactive(input$fitting, {cc0_conv_ngl(infdat(), out_fit_cc0())})
   observe({fitted_data_cc0(process_output(fittedcc0()))})
-  
   
 
   outputeffluent<-reactiveValues()
@@ -1034,7 +1030,7 @@ server <- function(input, output, session) {
       outputeffluent$hours<- effdat_plot()$hours/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
       outputfit$hours<-fit_data()$hours / (bv_conv / hour2sec) / 1e3
-      
+
     } else {
       outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])# / hour2sec)
       outputeffluent$hours<- effdat_plot()$hours* (time_conv[input$timeunits]) #/ hour2sec)
@@ -1060,8 +1056,8 @@ server <- function(input, output, session) {
     }
 
   })
-  
-  observe({print(mass_conv[input$OCunits])})
+
+  #observe({print(mass_conv[input$OCunits])})
 
 
   computational_processed<-reactive({
@@ -1104,22 +1100,22 @@ server <- function(input, output, session) {
       plot_data4
     }
   })
-  
-  
 
-  effluent_fit_processed<-reactive({
-    if(input$fitting==TRUE){
-      plot_data5<-fit_data()
-      plot_data5$conc<-outputfit$conc
-      plot_data5$hours<-outputfit$hours
-      plot_data5
-    }
-    else{
-      plot_data5<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
-    }
-  })
-  
- 
+
+
+  # effluent_fit_processed<-reactive({
+  #   if(input$fitting==TRUE){
+  #     plot_data5<-fit_data()
+  #     plot_data5$conc<-outputfit$conc
+  #     plot_data5$hours<-outputfit$hours
+  #     plot_data5
+  #   }
+  #   else{
+  #     plot_data5<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
+  #   }
+  # })
+
+
 
   fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed(), effluent_fit_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
@@ -1130,22 +1126,22 @@ server <- function(input, output, session) {
 
   output$Plot<-renderPlotly(
     counterionfigure())
-  
-  
+
+
   outputconcentrations<-reactive({rbind(influent_processed(), effluent_processed())})
   foulingdata<-reactive({data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling))})
-  
-  
-  
+
+
+
   output$save_button<-downloadHandler(
     filename=function() {
       paste("data-", Sys.Date(), ".xlsx", sep="")
     },
     content=function(file){
-      sheets<-list("Properties"=chem_data(), 
-                   "Kdata"=kdat(), 
-                   "columnSpecs"=column_data_converted(), 
-                   "data"=outputconcentrations(), 
+      sheets<-list("Properties"=chem_data(),
+                   "Kdata"=kdat(),
+                   "columnSpecs"=column_data_converted(),
+                   "data"=outputconcentrations(),
                    "Model Results"=computational_processed(),
                    'Fit Data'=effluent_fit_processed(),
                    'Fouling Data'=foulingdata())
