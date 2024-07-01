@@ -1409,7 +1409,7 @@ class PSDM():
             if water_type != 'Organic Free':
                 tortu = tortuosity(time_temp)
             else:
-                tortu = np.ones(len(time_temp))
+                tortu = np.ones(len(time_temp)) * self.tortu ## assumes tortuosity is provided at input and does not change
                 
             #convert pandas to arrays, test for speed? 2-3x speed up per diffun
             ThreeDSize = (self.num_comps, 1, 1)
