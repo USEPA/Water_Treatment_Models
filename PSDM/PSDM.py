@@ -1311,7 +1311,11 @@ class PSDM():
         cb0[cb0 == 0.] = 1. # if influent at time = 0 is 0, reset to 1 
         cin = cbo/cb0 # convert to relative concentration
         
-        tortu = self.tortu                             # tortuosity
+        ## Set initial tortuosity
+        if water_type != 'Organic Free': 
+            tortu = 1        ## If fouling used, ignores user supplied tortuosity
+        else:
+            tortu = self.tortu                         # tortuosity
         psdfr = self.psdfr                             # pore to surface diffusion ratio
         nd = nc - 1
         
@@ -1322,8 +1326,8 @@ class PSDM():
         multi_p = difl/(2*rad) # multiplier used for kf calculation
         ## calculate everything first, replace as needed
         kf_v = kf_calc(multi_p, self.re, sc, ebed, corr='Chern and Chien')
-                    
-        dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
+        
+                          dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
         
         self.mass_transfer_data = self.mass_transfer.copy()
         
