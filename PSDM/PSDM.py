@@ -200,7 +200,10 @@ class PSDM():
         self.psdfr = column_data['psdfr']
         self.epor = column_data['epor']
         self.influent = column_data['influentID']
-        self.carbon = column_data.name
+        if column_data.name == None:
+            self.carbon = column_data['carbonID']
+        else:
+            self.carbon = column_data.name
         self.duration = kw.get('duration',\
                                np.max(rawdata_df.index.values))
         #calculate other fixed values
@@ -412,18 +415,18 @@ class PSDM():
         xn_f_range = np.arange(0.15, 1.001, 0.01)  # sets up xn_range for returned interpolating function
         times_to_test = np.arange(self.duration + 1) ## returns a list of days 
         
-        k_function = interp1d(xn_f_range, np.ones(len(xn_f_range))) ## creates empty function so something will be returned
+        k_function = interp1d(xn_f_range, np.ones(len(xn_f_range))) ## creates empty function so something will be returned, need to update
         
         ### get influent and effluent data
         infl = self.data_df[self.influent, compound]
         infl[infl == 0] = 1e-3  ### prevents divide by zero error
         aveC = infl.mean()              #calculates average influent concentration
-        
+
         effl = self.data_df[self.carbon, compound]
-        
+
         ## create interpolating functions for influent and effluent
-        f_inf = interp1d(infl.index, infl.values, fill_value='extrapolate')
-        f_eff = interp1d(effl.index, effl.values, fill_value='extrapolate')
+        f_inf = interp1d(infl.index, infl.values, fill_value='extrapolate') ## need to update
+        f_eff = interp1d(effl.index, effl.values, fill_value='extrapolate') ## need to update
         
         xdata = self.xdata   ## can maybe get rid of
         
@@ -431,7 +434,7 @@ class PSDM():
         if infl.sum() == 0:
             print(f'No mass in influent for {compound}. Skipping.')
             donothing = True
-              
+        
         brk_found = False
         if self.brk_type == 'calc' and not donothing:
             if effl.sum() == 0:  ## no Effluent breakthrough at all
@@ -439,16 +442,6 @@ class PSDM():
                 breakthrough_code = 'minimum'
                 brk_found = True
                 
-                ## likely remove. duplicative
-                # infl_load, _ = quad(f_inf, 0, breakthrough_time)
-                # q = (infl_load) * flow_per_day * self.mass_mul / carbon_mass
-                
-                # aveC = np.mean(f_inf(times_to_test[times_to_test <= breakthrough_time]))
-                
-                # k = q / (aveC * self.mass_mul) ** self.xn
-                
-                # k_s = q / (aveC * self.mass_mul) ** xn_f_range
-                # k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
             elif np.count_nonzero(effl.values) == 1:
                 ## if only one data point exceeds 0, may be able to estimate 
                 if effl.iloc[-1].values[0] > 0 and effl.iloc[-1].values[0]/aveC >= 0.25:
@@ -572,7 +565,7 @@ class PSDM():
                 k = q_meas / (aveC * self.mass_mul) ** self.xn
                 
                 k_s = q_meas / (aveC * self.mass_mul) ** xn_f_range
-                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
+                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate') ## need to update
             
             else:
                 print(f'WARNING: No Capacity Estimated for {compound}. Assuming data duration for capacity.')
@@ -588,7 +581,7 @@ class PSDM():
                 k = q_meas / (aveC * self.mass_mul) ** self.xn
                 
                 k_s = q_meas / (aveC * self.mass_mul) ** xn_f_range
-                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
+                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate') ## need to update
 
 
             
@@ -1005,8 +998,6 @@ class PSDM():
                 ## prevents duplicative run_psdm_kfit calls
                 try:
                     _, _, _, ssqs, _ = self.run_psdm_kfit(compound)
-
-                    # print(ssqs)
                 
                     return ssqs.values[0][0]
                 except Exception as e:
@@ -1598,8 +1589,6 @@ class PSDM():
         ssqs = 1
         results = 1
         
-        # print(self.data_df)
-
         self.num_comps = 1
         self.jac_sparse = spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
         self.__y0shape = (self.num_comps, self.nc+1, self.mc)
@@ -1647,7 +1636,6 @@ class PSDM():
                     ssqs.loc[i, xn] =ssq
            
         else:
-            # print(self.k_data_input_type)
             if self.k_data_input_type == list:
                 if len(self.test_range) == 1 and len(self.xn_range) == 1:
                     ### This means nothing was input and input occured through test_range and xn_range
@@ -1752,8 +1740,6 @@ class PSDM():
 
 
 
-        # print(self.mass_transfer)
-                
         
         ### END, cleanup
         self.__reset_column_values()
@@ -1796,7 +1782,6 @@ class PSDM():
                 self.results[comp] = temp_results[comp](self.results.index) ## store results in dataframe
                 
                 calced_mass_transfer[comp] = self.mass_transfer_data[comp]
-                #print(self.mass_transfer_data[comp])
         else: ## run as multi-competitive
         ## TODO: Still need to test this, but it should work...
             temp_results = self.run_psdm() ## run simulation, returns dictionary of interpolating functions
@@ -1811,7 +1796,7 @@ class PSDM():
         
         ### Create copy of base results to start uncertainty_results
         for comp in self.compounds_bup:
-            # print(comp)
+
             self.uncertainty_results.loc[self.results.index, ('upper', comp)] = self.results[comp] * 1
             self.uncertainty_results.loc[self.results.index, ('lower', comp)] = self.results[comp] * 1
        
