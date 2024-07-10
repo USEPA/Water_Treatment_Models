@@ -1330,6 +1330,7 @@ class PSDM():
             nonlocal time_dim2
             nonlocal ttol
             nonlocal tstep
+            nonlocal tortu
             nonlocal ds_v # for output
 
             aau = np.zeros(mc)
@@ -1340,7 +1341,7 @@ class PSDM():
 
             xni = 1./xn_v
             
-            ds_v = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn_v)
+            ds_v = epor * difl * cb0 * psdfr / (tortu * 1e3 * rhop * molar_k*(cb0**xn_v))
             
             for cdx in self.mass_transfer.columns:
                 if self.mass_transfer[cdx]['kf'] > 0.:
