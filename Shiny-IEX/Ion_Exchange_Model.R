@@ -22,8 +22,6 @@ library(ggplot2)
 #------------------------------------------------------------------------------#
 
 
-
-
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
 #unit conversions
@@ -1247,7 +1245,6 @@ process_files(input, paste0("config.xlsx"))
 ui<-fluidPage(
   
 
-
 HTML("<html lang = 'en'>"),
 
 tags$body(class = "html wide-template"),
@@ -1349,7 +1346,6 @@ tags$head(
 tags$style(HTML("
   .tabbable > .nav > li > a                  {background-color: #D3D3D3;  color:black}
 # ")),
-
   
   navbarPage("",
     
