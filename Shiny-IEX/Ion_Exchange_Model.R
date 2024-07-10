@@ -22,8 +22,6 @@ library(ggplot2)
 #------------------------------------------------------------------------------#
 
 
-
-
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
 #unit conversions
@@ -1247,109 +1245,107 @@ process_files(input, paste0("config.xlsx"))
 ui<-fluidPage(
   
 
+HTML("<html lang = 'en'>"),
 
-  HTML("<html lang = 'en'>"),
+tags$body(class = "html wide-template"),
+tags$head(tags$link(rel = "stylesheet",
+                    type = "text/css",
+                    href = "style.css")),
 
-  tags$body(class = "html wide-template"),
-  tags$head(tags$link(rel = "stylesheet",
-                      type = "text/css",
-                      href = "style.css")),
+# Header
+HTML("<header class='masthead clearfix' role='banner'>
+     <img alt='' class='site-logo' src='https://www.epa.gov/sites/all/themes/epa/logo.png'>
+     <div class='site-name-and-slogan'>
+     <h1 class='site-name'><a href='https://www.epa.gov' rel='home' title='Go to the home page'><span>US EPA</span></a></h1>
+     <div class='site-slogan'>
+     United States Environmental Protection Agency
+     </div>
+     </div>
+     <div class='region-header'>
+     <div class='block-epa-core-gsa-epa-search' id='block-epa-core-gsa-epa-search'>"),
 
-  # Header
-  HTML("<header class='masthead clearfix' role='banner'>
-       <img alt='' class='site-logo' src='https://www.epa.gov/sites/all/themes/epa/logo.png'>
-       <div class='site-name-and-slogan'>
-       <h1 class='site-name'><a href='https://www.epa.gov' rel='home' title='Go to the home page'><span>US EPA</span></a></h1>
-       <div class='site-slogan'>
-       United States Environmental Protection Agency
-       </div>
-       </div>
-       <div class='region-header'>
-       <div class='block-epa-core-gsa-epa-search' id='block-epa-core-gsa-epa-search'>"),
+HTML("</div>
+     </div>
+     </header>
+     <nav class='nav main-nav clearfix' role='navigation'>
+     <div class='nav__inner'>
+     <h2 class='element-invisible'>Main menu</h2>
+     <ul class='menu' role='menu'>
+     <li class='expanded active-trail menu-item' role='presentation'>
+     <a class='active-trail menu-link' href='https://www.epa.gov/environmental-topics' role='menuitem' title='View links to the most popular pages for each of EPA&#8217s top environmental topics.'>Environmental Topics</a></li>
+     <li class='menu-item' role='presentation'>
+     <a class='menu-link' href='https://www.epa.gov/laws-regulations' role='menuitem' title='View links to regulatory information by topic and sector, and to top pages about environmental laws, regulations, policies, compliance, and enforcement.'>Laws &amp; Regulations</a></li>
+     <li class='expanded menu-item' role='presentation'>
+     <a class='menu-link' href='https://www.epa.gov/aboutepa' role='menuitem' title='Learn more about our mission, organization, and locations.'>About EPA</a></li>
+     </ul>
+     </div>
+     </nav>
+     <div class='mobile-nav' id='mobile-nav'>
+     <div class='mobile-bar clearfix'>
+     <label class='menu-button' for='mobile-nav-toggle'>Menu</label>
+     </div><input checked id='mobile-nav-toggle' type='checkbox'>
+     <div class='mobile-links element-hidden' id='mobile-links' style='height:2404px;'>
+     <ul class='mobile-menu'>
+     <li class='expanded menu-item'><a class='menu-link' href='https://www.epa.gov/environmental-topics' tabindex='-1' title='View links to the most popular pages for each of EPA&#8217s top environmental topics.'>Environmental Topics</a></li>
+     <li class='menu-item'><a class='menu-link' href='https://www.epa.gov/laws-regulations' tabindex='-1' title='View links to regulatory information by topic and sector, and to top pages about environmental laws, regulations, policies, compliance, and enforcement.'>Laws &amp; Regulations</a></li>
+     <li class='expanded menu-item'><a class='menu-link' href='https://www.epa.gov/aboutepa' tabindex='-1' title='Learn more about our mission, organization, and locations.'>About EPA</a></li>
+     </ul>
+     </div>
+     </div>
+     <section class='main-content clearfix' id='main-content' lang='en' role='main' tabindex='-1'>
+     <div class='region-preface clearfix'>
+     <div class='block-views-revision-hublinks-block' id='block-views-revision-hublinks-block'>
+     <div class='view view-revision-hublinks view-id-revision_hublinks'>
+     <span class='related-info'><strong>Related Topics:</strong></span>
+     <ul class='menu pipeline'>
+     <li class='menu-item'><a href='https://www.epa.gov/environmental-topics'>Environmental Topics</a></li>
+     </ul>
+     </div>
+     </div>
+     <div class='block block-pane block-pane-epa-web-area-connect' id='block-pane-epa-web-area-connect'>
+     <ul class='menu utility-menu'>
+     <li class='menu-item'><a class='menu-link' href='https://www.epa.gov/water-research/forms/contact-us-about-water-research'>Contact Us</a></li>
+     </ul>
+     </div>
+     </div>
+     <div class='main-column clearfix'><!--googleon:all-->
+     <h1  class='page-title'>Ion Exchange Model</h1>
+     <div class='panel-pane pane-node-content'>
+     <div class='pane-content'>
+     <div class='node node-page clearfix view-mode-full'>"),
+####Added from EPA template######################################################
 
-  HTML("</div>
-       </div>
-       </header>
-       <nav class='nav main-nav clearfix' role='navigation'>
-       <div class='nav__inner'>
-       <h2 class='element-invisible'>Main menu</h2>
-       <ul class='menu' role='menu'>
-       <li class='expanded active-trail menu-item' role='presentation'>
-       <a class='active-trail menu-link' href='https://www.epa.gov/environmental-topics' role='menuitem' title='View links to the most popular pages for each of EPA&#8217s top environmental topics.'>Environmental Topics</a></li>
-       <li class='menu-item' role='presentation'>
-       <a class='menu-link' href='https://www.epa.gov/laws-regulations' role='menuitem' title='View links to regulatory information by topic and sector, and to top pages about environmental laws, regulations, policies, compliance, and enforcement.'>Laws &amp; Regulations</a></li>
-       <li class='expanded menu-item' role='presentation'>
-       <a class='menu-link' href='https://www.epa.gov/aboutepa' role='menuitem' title='Learn more about our mission, organization, and locations.'>About EPA</a></li>
-       </ul>
-       </div>
-       </nav>
-       <div class='mobile-nav' id='mobile-nav'>
-       <div class='mobile-bar clearfix'>
-       <label class='menu-button' for='mobile-nav-toggle'>Menu</label>
-       </div><input checked id='mobile-nav-toggle' type='checkbox'>
-       <div class='mobile-links element-hidden' id='mobile-links' style='height:2404px;'>
-       <ul class='mobile-menu'>
-       <li class='expanded menu-item'><a class='menu-link' href='https://www.epa.gov/environmental-topics' tabindex='-1' title='View links to the most popular pages for each of EPA&#8217s top environmental topics.'>Environmental Topics</a></li>
-       <li class='menu-item'><a class='menu-link' href='https://www.epa.gov/laws-regulations' tabindex='-1' title='View links to regulatory information by topic and sector, and to top pages about environmental laws, regulations, policies, compliance, and enforcement.'>Laws &amp; Regulations</a></li>
-       <li class='expanded menu-item'><a class='menu-link' href='https://www.epa.gov/aboutepa' tabindex='-1' title='Learn more about our mission, organization, and locations.'>About EPA</a></li>
-       </ul>
-       </div>
-       </div>
-       <section class='main-content clearfix' id='main-content' lang='en' role='main' tabindex='-1'>
-       <div class='region-preface clearfix'>
-       <div class='block-views-revision-hublinks-block' id='block-views-revision-hublinks-block'>
-       <div class='view view-revision-hublinks view-id-revision_hublinks'>
-       <span class='related-info'><strong>Related Topics:</strong></span>
-       <ul class='menu pipeline'>
-       <li class='menu-item'><a href='https://www.epa.gov/environmental-topics'>Environmental Topics</a></li>
-       </ul>
-       </div>
-       </div>
-       <div class='block block-pane block-pane-epa-web-area-connect' id='block-pane-epa-web-area-connect'>
-       <ul class='menu utility-menu'>
-       <li class='menu-item'><a class='menu-link' href='https://www.epa.gov/water-research/forms/contact-us-about-water-research'>Contact Us</a></li>
-       </ul>
-       </div>
-       </div>
-       <div class='main-column clearfix'><!--googleon:all-->
-       <h1  class='page-title'>Ion Exchange Model</h1>
-       <div class='panel-pane pane-node-content'>
-       <div class='pane-content'>
-       <div class='node node-page clearfix view-mode-full'>"),
-  ####Added from EPA template######################################################
+tags$head(
+  tags$style(HTML('.navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
+    color: #000; /*Sets the text hover color on navbar*/
+  }
 
-  tags$head(
-    tags$style(HTML('.navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
-      color: #000; /*Sets the text hover color on navbar*/
+  .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active >
+    a:hover, .navbar-default .navbar-nav > .active > a:focus {
+      color: white; /*BACKGROUND color for active*/
+        background-color: #0e6cb6;
     }
 
-    .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active >
-      a:hover, .navbar-default .navbar-nav > .active > a:focus {
-        color: white; /*BACKGROUND color for active*/
-          background-color: #0e6cb6;
-      }
+  .navbar-default {
+    background-color: #0e6cb6;
+      border-color: #030033;
+  }
 
-    .navbar-default {
-      background-color: #0e6cb6;
-        border-color: #030033;
-    }
-  
-    .navbar-nav > li > a, .navbar-brand {
-      padding-top:15px !important; 
-      padding-bottom:0 !important;
-      height: 25px;
-    }
-    .navbar {min-height:25px !important;}
+  .navbar-nav > li > a, .navbar-brand {
+    padding-top:15px !important;
+    padding-bottom:0 !important;
+    height: 25px;
+  }
+  .navbar {min-height:25px !important;}
 
 
-    .navbar-default .navbar-nav > li > a {
-      color: white; /*Change active text color here*/
-    }'))),
+  .navbar-default .navbar-nav > li > a {
+    color: white; /*Change active text color here*/
+  }'))),
 
-  tags$style(HTML("
-    .tabbable > .nav > li > a                  {background-color: #D3D3D3;  color:black}
-  # ")),
-  
+tags$style(HTML("
+  .tabbable > .nav > li > a                  {background-color: #D3D3D3;  color:black}
+# ")),
   
   navbarPage("",
     

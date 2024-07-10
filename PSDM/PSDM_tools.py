@@ -754,3 +754,103 @@ def analyze_all_ds(PSDM_obj):
         
         ti.sleep(.1)
         plt.close('all')
+
+## Calculate Predicted Regulatory Compliance
+def calculate_replacement_interval(data, uncertainty_data='None'):
+    ''' 
+    Function to calculate the replacement interval using US regulatory MCLs.
+    Assumes removal before first day of predicted breakthrough above an MCL (i.e., does not consider annualized average).
+
+    PFOA, PFOS <= 4 ppt (ng/L)
+    PFHxS, PFNA, GenX (HFPO-DA) <= 10 ppt 
+    Hazard Index: PFHxS/10 + PFNA/10 + GenX/10 + PFBS/2000 <= 1
+
+
+    data: should be structured like column_obj.results as a pd.DataFrame
+
+    uncertainty_data: should pass in the column_obj.uncertainty_results data ('None' default, ignores)
+
+
+    returns pd.DataFrame with each compound and predicted breakthrough
+    
+    '''
+    mcls = {'PFOA': 4.0,
+            'PFOS': 4.0,
+            'PFHxS': 10.0,
+            'PFNA': 10.0,
+            'GenX': 10.0,
+            'HI': 1.0} 
+    ## values stored as floats here, regulatory levels may have different number of significant figures, please refer to official numbers for official compliance.
+
+
+    replacement_interval = pd.DataFrame(index=list(mcls.keys()),
+                                        columns=['predicted', 'lower', 'upper', 'note'],
+                                        )## initially populated with nans
+    
+
+    ## create a daily indexed dataframe if not already present
+    new_idx = np.arange(0, data.index[-1] + 1)
+        
+    data_new = pd.DataFrame(columns=data.columns, 
+                            index=new_idx)
+    
+    for comp in data_new.columns:
+        data_new[comp] = np.interp(new_idx, data.index.astype('float64'), data[comp].values.astype('float64'))
+
+        ## borrowing this loop for initial check of mcl exceedance
+        if comp in mcls.keys():
+            if np.max(data[comp].values) < mcls[comp]:
+                replacement_interval.loc[comp]['note'] = f'{comp} does not exceed {mcls[comp]} in {new_idx[-1]} days.'
+
+
+    ## build hazard index data
+    data_new['HI'] = np.zeros(len(new_idx))
+    for comp in ['PFHxS', 'PFNA', 'GenX', 'PFBS']:
+        if comp in data.columns:
+            if comp != 'PFBS':
+                ## add contribution if the compound is available in data
+                data_new['HI'] += data_new[comp]/mcls[comp] ## HI contributions are concentrations divided by MCL values
+            else: # compound is PFBS
+                data_new[comp] += data_new[comp]/2000.0 ## HI contribution is concentration divided by 2000 ppt.
+        else:
+            replacement_interval.loc[comp]['note'] = f'{comp} not present in dataset'
+    
+    if np.max(data_new['HI'].values) < 1:
+        replacement_interval.loc['HI']['note'] = f'Hazard Index does not exceed 1 in {new_idx[-1]} days.'
+
+    for comp in replacement_interval.index:
+        if type(replacement_interval.loc[comp]['note']) != str: ## if it is a string, that means there is a note
+            for day in new_idx: 
+                ## iterate to find breakthroughs
+           
+                if np.isnan(replacement_interval.loc[comp]['predicted']):
+                    if data_new[comp][day] > mcls[comp]:
+                        
+                        replacement_interval.loc[comp]['predicted'] = day - 1 ## provides last day that would have been below the MCL
+
+    if type(uncertainty_data) == str: ## assumes string is 'None'
+        for comp in replacement_interval.index:
+            if type(replacement_interval.loc[comp]['note']) != str:
+                string_result = f'{comp}: {replacement_interval.loc[comp]["predicted"]:,.0f} days'
+
+                replacement_interval.loc[comp, 'note'] = string_result
+     
+    elif type(uncertainty_data) == pd.DataFrame:
+        for uncertainty_type in ['lower', 'upper']:
+
+            inter_results = calculate_replacement_interval(pd.DataFrame(uncertainty_data[uncertainty_type]))
+
+            if uncertainty_type == 'lower': ### need to reverse, because upper line should occur earlier and result in lower replacement interval value
+                replacement_interval['upper'] = inter_results['predicted']
+            else:
+                replacement_interval['lower'] = inter_results['predicted']
+           
+        
+        for comp in replacement_interval.index:
+            if type(replacement_interval.loc[comp]['note']) != str:
+                string_result = f'{comp}: {replacement_interval.loc[comp]["predicted"]:,.0f} ({replacement_interval.loc[comp]["lower"]:,.0f}-{replacement_interval.loc[comp]["upper"]:,.0f}) days'
+
+                replacement_interval.loc[comp, 'note'] = string_result
+    
+    
+    return replacement_interval
