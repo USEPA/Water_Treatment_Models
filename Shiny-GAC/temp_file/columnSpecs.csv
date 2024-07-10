@@ -1,0 +1,16 @@
+"name","value","units"
+"carbonID","F400",NA
+"radius","5.1299999999999998E-2","cm"
+"porosity","0.64100000000000001",NA
+"psdfr","5",NA
+"particleDensity","0.80300000000000005","g/ml"
+"apparentDensity","0.62","g/ml"
+"length","2.7650000000000001","m"
+"weight","20000","lb"
+"flowrate","566.96600000000001","gpm"
+"diameter","10","ft"
+"tortuosity","1",NA
+"influentID","influent",NA
+"effluentID","effluent",NA
+"units","ug",NA
+"time","days",NA
