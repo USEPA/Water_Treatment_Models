@@ -1303,10 +1303,9 @@ class PSDM():
         cin = cbo/cb0 # convert to relative concentration
         
         ## Set initial tortuosity
-        if water_type != 'Organic Free': 
-            tortu = 1        ## If fouling used, ignores user supplied tortuosity
-        else:
-            tortu = self.tortu                             # tortuosity
+        tortu = 1 ## default case, assumes fouling and ignores user input
+        if water_type == 'Organic Free': 
+            tortu = self.tortu                         # tortuosity
         psdfr = self.psdfr                             # pore to surface diffusion ratio
         nd = nc - 1
         
