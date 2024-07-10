@@ -200,10 +200,7 @@ class PSDM():
         self.psdfr = column_data['psdfr']
         self.epor = column_data['epor']
         self.influent = column_data['influentID']
-        if column_data.name == None:
-            self.carbon = column_data['carbonID']
-        else:
-            self.carbon = column_data.name
+        self.carbon = column_data.name
         self.duration = kw.get('duration',\
                                np.max(rawdata_df.index.values))
         #calculate other fixed values
@@ -250,7 +247,7 @@ class PSDM():
         self.chem_type = kw.get('chem_type', 'halogenated alkenes')
         
         self.test_range = kw.get('test_range', np.linspace(1, 5, 41))
-        self.xn_range = kw.get('xn_range', np.arange(0.25, 1.01, 0.05))
+        self.xn_range = kw.get('xn_range', np.arange(0.20, 0.95, 0.05))
         
         #handling for multiprocessing
         self.processes = kw.get('mp', mp.cpu_count())
@@ -415,18 +412,18 @@ class PSDM():
         xn_f_range = np.arange(0.15, 1.001, 0.01)  # sets up xn_range for returned interpolating function
         times_to_test = np.arange(self.duration + 1) ## returns a list of days 
         
-        k_function = interp1d(xn_f_range, np.ones(len(xn_f_range))) ## creates empty function so something will be returned, need to update
+        k_function = interp1d(xn_f_range, np.ones(len(xn_f_range))) ## creates empty function so something will be returned
         
         ### get influent and effluent data
         infl = self.data_df[self.influent, compound]
         infl[infl == 0] = 1e-3  ### prevents divide by zero error
         aveC = infl.mean()              #calculates average influent concentration
-
+        
         effl = self.data_df[self.carbon, compound]
-
+        
         ## create interpolating functions for influent and effluent
-        f_inf = interp1d(infl.index, infl.values, fill_value='extrapolate') ## need to update
-        f_eff = interp1d(effl.index, effl.values, fill_value='extrapolate') ## need to update
+        f_inf = interp1d(infl.index, infl.values, fill_value='extrapolate')
+        f_eff = interp1d(effl.index, effl.values, fill_value='extrapolate')
         
         xdata = self.xdata   ## can maybe get rid of
         
@@ -434,7 +431,7 @@ class PSDM():
         if infl.sum() == 0:
             print(f'No mass in influent for {compound}. Skipping.')
             donothing = True
-        
+              
         brk_found = False
         if self.brk_type == 'calc' and not donothing:
             if effl.sum() == 0:  ## no Effluent breakthrough at all
@@ -442,6 +439,16 @@ class PSDM():
                 breakthrough_code = 'minimum'
                 brk_found = True
                 
+                ## likely remove. duplicative
+                # infl_load, _ = quad(f_inf, 0, breakthrough_time)
+                # q = (infl_load) * flow_per_day * self.mass_mul / carbon_mass
+                
+                # aveC = np.mean(f_inf(times_to_test[times_to_test <= breakthrough_time]))
+                
+                # k = q / (aveC * self.mass_mul) ** self.xn
+                
+                # k_s = q / (aveC * self.mass_mul) ** xn_f_range
+                # k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
             elif np.count_nonzero(effl.values) == 1:
                 ## if only one data point exceeds 0, may be able to estimate 
                 if effl.iloc[-1].values[0] > 0 and effl.iloc[-1].values[0]/aveC >= 0.25:
@@ -565,7 +572,7 @@ class PSDM():
                 k = q_meas / (aveC * self.mass_mul) ** self.xn
                 
                 k_s = q_meas / (aveC * self.mass_mul) ** xn_f_range
-                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate') ## need to update
+                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
             
             else:
                 print(f'WARNING: No Capacity Estimated for {compound}. Assuming data duration for capacity.')
@@ -581,7 +588,7 @@ class PSDM():
                 k = q_meas / (aveC * self.mass_mul) ** self.xn
                 
                 k_s = q_meas / (aveC * self.mass_mul) ** xn_f_range
-                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate') ## need to update
+                k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate')
 
 
             
@@ -998,6 +1005,8 @@ class PSDM():
                 ## prevents duplicative run_psdm_kfit calls
                 try:
                     _, _, _, ssqs, _ = self.run_psdm_kfit(compound)
+
+                    # print(ssqs)
                 
                     return ssqs.values[0][0]
                 except Exception as e:
@@ -1302,10 +1311,7 @@ class PSDM():
         cb0[cb0 == 0.] = 1. # if influent at time = 0 is 0, reset to 1 
         cin = cbo/cb0 # convert to relative concentration
         
-        ## Set initial tortuosity
-        tortu = 1 ## default case, assumes fouling and ignores user input
-        if water_type == 'Organic Free': 
-            tortu = self.tortu                         # tortuosity
+        tortu = self.tortu                             # tortuosity
         psdfr = self.psdfr                             # pore to surface diffusion ratio
         nd = nc - 1
         
@@ -1316,7 +1322,7 @@ class PSDM():
         multi_p = difl/(2*rad) # multiplier used for kf calculation
         ## calculate everything first, replace as needed
         kf_v = kf_calc(multi_p, self.re, sc, ebed, corr='Chern and Chien')
-        
+                    
         dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
         
         self.mass_transfer_data = self.mass_transfer.copy()
@@ -1329,7 +1335,6 @@ class PSDM():
             nonlocal time_dim2
             nonlocal ttol
             nonlocal tstep
-            nonlocal tortu
             nonlocal ds_v # for output
 
             aau = np.zeros(mc)
@@ -1340,7 +1345,7 @@ class PSDM():
 
             xni = 1./xn_v
             
-            ds_v = epor * difl * cb0 * psdfr / (tortu * 1e3 * rhop * molar_k*(cb0**xn_v))
+            ds_v = epor*difl*cb0*psdfr/(1e3*rhop*molar_k*cb0**xn_v)
             
             for cdx in self.mass_transfer.columns:
                 if self.mass_transfer[cdx]['kf'] > 0.:
@@ -1404,7 +1409,7 @@ class PSDM():
             if water_type != 'Organic Free':
                 tortu = tortuosity(time_temp)
             else:
-                tortu = np.ones(len(time_temp)) * self.tortu ## assumes tortuosity is provided at input and does not change
+                tortu = np.ones(len(time_temp))
                 
             #convert pandas to arrays, test for speed? 2-3x speed up per diffun
             ThreeDSize = (self.num_comps, 1, 1)
@@ -1448,6 +1453,9 @@ class PSDM():
             #initialize storage arrays/matrices
             n = self.num_comps * (nc+1)*mc
             y0 = np.zeros(n)
+            # yt0 = np.zeros(self.__altshape)
+            # z = np.zeros(self.__altshape)
+            # q0 = np.zeros(self.__altshape)
             aau = np.zeros((self.num_comps, mc))
             aau2 = np.zeros((self.num_comps, mc))
 
@@ -1589,6 +1597,8 @@ class PSDM():
         ssqs = 1
         results = 1
         
+        # print(self.data_df)
+
         self.num_comps = 1
         self.jac_sparse = spar_Jac(self.num_comps, self.nc, self.nz, self.ne)
         self.__y0shape = (self.num_comps, self.nc+1, self.mc)
@@ -1636,6 +1646,7 @@ class PSDM():
                     ssqs.loc[i, xn] =ssq
            
         else:
+            # print(self.k_data_input_type)
             if self.k_data_input_type == list:
                 if len(self.test_range) == 1 and len(self.xn_range) == 1:
                     ### This means nothing was input and input occured through test_range and xn_range
@@ -1740,6 +1751,8 @@ class PSDM():
 
 
 
+        # print(self.mass_transfer)
+                
         
         ### END, cleanup
         self.__reset_column_values()
@@ -1782,6 +1795,7 @@ class PSDM():
                 self.results[comp] = temp_results[comp](self.results.index) ## store results in dataframe
                 
                 calced_mass_transfer[comp] = self.mass_transfer_data[comp]
+                #print(self.mass_transfer_data[comp])
         else: ## run as multi-competitive
         ## TODO: Still need to test this, but it should work...
             temp_results = self.run_psdm() ## run simulation, returns dictionary of interpolating functions
@@ -1796,7 +1810,7 @@ class PSDM():
         
         ### Create copy of base results to start uncertainty_results
         for comp in self.compounds_bup:
-
+            # print(comp)
             self.uncertainty_results.loc[self.results.index, ('upper', comp)] = self.results[comp] * 1
             self.uncertainty_results.loc[self.results.index, ('lower', comp)] = self.results[comp] * 1
        
@@ -1809,7 +1823,7 @@ class PSDM():
             test_uncertainty.append({'k': 1 - capacity/100, '1/n': 1 + capacity/100})
             compare_bounds = True
         
-        other_inputs = {'k': k, 'qn': qn, 'mass': mass, 'ds': ds, 'dp': dp, 'kf': kf, 'flrt': flrt, 'C': c0}
+        other_inputs = {'k': k, 'qn': qn, 'mass': mass, 'ds': ds, 'dp': dp, 'kf': kf, 'flrt': flrt}
         for key, value in other_inputs.items():
             
             if value != 'None':
