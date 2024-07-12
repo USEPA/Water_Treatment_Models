@@ -1599,7 +1599,6 @@ class PSDM():
         ## get influent/effluent data for single species
         self.data_df = self.data_bup.transpose().loc[idx[:, compound], :].transpose()
         
-        # self.data_df = filter_compounds(self.data_df, [compound], self.carbon, self.influent)
         f_eff = interp1d(self.data_df.index, self.data_df[self.carbon, compound], fill_value='extrapolate')
         
         ssq_xs = np.arange(self.k_data[compound]['brk']) ## only consider through breakthrough, old: np.max(self.data_df.index))
@@ -1704,7 +1703,6 @@ class PSDM():
         ## get influent/effluent data for single species
         self.data_df = self.data_bup.transpose().loc[idx[:, compound], :].transpose()
         
-        # self.data_df = filter_compounds(self.data_df, [compound], self.carbon, self.influent)
         f_eff = interp1d(self.data_df.index, self.data_df[self.carbon, compound], fill_value='extrapolate')
 
         mol_vol = self.k_data[compound]['MolarVol']
@@ -1737,8 +1735,6 @@ class PSDM():
                 best_factor = factor * 1
                 results_out = pd.DataFrame(results[compound].y, index=results[compound].x,
                                        columns=[compound])
-
-
 
         
         ### END, cleanup
@@ -2006,16 +2002,6 @@ class PSDM():
                     models.append([deepcopy(self), k * k_mult[xn], xn, 
                                    compound, k])
 
-            # processes = []
-            # for row in models:
-            #     p = mp.Process(target=run_MP_helper, args=(*row, ))
-            #     processes.append(p)
-            
-            # result_list = [x.start() for x in processes]
-            # print('Here')
-            # for item in result_list:
-            #     item.join()
-            
             pool = mp.Pool(processes=num_processes)
             retval = pool.starmap(run_MP_helper, models)
             pool.close()
