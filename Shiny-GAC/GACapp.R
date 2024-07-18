@@ -1133,6 +1133,7 @@ server <- function(input, output, session) {
   out_fit_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   kdata_fit_save<-reactiveVal(data.frame(Chemical=c(0, 0, 0, 0, 0)))
   kdataframe<-data.frame(name=c('K', '1/n', 'q', 'brk', 'AveC'))
+  colnames(kdataframe)<-c('...1')
   
   output$FitK<-renderTable(kdataframe)
   
@@ -1157,14 +1158,16 @@ server <- function(input, output, session) {
   #Changing the shape of fitted kdata to be able to run in the analysis again
   kdat_fitted<-reactive({
     df<-kdata_fit()
+    df<-cbind(kdataframe, df)
     rownames(df)<-1:nrow(df)
     return(df)
   })
   
-
+  observe({print(kdat())})
+  observe({print(kdat_fitted())})
   #Rerunning the analysis with fitted kdata
   observeEvent(input$Use, {
-    out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+    out(run_PSDM(column_data_converted(), chem_data(), kdat_fitted(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
   })
   
   
