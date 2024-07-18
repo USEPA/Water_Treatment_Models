@@ -1153,6 +1153,19 @@ server <- function(input, output, session) {
     }
   })
   
+  observe({print(kdat())})
+  
+  kdat_fitted<-reactive({
+    df<-kdata_fit()
+    rownames(df)<-1:nrow(df)
+    return(df)
+  })
+  
+  observe({print(kdat_fitted())})
+  
+  observeEvent(input$Use, {
+    out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+  })
   
   
   #Putting Data into correct shapes
