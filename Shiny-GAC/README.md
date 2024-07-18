@@ -110,8 +110,8 @@ In order for the tool to work the user must point their R Studio to a Python Int
 9. (Optional: Fitting the Data) The user can fit the K data to the any effluent data that is provided. To do this, simply click the 'Fit Data' button above the 'Save Data' button on the side bar panel. The fitted k data will then display on the 'Fitted Data' panel that the user can select on the header. Finally, a user may click 'Use Data' and this will rerun the analysis with the fitted data.
 
 ![Fit](DocumentPics/Fit.PNG)
-![FitResults](DocumentPics/FitResults.PNG)
 ![Use](DocumentPics/Use.PNG)
+![FitResults](DocumentPics/FitResults.PNG)
 
 
 ## Appendix
