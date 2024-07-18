@@ -82,7 +82,7 @@ In order for the tool to work the user must point their R Studio to a Python Int
 ![Import File](DocumentPics/Slide1.PNG)
 
 
-3. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
+3. (Optional) Change the parameters to match the specifications of your Granular Activated Carbon apparatus
 
 ![Inputs](DocumentPics/Slide2.PNG)
 
@@ -128,7 +128,7 @@ The parameters tab is used to describe the physical constraints of the resin cha
 |apparent density               | Mass per unit volume of bead particle measured within a medium. | g/ml|
 |length                         |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor.| m, cm, mm, in, ft|
 |weight                         | Weight of carbon. | lb, kg, g |
-|flowrate                       | The average flow rate through the column. HSDM only considers and average or steady-state condition, not variable flow. | gpm, cm^3/s, m^3/s, ft^3/s, mL/s, L/min, mL/min, mgd |
+|flowrate                       | The average flow rate through the column. PSDM only considers and average or steady-state condition, not variable flow. | gpm, cm^3/s, m^3/s, ft^3/s, mL/s, L/min, mL/min, mgd |
 |diameter                     | The diameter of a cylindrical column.  | cm, mm, m, ft, in |
 |tortuosity                   | Parameter of flow between curve and length. | N/A |
 |units                        | Influent and Effluent Concentrations | ug, ng, mg |
@@ -139,7 +139,7 @@ The parameters tab is used to describe the physical constraints of the resin cha
 
 ### Ions Tab
 
-The Ions tab contains information about the ions to be simulated. The Ions tab should contain any anionic species found in the system, as HSDM always models a simultaneous competitive exchange process (counterions like sulfate, nitrate, chloride, and bicarbonate must also be modeled in simulations). Ion characteristics (molecular weight, selectivity, valence, mass transfer coefficients) are stored in the "ions" tab in Excel-based input files and listed under "Ion List" within HSDM under the Input>Ions tab. information on concentrations within the system over time are stored in the "Cin" tab in Excel-based input files or "Concentration Points" within HSDM under the Input>Ions tab.
+The Ions tab contains information about the ions to be simulated. The Ions tab should contain any anionic species found in the system, as PSDM always models a simultaneous competitive exchange process (counterions like sulfate, nitrate, chloride, and bicarbonate must also be modeled in simulations). Ion characteristics (molecular weight, selectivity, valence, mass transfer coefficients) are stored in the "ions" tab in Excel-based input files and listed under "Ion List" within PSDM under the Input>Ions tab. information on concentrations within the system over time are stored in the "Cin" tab in Excel-based input files or "Concentration Points" within PSDM under the Input>Ions tab.
 
 **Note:** Order of rows in the ions table should match order of columns in the Cin table.
 
@@ -187,11 +187,11 @@ To export the graph, the user can hover over the graph with their cursor which w
 ## Notes to the User
 
 #### Selection of Collocation Points (nr and nz)
-The parameters nr and nz control the size of the grid used to numerically solve the underlying differential equations during the simulation. Increasing nr and nz may increase the accuracy of simulations but doing so also makes them take longer to run. No analytical expression has been found for determining optimal grid dimensions for this class of problems, so selecting nr and nz may take some experimentation. Generally, the sharper the ion exchange zone is relative to the column length, the higher nz will need to be and the sharper the diffusion gradient in the resin beads becomes, the higher nr will need to be. In practice, it is rare for nr to be the controlling parameter for grid size, with nr=7 being accurate enough for most cases without unduly increasing computational cost. The parameter nz is more likely to need attention. Setting nz too low will often produce erroneous oscillations in the breakthrough curves. The illustration below shows simulations with (a) and without (b) these erroneous oscillations.
+The parameters nr and nz control the size of the grid used to numerically solve the underlying differential equations during the simulation. Increasing nr and nz may increase the accuracy of simulations but doing so also makes them take longer to run. No analytical expression has been found for determining optimal grid dimensions for this class of problems, so selecting nr and nz may take some experimentation. Generally, the sharper the GAC zone is relative to the column length, the higher nz will need to be and the sharper the diffusion gradient in the resin beads becomes, the higher nr will need to be. In practice, it is rare for nr to be the controlling parameter for grid size, with nr=7 being accurate enough for most cases without unduly increasing computational cost. The parameter nz is more likely to need attention. Setting nz too low will often produce erroneous oscillations in the breakthrough curves. The illustration below shows simulations with (a) and without (b) these erroneous oscillations.
 
 ![nrnz](DocumentPics/Picture1.png)
 
-If increasing nz does not smooth out the erroneous oscillations, there may be other problems with the simulation. In this case, the user is advised to double check the inputs for errors. If there are no errors in the inputs, it is possible the ion exchange zones in the requested simulations are simply too sharp for this numerical approximation to handle. Faced with this problem, the user may wish to consider reducing the empty bed contact time of the simulation or seek out an alternate method of solution such as an equilibrium-based column model.
+If increasing nz does not smooth out the erroneous oscillations, there may be other problems with the simulation. In this case, the user is advised to double check the inputs for errors. If there are no errors in the inputs, it is possible the GAC zones in the requested simulations are simply too sharp for this numerical approximation to handle. Faced with this problem, the user may wish to consider reducing the empty bed contact time of the simulation or seek out an alternate method of solution such as an equilibrium-based column model.
 
 #### Specifying Column Size and Flow Rate
 
