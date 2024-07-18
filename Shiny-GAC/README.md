@@ -111,7 +111,7 @@ In order for the tool to work the user must point their R Studio to a Python Int
 
 ![Fit](DocumentPics/Fit.PNG)
 ![FitResults](DocumentPics/FitResults.PNG)
-![Use.PNG](DocumentPics/Use.PNG)
+![Use](DocumentPics/Use.PNG)
 
 
 ## Appendix
