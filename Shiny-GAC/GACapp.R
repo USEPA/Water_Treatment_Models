@@ -1153,16 +1153,16 @@ server <- function(input, output, session) {
     }
   })
   
-  observe({print(kdat())})
-  
+
+  #Changing the shape of fitted kdata to be able to run in the analysis again
   kdat_fitted<-reactive({
     df<-kdata_fit()
     rownames(df)<-1:nrow(df)
     return(df)
   })
   
-  observe({print(kdat_fitted())})
-  
+
+  #Rerunning the analysis with fitted kdata
   observeEvent(input$Use, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
   })
