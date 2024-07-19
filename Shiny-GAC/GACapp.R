@@ -169,19 +169,22 @@ read_in_files<-function(input, file){
   write.csv(pivoted_effluent, 'temp_file/dat_effluent.csv', row.names=FALSE)
   
   tryCatch({
-
     name<-read_excel(file, sheet='name')
     write.csv(name, 'temp_file/filename.csv', row.names=FALSE)
-
   },
   warning=function(war){
-
   },
   error=function(err){
-
-    namedata<-data.frame(name=c(input$file1$name))
-    write.csv(namedata, "temp_file/filename.csv", row.names=FALSE)
-
+    tryCatch({
+      print(err)
+      namedata<-data.frame(name=c(input$file1$name))
+      write.csv(namedata, "temp_file/filename.csv", row.names=FALSE)
+    }, error=function(e){
+      print(e)
+      print(file)
+      file_name <- data.frame(name=c(file))
+      write.csv(file_name, 'temp_file/filename.csv', row.names=FALSE)#, col.names=FALSE)
+    })
   })
   
   
@@ -1163,8 +1166,7 @@ server <- function(input, output, session) {
     return(df)
   })
   
-  observe({print(kdat())})
-  observe({print(kdat_fitted())})
+
   #Rerunning the analysis with fitted kdata
   observeEvent(input$Use, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat_fitted(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
