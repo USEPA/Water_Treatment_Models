@@ -1169,7 +1169,9 @@ server <- function(input, output, session) {
 
   #Rerunning the analysis with fitted kdata
   observeEvent(input$Use, {
-    out(run_PSDM(column_data_converted(), chem_data(), kdat_fitted(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+    #out(run_PSDM(column_data_converted(), chem_data(), kdat_fitted(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+    write.csv(kdat_fitted(), 'temp_file/Kdata.csv', row.names=FALSE)
+    session$reload()
   })
   
   
