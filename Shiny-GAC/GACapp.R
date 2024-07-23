@@ -164,6 +164,7 @@ read_in_files<-function(input, file){
   
   write.csv(Properties, 'temp_file/Properties.csv', row.names=FALSE)
   write.csv(Kdata, 'temp_file/Kdata.csv', row.names=FALSE)
+  write.csv(Kdata, 'temp_file/Kdata2.csv', row.names=FALSE)
   write.csv(columnSpecs, 'temp_file/columnSpecs.csv', row.names=FALSE)
   write.csv(pivoted_influent, 'temp_file/dat_influent.csv', row.names=FALSE)
   write.csv(pivoted_effluent, 'temp_file/dat_effluent.csv', row.names=FALSE)
@@ -1170,6 +1171,7 @@ server <- function(input, output, session) {
   #Rerunning the analysis with fitted kdata
   observeEvent(input$Use, {
     #out(run_PSDM(column_data_converted(), chem_data(), kdat_fitted(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+    write.csv(kdat(), 'temp_file/Kdata2.csv', row.names=FALSE)
     write.csv(kdat_fitted(), 'temp_file/Kdata.csv', row.names=FALSE)
     session$reload()
   })
