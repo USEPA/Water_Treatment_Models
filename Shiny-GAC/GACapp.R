@@ -188,6 +188,18 @@ read_in_files<-function(input, file){
     })
   })
   
+  tryCatch({
+    outputdata<-read_excel(file, sheet='output')
+    write.csv(outputdata, 'temp_file/outputdata.csv', row.names=FALSE)
+  },
+  warning=function(war){
+    #pass
+  },
+  error=function(e){
+    #pass
+    
+  })
+  
   
 }
 
@@ -1111,7 +1123,8 @@ server <- function(input, output, session) {
 #in the app. It takes the arguments: columndata, chem_data, kdata, infdat, 
 #effdat, nr, nz, water_type, and chem_type
 #------------------------------------------------------------------------------#  
-  out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
+  #out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
+  out<-reactiveVal(read.csv(paste(file_direc,"outputdata.csv", sep='')))
   
   observeEvent(input$run_button, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
@@ -1145,7 +1158,7 @@ server <- function(input, output, session) {
     if(nrow(out())>2){
       out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
       #out_fit_cc0(out_fit()[[1]])
-      #print(out_fit())
+      output_fit(out_fit()[[1]])
       kdata_fit(out_fit()[[2]])
       #print(out_fit()[[2]])
       #output_fit(process_output(out_fit()[[1]]))
@@ -1173,6 +1186,7 @@ server <- function(input, output, session) {
     #out(run_PSDM(column_data_converted(), chem_data(), kdat_fitted(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
     write.csv(kdat(), 'temp_file/Kdata2.csv', row.names=FALSE)
     write.csv(kdat_fitted(), 'temp_file/Kdata.csv', row.names=FALSE)
+    write.csv(output_fit(), 'temp_file/outputdata.csv', row.names=FALSE)
     session$reload()
   })
   
