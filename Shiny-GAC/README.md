@@ -1,6 +1,6 @@
 # Granular Activated Carbon Tool
 
-The Granular Activated Carbon Modeling Tool is used to model a __________________ in a drinking water treatment plant. This model relies on ______________________ and predicts the breakthrough behavior for unit operation design. To read a further in-depth analysis of the theory behind this model please reference 
+The Shiny-GAC Modeling Tool is used to model a granular activated carbon (GAC) unit operation in a drinking water treatment plant. Shiny-GAC includes a pore and surface diffusion model (PSDM) to predict the breakthrough behavior for unit operation design. To read a further in-depth analysis of the theory behind this model please reference the [AdDesignS User Manual](https://github.com/USEPA/Environmental-Technologies-Design-Option-Tool/blob/master/VS2019_AdDesignS/ADS_VBnet_MV/help/ads.doc).
 
 1. [Requirements](#requirements)
 2. [Excel Formatting](#excel-based-input-file)
@@ -17,7 +17,7 @@ The Granular Activated Carbon Modeling Tool is used to model a _________________
 5. Optional: Example_TCE.xlsx
 
 ## Excel-based Input File
-The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny GAC app looks for sheetnames of "Properties", "Kdata", "columnSpecs", "data", "data_variable" (optional) and "data_optimize" (optional). If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth and fifth optional sheet "data_variable", which represents varying influent and effluent concentration. There is also "data_optimize" which ___________. These pages do not need to be present when the file is ran and is not required to exist in the excel sheet.
+The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny-GAC App looks for sheetnames of "Properties", "Kdata", "columnSpecs", and "data". If one or more of those sheets are not found then the app cannot be run using that input file. The App is loaded with default data (found in 'config.xlsx') if the user does not want to use an Excel-based file, which can be modified as needed within the GUI. 
 
 <figure>
     <img src="DocumentPics/Properties.png"
