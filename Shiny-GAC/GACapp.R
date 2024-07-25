@@ -188,17 +188,17 @@ read_in_files<-function(input, file){
     })
   })
   
-  tryCatch({
-    outputdata<-read_excel(file, sheet='output')
-    write.csv(outputdata, 'temp_file/outputdata.csv', row.names=FALSE)
-  },
-  warning=function(war){
-    #pass
-  },
-  error=function(e){
-    #pass
-    
-  })
+  # tryCatch({
+  #   outputdata<-read_excel(file, sheet='output')
+  #   write.csv(outputdata, 'temp_file/outputdata.csv', row.names=FALSE)
+  # },
+  # warning=function(war){
+  #   #pass
+  # },
+  # error=function(e){
+  #   #pass
+  #   
+  # })
   
   
 }
@@ -1123,8 +1123,8 @@ server <- function(input, output, session) {
 #in the app. It takes the arguments: columndata, chem_data, kdata, infdat, 
 #effdat, nr, nz, water_type, and chem_type
 #------------------------------------------------------------------------------#  
-  #out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
-  out<-reactiveVal(read.csv(paste(file_direc,"outputdata.csv", sep='')))
+  out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
+  #out<-reactiveVal(read.csv(paste(file_direc,"outputdata.csv", sep='')))
   
   observeEvent(input$run_button, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
@@ -1184,13 +1184,11 @@ server <- function(input, output, session) {
   #Rerunning the analysis with fitted kdata
   observeEvent(input$Use, {
     #out(run_PSDM(column_data_converted(), chem_data(), kdat_fitted(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
-    write.csv(kdat(), 'temp_file/Kdata2.csv', row.names=FALSE)
-    write.csv(kdat_fitted(), 'temp_file/Kdata.csv', row.names=FALSE)
-    write.csv(output_fit(), 'temp_file/outputdata.csv', row.names=FALSE)
-    
-    kdat<- dataEditServer("edit-2", data =paste(file_direc, 'Kdata.csv', sep=''))
-    dataOutputServer("output-2", data = kdat) 
-    
+    write.csv(kdat(), paste(file_direc, 'Kdata2.csv', sep=''), row.names=FALSE)
+    write.csv(kdat_fitted(), paste(file_direc, 'Kdata.csv', sep=''), row.names=FALSE)
+    # write.csv(output_fit(), 'temp_file/outputdata.csv', row.names=FALSE)
+    kdat<- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep=''))
+    dataOutputServer("output-2", data = kdat)
     out(out_fit()[[1]])
     #session$reload()
   })
