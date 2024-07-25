@@ -1095,7 +1095,7 @@ server <- function(input, output, session) {
 #------------------------------------------------------------------------------#  
   
   #data frame of chemicals and their properties
-  iondat<- dataEditServer("edit-1",  data = paste(file_direc,'Properties.csv', sep=''), )
+  iondat<- dataEditServer("edit-1",  data = paste(file_direc,'Properties.csv', sep=''))
   dataOutputServer("output-1", data = iondat)
   
   #data frame of k data for each chemical
@@ -1187,7 +1187,12 @@ server <- function(input, output, session) {
     write.csv(kdat(), 'temp_file/Kdata2.csv', row.names=FALSE)
     write.csv(kdat_fitted(), 'temp_file/Kdata.csv', row.names=FALSE)
     write.csv(output_fit(), 'temp_file/outputdata.csv', row.names=FALSE)
-    session$reload()
+    
+    kdat<- dataEditServer("edit-2", data =paste(file_direc, 'Kdata.csv', sep=''))
+    dataOutputServer("output-2", data = kdat) 
+    
+    out(out_fit()[[1]])
+    #session$reload()
   })
   
   
