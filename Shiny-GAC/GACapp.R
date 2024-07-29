@@ -188,18 +188,6 @@ read_in_files<-function(input, file){
     })
   })
   
-  # tryCatch({
-  #   outputdata<-read_excel(file, sheet='output')
-  #   write.csv(outputdata, 'temp_file/outputdata.csv', row.names=FALSE)
-  # },
-  # warning=function(war){
-  #   #pass
-  # },
-  # error=function(e){
-  #   #pass
-  #   
-  # })
-  
   
 }
 
@@ -371,7 +359,7 @@ fitted_chemical_renamer<-function(fitted_data){
                                         #influent_organizer
 #influent_organizer takes the influent data frame and changes the shape
 #of the data frame into something that is easier to manipulate to and plot
-#------------------------------------------------------------------------------#-----------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
 
 influent_organizer<-function(influent){
   
@@ -459,7 +447,7 @@ get_bv_in_sec <- function(input) {
 #Frame 4 is currently not included but is the fitted data. In the future
 #This may be useful
 #------------------------------------------------------------------------------#
-create_plotly<-function(frame1, frame2, frame3){#,frame4){
+create_plotly<-function(frame1, frame2, frame3){
   
   
   #Create a subset of data that 
@@ -472,10 +460,7 @@ create_plotly<-function(frame1, frame2, frame3){#,frame4){
   #Using the curated data, plot
   counterionfig<-plot_ly(computationaldata, x=~hours, y=~conc, type='scatter', mode='lines', color=~name, colors=SteppedSequential5Steps)%>%
     add_trace(data=effluentdata, x=~hours, y=~conc, mode='markers')%>%
-    add_trace(data=influentdata, x=~hours, y=~conc, mode='lines+markers')#%>%
-  #add_trace(data=fitframe, x=~hours,y=~conc,line = list(color=SteppedSequential5Steps, width = 4,  dash='dot'))
-  
-  #options(warn = -1)
+    add_trace(data=influentdata, x=~hours, y=~conc, mode='lines+markers')
   
   
   return(counterionfig)
@@ -853,12 +838,11 @@ ui <- fluidPage(
                           
                           HTML(paste0("<h5>","<strong>", "Effluent Fitting", "</strong>", "</h5>")),
                           
-                          
-                          # sliderInput("xn", "Step Size of 1/n",0.01, 0.05, 0.025),
                           radioButtons("xn", "Options for 1/n increment", choices=c(0.01, 0.025, 0.05), inline=TRUE),
                           sliderInput("pm", "Range of K values to test (± %)",0, 50, 30, step=5),
                           
                           actionButton('fitting', 'Fit Data'),
+                          
                           br(), br(), br(),
                           
                           
@@ -889,7 +873,8 @@ ui <- fluidPage(
                       
                       shinycssloaders::withSpinner(
                         uiOutput('FitK')),
-                      actionButton('Use', 'Use Data')
+                      actionButton('Use', 'Use Data'),
+                      h6('Note: This will replace the K Data in the ions tab.')
                       
              )
              
@@ -1124,7 +1109,6 @@ server <- function(input, output, session) {
 #effdat, nr, nz, water_type, and chem_type
 #------------------------------------------------------------------------------#  
   out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
-  #out<-reactiveVal(read.csv(paste(file_direc,"outputdata.csv", sep='')))
   
   observeEvent(input$run_button, {
     out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
@@ -1139,9 +1123,6 @@ server <- function(input, output, session) {
             #Running the fit to the Analysis/PSDM function
 #This function returns computed data fitted to the effluent data and kdata that
 #is fitted to the effluent data. Currently, on the kdata part is being used. 
-#If you will notice, however, all of the code exists to use the computed data
-#in this file but is just commented out because of lack of interest and will
-#reduce errors if it is not in use
 #------------------------------------------------------------------------------#  
   
   out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
@@ -1157,11 +1138,8 @@ server <- function(input, output, session) {
   observeEvent(input$fitting,{
     if(nrow(out())>2){
       out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
-      #out_fit_cc0(out_fit()[[1]])
       output_fit(out_fit()[[1]])
       kdata_fit(out_fit()[[2]])
-      #print(out_fit()[[2]])
-      #output_fit(process_output(out_fit()[[1]]))
       kdataframe<-cbind(kdataframe, kdata_fit())
       kdata_fit_save(kdataframe)
       output$FitK<-renderTable({kdataframe})
@@ -1183,22 +1161,15 @@ server <- function(input, output, session) {
 
   #Rerunning the analysis with fitted kdata
   observeEvent(input$Use, {
-    #out(run_PSDM(column_data_converted(), chem_data(), kdat_fitted(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
     write.csv(kdat(), paste(file_direc, 'Kdata2.csv', sep=''), row.names=FALSE)
     write.csv(kdat_fitted(), paste(file_direc, 'Kdata.csv', sep=''), row.names=FALSE)
-    # write.csv(output_fit(), 'temp_file/outputdata.csv', row.names=FALSE)
     kdat<- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep=''))
     dataOutputServer("output-2", data = kdat)
     out(out_fit()[[1]])
-    #session$reload()
   })
   
   
   #Putting Data into correct shapes
-  
-  # fit_data_prep<-reactive({output_conv(output_fit(), input)})
-  # fit_data<-reactive({fitted_chemical_renamer(fit_data_prep())})
-  
   
   effdat_plot<-reactive({effluent_data_processor(effdat())})
   
@@ -1223,9 +1194,6 @@ server <- function(input, output, session) {
   influentcc0data<-reactive({c_points_cc0(infdat(), infdat())})
   observe({influent_data_cc0(process_output(influentcc0data()))})
   
-  # fitted_data_cc0<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
-  # fittedcc0<-eventReactive(input$fitting, {cc0_conv_ngl(infdat(), out_fit_cc0())})
-  # observe({fitted_data_cc0(process_output(fittedcc0()))})
  
 #------------------------------------------------------------------------------#
                         #Converting the output data
@@ -1244,14 +1212,12 @@ server <- function(input, output, session) {
       bv_conv <- get_bv_in_sec(input)
       outputchemicals$hours <- computed_data()$hours/ (bv_conv / hour2sec) / 1e3
       outputeffluent$hours<- effdat_plot()$hours/ (bv_conv / hour2sec) / 1e3
-      outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
-      #outputfit$hours<-fit_data()$hours / (bv_conv / hour2sec) / 1e3
+      outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  
       
     } else {
-      outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])# / hour2sec)
-      outputeffluent$hours<- effdat_plot()$hours* (time_conv[input$timeunits]) #/ hour2sec)
-      outputinfluent$hours<-influent_plot()$hours* (time_conv[input$timeunits])# / hour2sec) ## should this be $time?
-      #outputfit$hours<-fit_data()$hours* (time_conv[input$timeunits])
+      outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])
+      outputeffluent$hours<- effdat_plot()$hours* (time_conv[input$timeunits])
+      outputinfluent$hours<-influent_plot()$hours* (time_conv[input$timeunits])
     }
   })
   
@@ -1262,18 +1228,15 @@ server <- function(input, output, session) {
       ## just replicates the returned data
       outputchemicals$conc<-computed_data_cc0()$conc
       outputeffluent$conc<- effluent_data_cc0()$conc
-      outputinfluent$conc <-influent_data_cc0()$conc#influentcc04()$conc
-      #outputfit$conc<-fitted_data_cc0()$conc
+      outputinfluent$conc <-influent_data_cc0()$conc
     } else {
       outputchemicals$conc <- computed_data()$conc / mass_conv[input$OCunits]
       outputeffluent$conc <- effdat_plot()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- influent_plot()$conc/mass_conv[input$OCunits]
-      #outputfit$conc<-fit_data()$conc/mass_conv[input$OCunits]
     }
     
   })
   
-  #observe({print(mass_conv[input$OCunits])})
   
   
 #------------------------------------------------------------------------------#
@@ -1326,26 +1289,14 @@ server <- function(input, output, session) {
   
   
   
-  # effluent_fit_processed<-reactive({
-  #   if(input$fitting==TRUE){
-  #     plot_data5<-fit_data()
-  #     plot_data5$conc<-outputfit$conc
-  #     plot_data5$hours<-outputfit$hours
-  #     plot_data5
-  #   }
-  #   else{
-  #     plot_data5<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
-  #   }
-  # })
   
-  
-  #------------------------------------------------------------------------------#
+#------------------------------------------------------------------------------#
                       #Saving Output Data To .xlsx
 #This section is where everything comes together, the computational, effluent,
 #and influent data are plotted
 #------------------------------------------------------------------------------#
   
-  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})#, effluent_fit_processed())})
+  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                              legend=list(orientation='h', y=1), hovermode='x unified',
                                              xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
