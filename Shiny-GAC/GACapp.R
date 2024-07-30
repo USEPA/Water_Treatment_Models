@@ -874,7 +874,7 @@ ui <- fluidPage(
                       shinycssloaders::withSpinner(
                         uiOutput('FitK')),
                       actionButton('Use', 'Use Data'),
-                      h6('Note: This will replace the K Data in the ions tab.')
+                      h6('Note: This will replace the K Data in the ions tab on the Input tab and the modeled output on the Output tab.')
                       
              )
              
@@ -1318,7 +1318,10 @@ server <- function(input, output, session) {
   #The influent and effluent data were split up to treat them independently earlier
   #Now they are being brought back together 
   
-  outputconcentrations<-reactive({rbind(influent_processed(), effluent_processed())})
+  outputconcentrations<-reactive({rbind(influent_plot(), effdat_plot())})
+  observe({print(effdat_plot())})
+  observe({print(influent_plot())})
+  observe({print(outputconcentrations())})
   #Fouling data is saved in the excel file just in case
   foulingdata<-reactive({data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling))})
   
