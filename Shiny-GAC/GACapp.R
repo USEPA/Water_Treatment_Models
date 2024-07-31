@@ -1099,7 +1099,7 @@ server <- function(input, output, session) {
   column_data_converted<-reactive({column_data(input)})
   ##chem_data = properties
   chem_data<-reactive({properties()})
-  
+   
   
   
 #------------------------------------------------------------------------------#
@@ -1314,10 +1314,46 @@ server <- function(input, output, session) {
 #saves them to an excel file with the exact values that were inputted into
 #The model.
 #------------------------------------------------------------------------------#
+  
+  infdatsave<-reactive({
+    inf_pivoted<-infdat()%>%pivot_longer(!time, names_to='compound',values_to='concentration')
+    inf_pivoted<-cbind("influent",inf_pivoted)
+    colnames(inf_pivoted)<-c('type', 'time', 'compound', 'concentration')
+    inf_pivoted_ordered<-inf_pivoted[,c('type', 'time', 'concentration', 'compound')]
+    return(inf_pivoted_ordered)
+  })
+  
+  effdatsave<-reactive({
+    eff_pivoted<-effdat()%>%pivot_longer(!time, names_to='comound', values_to='concentration')
+    eff_pivoted<-cbind("effluent", eff_pivoted)
+    colnames(eff_pivoted)<-c('type', 'time', 'compound', 'concentration')
+    eff_pivoted_ordered<-eff_pivoted[,c('type', 'time', 'concentration', 'compound')]
+    return(eff_pivoted_ordered)
+  })
+  
+  column_data_units<-reactive({data.frame(units=c(NA, input$brunits, NA, NA, 'g/ml', 'g/ml',
+                                                  input$LengthUnits, input$wunits, input$FlowrateUnits,
+                                                  input$DiameterUnits, NA, NA, NA, NA, NA))})
+  column_data_names<-data.frame(name=c('CarbondID', 'radius', 'porosity', 'psdfr',
+                                                 'particleDensity', 'apparentDensity', 'length', 'weight',
+                                                 'flowrate', 'diameter', 'tortuosity', 'influentID', 'effluentID',
+                                                 'units', 'time'))
+  column_inputs<-reactive({data.frame(values=c('F400', input$brv, input$EPORv, input$psdfrv, input$pdv, input$adv,
+                                               input$Lv, input$wv, input$Fv, input$Dv, input$tortuv, 'influent', 'effluent',
+                                               input$conc_units, input$tunits2))})
+  
+  
+  columnspecssave<-reactive({
+    df<-cbind(column_data_names, column_inputs(), column_data_units())
+    colnames(df)<-c('name', 'value', 'units')
+    return(df)
+  })
+  
+  
 
   #The influent and effluent data were split up to treat them independently earlier
   #Now they are being brought back together 
-  outputconcentrations<-reactive({rbind(influent_plot(), effdat_plot())})
+  outputconcentrations<-reactive({rbind(infdatsave(), effdatsave())})
   
   #Fouling data is saved in the excel file just in case
   foulingdata<-reactive({data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling))})
@@ -1331,10 +1367,10 @@ server <- function(input, output, session) {
     content=function(file){
       sheets<-list("Properties"=chem_data(),
                    "Kdata"=kdat(),
-                   "columnSpecs"=column_data_converted(),
+                   "columnSpecs"=columnspecssave(),
                    "data"=outputconcentrations(),
                    "Model Results"=computational_processed(),
-                  'Fit Data'=kdata_fit_save(),
+                   'Fit Data'=kdata_fit(),
                    'Fouling Data'=foulingdata())
       write_xlsx(sheets, file)
     }
