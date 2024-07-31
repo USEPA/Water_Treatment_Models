@@ -130,7 +130,22 @@ foul_params=list('water'=list('Organic Free'=list(1.,0.,0.,0.),
                 'pesticides'=list(0., 0.05),
                 'PFAS'=list(0.82, 0.12)))
 
+
+
+reticulate::source_python("GAC_Shiny_helper.py")
+
+
+
+
+#------------------------------------------------------------------------------#
+                              #read_in_files
+#reads in a file that the user selects, reads pages 'Properties', 'Kdata',
+#'columnSpecs', 'dat'. The influent and effluent data get separated and then
+#pivoted to a data frame shape that is much easier to use with plotly
+#------------------------------------------------------------------------------#
+
 read_in_files<-function(input, file){
+
   
   Properties<-read_excel(file, sheet='Properties')
   Kdata<-read_excel(file, sheet='Kdata')
@@ -149,17 +164,40 @@ read_in_files<-function(input, file){
   
   write.csv(Properties, 'temp_file/Properties.csv', row.names=FALSE)
   write.csv(Kdata, 'temp_file/Kdata.csv', row.names=FALSE)
+  write.csv(Kdata, 'temp_file/Kdata2.csv', row.names=FALSE)
   write.csv(columnSpecs, 'temp_file/columnSpecs.csv', row.names=FALSE)
   write.csv(pivoted_influent, 'temp_file/dat_influent.csv', row.names=FALSE)
   write.csv(pivoted_effluent, 'temp_file/dat_effluent.csv', row.names=FALSE)
+  
+  tryCatch({
+    name<-read_excel(file, sheet='name')
+    write.csv(name, 'temp_file/filename.csv', row.names=FALSE)
+  },
+  warning=function(war){
+  },
+  error=function(err){
+    tryCatch({
+      print(err)
+      namedata<-data.frame(name=c(input$file1$name))
+      write.csv(namedata, "temp_file/filename.csv", row.names=FALSE)
+    }, error=function(e){
+      print(e)
+      print(file)
+      file_name <- data.frame(name=c(file))
+      write.csv(file_name, 'temp_file/filename.csv', row.names=FALSE)#, col.names=FALSE)
+    })
+  })
+  
   
 }
 
 
 
-reticulate::source_python("GAC_Shiny_helper.py")
-
-
+#------------------------------------------------------------------------------#
+                                      #column_data
+#Column data takes input from within the app and creates a data frame that gives
+#the GAC modeling function consistent units
+#------------------------------------------------------------------------------#
 
 column_data<-function(input){
   
@@ -240,6 +278,13 @@ column_data<-function(input){
   
 }
 
+#------------------------------------------------------------------------------#
+                             #effluent_data_processor
+#Takes the effluent data and creates a unique name for the chemicals so that
+#When the effluent data is plotted with influent and computed data they will
+#all be distinguishable. THe gather function then takes the current shape that
+#it is in and changes it to a shape that is friendlier with plotly
+#------------------------------------------------------------------------------#
 
 effluent_data_processor<-function(effluent){
   if(nrow(effluent)>1){                                      #If effluent data is not empty
@@ -270,6 +315,12 @@ effluent_data_processor<-function(effluent){
 }
 
 
+#------------------------------------------------------------------------------#
+                              #influent_chemical_renamer
+#Changes the names of the influent chemical data so that when the data is 
+#plotted the computed data, influent data, and effluent data can be 
+#distinguished
+#------------------------------------------------------------------------------#
 
 influent_chemical_renamer<-function(influent){
   
@@ -285,6 +336,14 @@ influent_chemical_renamer<-function(influent){
 }
 
 
+#------------------------------------------------------------------------------#
+                                #fitted_chemical_renamer
+#This function renames the chemicals in the fitted chemical data so that they
+#Are distinct from the computational, effluent, and influent data on the graph
+#This function is currently not being used because the fitted data is not being
+#plotted.
+#------------------------------------------------------------------------------#
+
 fitted_chemical_renamer<-function(fitted_data){
   
   for(chemical in 1:nrow(fitted_data)){
@@ -295,6 +354,12 @@ fitted_chemical_renamer<-function(fitted_data){
   
 }
 
+
+#------------------------------------------------------------------------------#
+                                        #influent_organizer
+#influent_organizer takes the influent data frame and changes the shape
+#of the data frame into something that is easier to manipulate to and plot
+#------------------------------------------------------------------------------#
 
 influent_organizer<-function(influent){
   
@@ -309,6 +374,12 @@ influent_organizer<-function(influent){
 }
 
 
+#------------------------------------------------------------------------------#
+                                    #process_output
+#If the output data frame is not empty, or in other words if the analysis has 
+#been ran, then the output data changes shape into something that is easier
+#to manipulate and plot
+#------------------------------------------------------------------------------#
 
 process_output<-function(dat, input){
   
@@ -328,7 +399,10 @@ process_output<-function(dat, input){
   
 }
 
-
+#------------------------------------------------------------------------------#
+                                  #output_conv
+#This function takes the data from the analysis and puts the data into ngl units
+#------------------------------------------------------------------------------#
 output_conv<-function(dat, input){
   
   if(nrow(dat)>1){
@@ -344,7 +418,11 @@ output_conv<-function(dat, input){
 
 
 
-
+#------------------------------------------------------------------------------#
+                                #get_bv_in_sec
+#This function calculates the bed volume time. This is the time it takes for 
+#concentrated water to pass through 1000 beds.
+#------------------------------------------------------------------------------#
 get_bv_in_sec <- function(input) {
   #get number of seconds per bv
   if (input$veloselect == 'Linear') {
@@ -360,24 +438,29 @@ get_bv_in_sec <- function(input) {
 }
 
 
-
-create_plotly<-function(frame1, frame2, frame3){#,frame4){
+#------------------------------------------------------------------------------#
+                            #create_plotly
+#This function creates the plot that is outputted on the output tab
+#Frame 1 is the computed data
+#Frame 2 is the effluent data
+#Frame 3 is the influent data
+#Frame 4 is currently not included but is the fitted data. In the future
+#This may be useful
+#------------------------------------------------------------------------------#
+create_plotly<-function(frame1, frame2, frame3){
   
   
   #Create a subset of data that 
-  counterionframe<-frame1
-  counterioneff<-frame2
-  counterioninfluent<-frame3
+  computationaldata<-frame1
+  effluentdata<-frame2
+  influentdata<-frame3
   # fitframe<-frame4
   
   
   #Using the curated data, plot
-  counterionfig<-plot_ly(counterionframe, x=~hours, y=~conc, type='scatter', mode='lines', color=~name, colors=SteppedSequential5Steps)%>%
-    add_trace(data=counterioneff, x=~hours, y=~conc, mode='markers')%>%
-    add_trace(data=counterioninfluent, x=~hours, y=~conc, mode='lines+markers')#%>%
-  #add_trace(data=fitframe, x=~hours,y=~conc,line = list(color=SteppedSequential5Steps, width = 4,  dash='dot'))
-  
-  #options(warn = -1)
+  counterionfig<-plot_ly(computationaldata, x=~hours, y=~conc, type='scatter', mode='lines', color=~name, colors=SteppedSequential5Steps)%>%
+    add_trace(data=effluentdata, x=~hours, y=~conc, mode='markers')%>%
+    add_trace(data=influentdata, x=~hours, y=~conc, mode='lines+markers')
   
   
   return(counterionfig)
@@ -385,6 +468,11 @@ create_plotly<-function(frame1, frame2, frame3){#,frame4){
 }
 
 
+#------------------------------------------------------------------------------#
+                                #cc0_conv_ngl
+#This function divides the computed data by the inital influent concentration of 
+#that chemical to put the chemical into units of c/c0
+#------------------------------------------------------------------------------#  
 cc0_conv_ngl<-function(concdata, dataoutput){
   
   if(nrow(dataoutput)>1){
@@ -407,7 +495,12 @@ cc0_conv_ngl<-function(concdata, dataoutput){
 }  
 
 
-
+#------------------------------------------------------------------------------#
+                                  #c_points_cc0
+#This function takes the effluent data of a chemical and divides the effluent 
+#data by the inital influent concentration of that chemical to put the chemical
+#into units of c/c0
+#------------------------------------------------------------------------------#  
 c_points_cc0<-function(concdata, effluent){
   
   if(nrow(effluent)>1){
@@ -438,24 +531,34 @@ c_points_cc0<-function(concdata, effluent){
 
 
 
-
+wd<-getwd()
 read_in_files(input, paste0("config.xlsx"))
+#read_in_name("config.xlsx")
 
 
 
-
+#==============================================================================#
+#------------------------------------------------------------------------------#
+                                  #UI SECTION#
+#------------------------------------------------------------------------------#
+#==============================================================================#
 
 ui <- fluidPage(
   
   useShinyjs(),
   
   navbarPage("Granular Activated Carbon Model",
-             
+#------------------------------------------------------------------------------#
+                                    #Input Tab#
+#------------------------------------------------------------------------------#             
              tabPanel("Input",
-                      
+#------------------------------------------------------------------------------#
+                              #Side Bar on Input Tab#
+#------------------------------------------------------------------------------#                      
                       sidebarLayout(
                         sidebarPanel(
                           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
+                          tableOutput("selectedfile"),
                           
                           h4("Fouling"),
                           
@@ -496,7 +599,9 @@ ui <- fluidPage(
                                        style="color: #000000; background-color: #ff0000; border-color: #e60000")
                           
                         ),
-                        
+#------------------------------------------------------------------------------#
+                            #Main Panel on Input Tab#
+#------------------------------------------------------------------------------#                        
                         mainPanel(
                           tabsetPanel(
                             tabPanel("Column Parameters",
@@ -711,9 +816,13 @@ ui <- fluidPage(
                       
                       
              ),
-             
+#------------------------------------------------------------------------------#
+                                #Output Tab#
+#------------------------------------------------------------------------------#             
              tabPanel("Output",
-                      
+ #------------------------------------------------------------------------------#
+                          #Side Bar on Output Tab#
+#------------------------------------------------------------------------------#                        
                       sidebarLayout(
                         sidebarPanel(
                           selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
@@ -729,12 +838,11 @@ ui <- fluidPage(
                           
                           HTML(paste0("<h5>","<strong>", "Effluent Fitting", "</strong>", "</h5>")),
                           
-                          
-                          # sliderInput("xn", "Step Size of 1/n",0.01, 0.05, 0.025),
                           radioButtons("xn", "Options for 1/n increment", choices=c(0.01, 0.025, 0.05), inline=TRUE),
                           sliderInput("pm", "Range of K values to test (± %)",0, 50, 30, step=5),
                           
                           actionButton('fitting', 'Fit Data'),
+                          
                           br(), br(), br(),
                           
                           
@@ -744,7 +852,9 @@ ui <- fluidPage(
                                        style="color: #000000; background-color: #ff0000; border-color: #e60000")
                           
                         ),
-                        
+#------------------------------------------------------------------------------#
+                      #Main Panel on Output Tab#
+#------------------------------------------------------------------------------#                             
                         mainPanel(
                           
                           shinycssloaders::withSpinner(
@@ -755,13 +865,16 @@ ui <- fluidPage(
                           plotlyOutput('Plot2'),
                           
                         ))),
-             
+#------------------------------------------------------------------------------#
+                                # Fitted Data Tab#
+#------------------------------------------------------------------------------#               
              tabPanel('Fitted Data',
                       
                       
                       shinycssloaders::withSpinner(
                         uiOutput('FitK')),
-                      actionButton('Use', 'Use Data')
+                      actionButton('Use', 'Use Data'),
+                      h6('Note: This will replace the K Data in the ions tab on the Input tab and the modeled output on the Output tab.')
                       
              )
              
@@ -769,12 +882,20 @@ ui <- fluidPage(
   
 )
 
+
+
+#==============================================================================#
+#------------------------------------------------------------------------------#
+                            #SERVER SECTION#
+#------------------------------------------------------------------------------#
+#==============================================================================#
 server <- function(input, output, session) {
   
-  
+  #Read in file 
   observeEvent(input$file1,{
     file <- input$file1
     read_in_files(input, paste0(file$datapath))
+    
   })
   
   #GUI rejects a file upload that is not an xlsx
@@ -792,6 +913,9 @@ server <- function(input, output, session) {
     session$reload()
   })
   
+  #For some reason when the reticulate package and tidyverse have a strange bug
+  #When a person uses the "stop" button within RStudio to stop the app R crashes.
+  #This can be avoided by added in-app stop buttons here
   observeEvent(input$Stop,{
     stopApp()
   })
@@ -800,6 +924,11 @@ server <- function(input, output, session) {
     stopApp()
   })
   
+
+  fileuploadedname<-read.csv("temp_file/filename.csv")
+  output$selectedfile<-renderTable(fileuploadedname)
+  
+  #These sheets are used to store data for the analysis
   file_direc<-paste(getwd(),'/temp_file/', sep='')
   
   properties<-reactiveVal(read.csv(paste(file_direc,"Properties.csv", sep='')))
@@ -807,10 +936,18 @@ server <- function(input, output, session) {
   Kdata<-reactiveVal(read.csv(paste(file_direc,"Kdata.csv", sep='')))
   
   
-  
+  #------------------------------------------------------------------------------#
+                     #Volumetric vs Linear Velocities#
+#Here we look at the file that has been uploaded and see if the user has
+#uploaded data with linear or volumetric flow rates. Whatever they do not 
+#use will be grayed out
+#------------------------------------------------------------------------------#
+
   
   test_df<-data.frame(C=c('v','flowrate','diameter'))
   flags<-reactive({test_df$C %in% columnSpecs()$name}) ##flags are in order [1] velocity [2] flowrate and [3] diameter
+  
+  #TO DO: Only have 1 velocity, flowrate and diameter variable
   
   velocity<-reactiveVal()
   velocityvector2<-reactiveVal()
@@ -867,6 +1004,11 @@ server <- function(input, output, session) {
     toggleState("Fv", condition=input$veloselect!="Linear")
   })
   
+  #------------------------------------------------------------------------------#
+  #Gathering Uploaded Values#
+  #------------------------------------------------------------------------------#  
+  
+  #Numeric Values
   CarbonID<-reactive({filter(columnSpecs(), name=="carbonID")$value})
   radius<-reactive({filter(columnSpecs(), name=="radius")$value})
   porosity<-reactive({filter(columnSpecs(), name=='porosity')$value})
@@ -885,7 +1027,34 @@ server <- function(input, output, session) {
   nrv<-reactive(7)
   nzv<-reactive(12)
   
+  #String Values
+  radiusvector<-reactive({
+    rv<-c(filter(columnSpecs(), name=='radius')$units, lengthvector)
+    return(unique(rv))})
   
+  lengthvec<-reactive({
+    lenvec<-c(filter(columnSpecs(), name=='length')$units, lengthvector)
+    return(unique(lenvec))})
+  
+  weightvec<-reactive({
+    wvec<-c(filter(columnSpecs(), name=='weight')$units, weightvector)
+    return(unique(wvec))})
+  
+  timevec<-reactive({
+    timevec<-c(filter(columnSpecs(), name=='time')$value, timevector)
+    return(unique(timevec))})
+  
+  flowvec<-reactive({
+    flowv<-c(filter(columnSpecs(), name=='flowrate')$units, flowratevector)
+    return(unique(flowv))})
+  
+  diamvec<-reactive({
+    diamv<-c(filter(columnSpecs(), name=='diameter')$units, diametervector)
+    return(unique(diamv))})
+  
+  #------------------------------------------------------------------------------#
+        #Updating default values with the values that were uploaded#
+#------------------------------------------------------------------------------#    
   observe({
     updateNumericInput(session, "brv", value=format(radius(), digits=4, scientific=FALSE))
     updateNumericInput(session, "EPORv", value=porosity())
@@ -896,43 +1065,6 @@ server <- function(input, output, session) {
     updateNumericInput(session, "wv", value=format(weight(), digits=4, scientific=FALSE))
     updateNumericInput(session, "nrv", value=nrv())
     updateNumericInput(session, "nzv", value=nzv())
-    
-  })
-  
-  radiusvector<-reactive({
-    rv<-c(filter(columnSpecs(), name=='radius')$units, lengthvector)
-    return(unique(rv))
-  })
-  
-  lengthvec<-reactive({
-    lenvec<-c(filter(columnSpecs(), name=='length')$units, lengthvector)
-    return(unique(lenvec))
-  })
-  
-  
-  
-  weightvec<-reactive({
-    wvec<-c(filter(columnSpecs(), name=='weight')$units, weightvector)
-    return(unique(wvec))
-  })
-  
-  timevec<-reactive({
-    timevec<-c(filter(columnSpecs(), name=='time')$value, timevector)
-    return(unique(timevec))
-  })
-  
-  flowvec<-reactive({
-    flowv<-c(filter(columnSpecs(), name=='flowrate')$units, flowratevector)
-    return(unique(flowv))
-  })
-  
-  diamvec<-reactive({
-    diamv<-c(filter(columnSpecs(), name=='diameter')$units, diametervector)
-    return(unique(diamv))
-  })
-  
-  
-  observe({
     updateSelectInput(session, "rbunits", choices=radiusvector())
     updateSelectInput(session, "LengthUnits", choices=lengthvec())
     updateSelectInput(session, "tunits2", choices=timevec())
@@ -942,34 +1074,43 @@ server <- function(input, output, session) {
   })
   
   
-  iondat<- dataEditServer("edit-1", # read_args=list(colClasses=c("text","numeric")),
-                          data = paste(file_direc,'Properties.csv', sep=''), )
+  #------------------------------------------------------------------------------#
+                          #Dynamic Data Frames
+#Here we have data frames that act like excel tables. These tables can be
+#manipulated to change values and add/remove rows and columns. These data frames
+#are populated with default values from the config file and get overwritten
+#when a file is uploaded
+#------------------------------------------------------------------------------#  
+  
+  #data frame of chemicals and their properties
+  iondat<- dataEditServer("edit-1",  data = paste(file_direc,'Properties.csv', sep=''))
   dataOutputServer("output-1", data = iondat)
   
+  #data frame of k data for each chemical
   kdat<- dataEditServer("edit-2", data =paste(file_direc, 'Kdata.csv', sep=''))
   dataOutputServer("output-2", data = kdat) 
   
+  #influent data for each chemical
   infdat<- dataEditServer("edit-3", data = paste(file_direc,'dat_influent.csv', sep=''))
   dataOutputServer("output-3", data = infdat)
   
+  #effluent data for each chemical, this is optional
   effdat<- dataEditServer("edit-4", data = paste(file_direc, 'dat_effluent.csv', sep=''))
   dataOutputServer("output-4", data = effdat)
-  
-  
-  
   
   ##Column_data_converted = column_info
   column_data_converted<-reactive({column_data(input)})
   ##chem_data = properties
   chem_data<-reactive({properties()})
-  ##compounds = compounds (column names)
-  compounds<-reactive({colnames(raw_data()[2:nrow(raw_data())])})
-  ##Carbons = CarbonID
-  Carbons<-reactive({CarbonID()})
+   
   
   
-  
-  #out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
+#------------------------------------------------------------------------------#
+                      #Running the Analysis/PSDM function
+#Here is the function that runs the analysis and does the heaviest lifting
+#in the app. It takes the arguments: columndata, chem_data, kdata, infdat, 
+#effdat, nr, nz, water_type, and chem_type
+#------------------------------------------------------------------------------#  
   out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
   
   observeEvent(input$run_button, {
@@ -981,26 +1122,28 @@ server <- function(input, output, session) {
   computed_data<-reactive({output_conv(computed_data_prep(), input)})
   
   
+#------------------------------------------------------------------------------#
+            #Running the fit to the Analysis/PSDM function
+#This function returns computed data fitted to the effluent data and kdata that
+#is fitted to the effluent data. Currently, on the kdata part is being used. 
+#------------------------------------------------------------------------------#  
   
-  
-  out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
-  output_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
-  kdata_fit<-reactiveVal(data.frame(Chemical=c(0, 0, 0, 0, 0)))
-  out_fit_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
-  
-  kdataframe<-data.frame(name=c('K', '1/n', 'q', 'brk', 'AveC'))
+  out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA))) #Stores PSDM function
+  output_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA))) #Stores first value of PSDM function
+  kdata_fit<-reactiveVal(data.frame(Chemical=c(0, 0, 0, 0, 0))) #Stores second value of PSDM function
+  kdata_fit_save<-reactiveVal(data.frame(Chemical=c(0, 0, 0, 0, 0))) #Used to Export Save File
+  kdataframe<-data.frame(name=c('K', '1/n', 'q', 'brk', 'AveC')) #Used label values
+  colnames(kdataframe)<-c('...1') #For some reason if this isn't here it crashes
   
   output$FitK<-renderTable(kdataframe)
   
   observeEvent(input$fitting,{
     if(nrow(out())>2){
       out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
-      #out_fit_cc0(out_fit()[[1]])
-      print(out_fit())
+      output_fit(out_fit()[[1]])
       kdata_fit(out_fit()[[2]])
-      #print(out_fit()[[2]])
-      #output_fit(process_output(out_fit()[[1]]))
       kdataframe<-cbind(kdataframe, kdata_fit())
+      kdata_fit_save(kdataframe)
       output$FitK<-renderTable({kdataframe})
     }
     else{
@@ -1008,12 +1151,27 @@ server <- function(input, output, session) {
     }
   })
   
+
+  #Changing the shape of fitted kdata to be able to run in the analysis again
+  kdat_fitted<-reactive({
+    df<-kdata_fit()
+    df<-cbind(kdataframe, df)
+    rownames(df)<-1:nrow(df)
+    return(df)
+  })
+  
+
+  #Rerunning the analysis with fitted kdata
+  observeEvent(input$Use, {
+    write.csv(kdat(), paste(file_direc, 'Kdata2.csv', sep=''), row.names=FALSE)
+    write.csv(kdat_fitted(), paste(file_direc, 'Kdata.csv', sep=''), row.names=FALSE)
+    kdat<- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep=''))
+    dataOutputServer("output-2", data = kdat)
+    out(out_fit()[[1]])
+  })
   
   
-  
-  # fit_data_prep<-reactive({output_conv(output_fit(), input)})
-  # fit_data<-reactive({fitted_chemical_renamer(fit_data_prep())})
-  
+  #Putting Data into correct shapes
   
   effdat_plot<-reactive({effluent_data_processor(effdat())})
   
@@ -1023,6 +1181,9 @@ server <- function(input, output, session) {
   })
   
   
+#------------------------------------------------------------------------------#
+                              #cc0 conversions#
+#------------------------------------------------------------------------------# 
   computed_data_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
   cc0data_ngl<-eventReactive(input$run_button,{cc0_conv_ngl(infdat(), out())})
   observe({computed_data_cc0(process_output(cc0data_ngl()))})
@@ -1035,10 +1196,10 @@ server <- function(input, output, session) {
   influentcc0data<-reactive({c_points_cc0(infdat(), infdat())})
   observe({influent_data_cc0(process_output(influentcc0data()))})
   
-  # fitted_data_cc0<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
-  # fittedcc0<-eventReactive(input$fitting, {cc0_conv_ngl(infdat(), out_fit_cc0())})
-  # observe({fitted_data_cc0(process_output(fittedcc0()))})
-  
+ 
+#------------------------------------------------------------------------------#
+                        #Converting the output data
+#------------------------------------------------------------------------------#   
   
   outputeffluent<-reactiveValues()
   outputinfluent<-reactiveValues()
@@ -1053,14 +1214,12 @@ server <- function(input, output, session) {
       bv_conv <- get_bv_in_sec(input)
       outputchemicals$hours <- computed_data()$hours/ (bv_conv / hour2sec) / 1e3
       outputeffluent$hours<- effdat_plot()$hours/ (bv_conv / hour2sec) / 1e3
-      outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
-      #outputfit$hours<-fit_data()$hours / (bv_conv / hour2sec) / 1e3
+      outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  
       
     } else {
-      outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])# / hour2sec)
-      outputeffluent$hours<- effdat_plot()$hours* (time_conv[input$timeunits]) #/ hour2sec)
-      outputinfluent$hours<-influent_plot()$hours* (time_conv[input$timeunits])# / hour2sec) ## should this be $time?
-      #outputfit$hours<-fit_data()$hours* (time_conv[input$timeunits])
+      outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])
+      outputeffluent$hours<- effdat_plot()$hours* (time_conv[input$timeunits])
+      outputinfluent$hours<-influent_plot()$hours* (time_conv[input$timeunits])
     }
   })
   
@@ -1071,19 +1230,23 @@ server <- function(input, output, session) {
       ## just replicates the returned data
       outputchemicals$conc<-computed_data_cc0()$conc
       outputeffluent$conc<- effluent_data_cc0()$conc
-      outputinfluent$conc <-influent_data_cc0()$conc#influentcc04()$conc
-      #outputfit$conc<-fitted_data_cc0()$conc
+      outputinfluent$conc <-influent_data_cc0()$conc
     } else {
       outputchemicals$conc <- computed_data()$conc / mass_conv[input$OCunits]
       outputeffluent$conc <- effdat_plot()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- influent_plot()$conc/mass_conv[input$OCunits]
-      #outputfit$conc<-fit_data()$conc/mass_conv[input$OCunits]
     }
     
   })
   
-  #observe({print(mass_conv[input$OCunits])})
   
+  
+#------------------------------------------------------------------------------#
+              #Putting together the data frames to plot
+#Now we put together all of output data that has been converted into plots
+#This is the easiest way to handle plotting the data with plotly in the next
+#section.
+#------------------------------------------------------------------------------#
   
   computational_processed<-reactive({
     if(input$computeddata==TRUE){
@@ -1128,21 +1291,14 @@ server <- function(input, output, session) {
   
   
   
-  # effluent_fit_processed<-reactive({
-  #   if(input$fitting==TRUE){
-  #     plot_data5<-fit_data()
-  #     plot_data5$conc<-outputfit$conc
-  #     plot_data5$hours<-outputfit$hours
-  #     plot_data5
-  #   }
-  #   else{
-  #     plot_data5<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
-  #   }
-  # })
   
+#------------------------------------------------------------------------------#
+                      #Saving Output Data To .xlsx
+#This section is where everything comes together, the computational, effluent,
+#and influent data are plotted
+#------------------------------------------------------------------------------#
   
-  
-  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})#, effluent_fit_processed())})
+  fig<-reactive({create_plotly(computational_processed(), effluent_processed(), influent_processed())})
   counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
                                              legend=list(orientation='h', y=1), hovermode='x unified',
                                              xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
@@ -1151,13 +1307,64 @@ server <- function(input, output, session) {
   
   output$Plot<-renderPlotly(
     counterionfigure())
+ 
+  
+#------------------------------------------------------------------------------#
+                        #Saving Output Data To .xlsx
+#This sections takes, the Properties, Kdata, columnSpecs, data (influent and
+#effluent data), Model Results, Fit Data, and Fouling Data data frames and
+#saves them to an excel file with the exact values that were inputted into
+#The model.
+#------------------------------------------------------------------------------#
+  
+  ## TO DO : Make infdatsave and effdatsave a function outside of the server
+  
+  infdatsave<-reactive({
+    inf_pivoted<-infdat()%>%pivot_longer(!time, names_to='compound',values_to='concentration')
+    inf_pivoted<-cbind("influent",inf_pivoted)
+    colnames(inf_pivoted)<-c('type', 'time', 'compound', 'concentration')
+    inf_pivoted_ordered<-inf_pivoted[,c('type', 'time', 'concentration', 'compound')]
+    return(inf_pivoted_ordered)
+  })
+  
+  effdatsave<-reactive({
+    eff_pivoted<-effdat()%>%pivot_longer(!time, names_to='comound', values_to='concentration')
+    eff_pivoted<-cbind("effluent", eff_pivoted)
+    colnames(eff_pivoted)<-c('type', 'time', 'compound', 'concentration')
+    eff_pivoted_ordered<-eff_pivoted[,c('type', 'time', 'concentration', 'compound')]
+    return(eff_pivoted_ordered)
+  })
+  
+  #TO DO: Make column_data_units, column_data_names, and column_inputs into one function outside of server
+  column_data_units<-reactive({data.frame(units=c(NA, input$brunits, NA, NA, 'g/ml', 'g/ml',
+                                                  input$LengthUnits, input$wunits, input$FlowrateUnits,
+                                                  input$DiameterUnits, NA, NA, NA, NA, NA))})
+  column_data_names<-data.frame(name=c('CarbondID', 'radius', 'porosity', 'psdfr',
+                                                 'particleDensity', 'apparentDensity', 'length', 'weight',
+                                                 'flowrate', 'diameter', 'tortuosity', 'influentID', 'effluentID',
+                                                 'units', 'time'))
+  column_inputs<-reactive({data.frame(values=c('F400', input$brv, input$EPORv, input$psdfrv, input$pdv, input$adv,
+                                               input$Lv, input$wv, input$Fv, input$Dv, input$tortuv, 'influent', 'effluent',
+                                               input$conc_units, input$tunits2))})
   
   
-  outputconcentrations<-reactive({rbind(influent_processed(), effluent_processed())})
+  columnspecssave<-reactive({
+    df<-cbind(column_data_names, column_inputs(), column_data_units())
+    colnames(df)<-c('name', 'value', 'units')
+    return(df)
+  })
+  
+  
+
+  #The influent and effluent data were split up to treat them independently earlier
+  #Now they are being brought back together 
+  outputconcentrations<-reactive({rbind(infdatsave(), effdatsave())})
+  
+  #Fouling data is saved in the excel file just in case
   foulingdata<-reactive({data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling))})
   
   
-  
+ #Fouling data is saved in the excel file just in case  
   output$save_button<-downloadHandler(
     filename=function() {
       paste("data-", Sys.Date(), ".xlsx", sep="")
@@ -1165,10 +1372,10 @@ server <- function(input, output, session) {
     content=function(file){
       sheets<-list("Properties"=chem_data(),
                    "Kdata"=kdat(),
-                   "columnSpecs"=column_data_converted(),
+                   "columnSpecs"=columnspecssave(),
                    "data"=outputconcentrations(),
                    "Model Results"=computational_processed(),
-                   'Fit Data'=effluent_fit_processed(),
+                   'Fit Data'=kdata_fit(),
                    'Fouling Data'=foulingdata())
       write_xlsx(sheets, file)
     }
