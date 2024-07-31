@@ -942,9 +942,12 @@ server <- function(input, output, session) {
 #uploaded data with linear or volumetric flow rates. Whatever they do not 
 #use will be grayed out
 #------------------------------------------------------------------------------#
+
   
   test_df<-data.frame(C=c('v','flowrate','diameter'))
   flags<-reactive({test_df$C %in% columnSpecs()$name}) ##flags are in order [1] velocity [2] flowrate and [3] diameter
+  
+  #TO DO: Only have 1 velocity, flowrate and diameter variable
   
   velocity<-reactiveVal()
   velocityvector2<-reactiveVal()
@@ -1125,13 +1128,12 @@ server <- function(input, output, session) {
 #is fitted to the effluent data. Currently, on the kdata part is being used. 
 #------------------------------------------------------------------------------#  
   
-  out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
-  output_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA)))
-  kdata_fit<-reactiveVal(data.frame(Chemical=c(0, 0, 0, 0, 0)))
-  out_fit_cc0<-reactiveVal(data.frame(time=c(NA), name=c(NA), conc=c(NA)))
-  kdata_fit_save<-reactiveVal(data.frame(Chemical=c(0, 0, 0, 0, 0)))
-  kdataframe<-data.frame(name=c('K', '1/n', 'q', 'brk', 'AveC'))
-  colnames(kdataframe)<-c('...1')
+  out_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA))) #Stores PSDM function
+  output_fit<-reactiveVal(data.frame(hours=c(NA), name=c(NA), conc=c(NA))) #Stores first value of PSDM function
+  kdata_fit<-reactiveVal(data.frame(Chemical=c(0, 0, 0, 0, 0))) #Stores second value of PSDM function
+  kdata_fit_save<-reactiveVal(data.frame(Chemical=c(0, 0, 0, 0, 0))) #Used to Export Save File
+  kdataframe<-data.frame(name=c('K', '1/n', 'q', 'brk', 'AveC')) #Used label values
+  colnames(kdataframe)<-c('...1') #For some reason if this isn't here it crashes
   
   output$FitK<-renderTable(kdataframe)
   
@@ -1315,6 +1317,8 @@ server <- function(input, output, session) {
 #The model.
 #------------------------------------------------------------------------------#
   
+  ## TO DO : Make infdatsave and effdatsave a function outside of the server
+  
   infdatsave<-reactive({
     inf_pivoted<-infdat()%>%pivot_longer(!time, names_to='compound',values_to='concentration')
     inf_pivoted<-cbind("influent",inf_pivoted)
@@ -1331,6 +1335,7 @@ server <- function(input, output, session) {
     return(eff_pivoted_ordered)
   })
   
+  #TO DO: Make column_data_units, column_data_names, and column_inputs into one function outside of server
   column_data_units<-reactive({data.frame(units=c(NA, input$brunits, NA, NA, 'g/ml', 'g/ml',
                                                   input$LengthUnits, input$wunits, input$FlowrateUnits,
                                                   input$DiameterUnits, NA, NA, NA, NA, NA))})
