@@ -559,8 +559,10 @@ ui <- fluidPage(
           fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
           tableOutput("selectedfile"),
 
-          h4("Fouling"),
-          
+          br(),
+
+          h4("Fouling"),  
+             
           selectInput("WFouling", "Water Type", list(
             'Organic Free',
             'Rhine',
@@ -603,7 +605,7 @@ ui <- fluidPage(
           tabsetPanel(
             tabPanel("Column Parameters",
               
-              br(),
+              br(), br(),
               
               fluidRow(
                 column(2, HTML(paste0("<h4>","<strong>", "Resin Characteristics", "</strong>", "</h4>"))),
@@ -672,50 +674,60 @@ ui <- fluidPage(
                   decimalCharacter = "."
                 ))),
               
-              br(), br(),
+              hr(),
               
               fluidRow(
-                column(2, HTML(paste0("<h4>","<strong>", "Column Specifications", "</strong>", "</h4>")),
+                column(2, HTML(paste0("<h4>","<strong>", "Column Specifications", "</strong>", "</h4>"))),
+                column(1,),                                          
+                column(3, shinyWidgets::autonumericInput(
+                  inputId = "Lv",
+                  label="Length",
+                  value = 8,
+                  decimalPlaces = 3,
+                  digitGroupSeparator = ",",
+                  decimalCharacter = "."
+                )),
+                column(3, selectInput("LengthUnits", "Length Units", c("cm", "ft", "m", "mm", "in")))),
+
+              fluidRow(
                 #This radio button toggles between Linear and volumetric flowrate
-                br(),
-                radioButtons("veloselect", "", c("Volumetric", "Linear"))),
+                column(2, radioButtons("veloselect", "", c("Volumetric", "Linear"))),
+                column(1,),                                          
+                column(3, shinyWidgets::autonumericInput(
+                  inputId = "Vv",
+                  label="Velocity",
+                  value = 0.123,
+                  decimalPlaces = 3,
+                  digitGroupSeparator = ",",
+                  decimalCharacter = "."
+                )),
+                column(3, selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")))),
+                
+              fluidRow(
+                column(2,),
                 column(1,),
-                column(3,
-                  shinyWidgets::autonumericInput(
-                    inputId = "Lv",
-                    label="Length",
-                    value = 8, 
-                    decimalPlaces = 3,
-                    digitGroupSeparator = ",",
-                    decimalCharacter = "."),
-                  
-                  shinyWidgets::autonumericInput(
-                    inputId = "Vv",
-                    label="Velocity",
-                    value = 0.123, 
-                    decimalPlaces = 3,
-                    digitGroupSeparator = ",",
-                    decimalCharacter = "."),
-                  
-                  shinyWidgets::autonumericInput(
-                    inputId = "Dv",
-                    label="Diameter",
-                    value = 10, 
-                    decimalPlaces = 3,
-                    digitGroupSeparator = ",",
-                    decimalCharacter = "."),
-                  
-                  shinyWidgets::autonumericInput(
-                    inputId = "Fv",
-                    label="Flow Rate",
-                    value = 500, 
-                    decimalPlaces = 2,
-                    digitGroupSeparator = ",",
-                    decimalCharacter = ".")),
-                column(3, selectInput("LengthUnits", "Length Units", c("cm", "ft", "m", "mm", "in")),
-                  div(style = "margin-top:-0.3em", selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s", "ft/s", "ft/min", "gpm/ft^2"))),
-                  div(style = "margin-top:-0.3em", selectInput("DiameterUnits", "Diameter Units", c("cm", "ft","mm", "m", "in"))),
-                  div(style = "margin-top:-0.3em", selectInput("FlowrateUnits", "Flow Rate Units", c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))))),
+                column(3, shinyWidgets::autonumericInput(
+                  inputId = "Dv",
+                  label="Diameter",
+                  value = 10,
+                  decimalPlaces = 3,
+                  digitGroupSeparator = ",",
+                  decimalCharacter = "."
+                )),
+                column(3, selectInput("DiameterUnits","Diameter Units",c("cm", "ft","mm", "m", "in")))),
+
+              fluidRow(
+                column(2,),
+                column(1,),
+                column(3, shinyWidgets::autonumericInput(
+                  inputId = "Fv",
+                  label="Flow Rate",
+                  value = 500,
+                  decimalPlaces = 2,
+                  digitGroupSeparator = ",",
+                  decimalCharacter = "."
+                )),
+                column(3, selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
 
               fluidRow(
                 column(2,),
