@@ -459,7 +459,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   }
   
   # Integration ----
-  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "bdf")
+  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "lsodes")  ## replace bdf ## JBB
   # XXX: is there something we can do with diagnose(out) ?
   
   t_out = out[ , 1]/60/60 # hours
@@ -663,7 +663,7 @@ PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   }
   
   # Integration ----
-  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "bdf")
+  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "lsodes") ## replaced bdf ## JBB
   # XXX: is there something we can do with diagnose(out) ?
   
   t_out = out[ , 1]/60/60 # hours
@@ -920,7 +920,7 @@ influent_organizer<-function(influent, influent_hours){
 HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
   ## prepare paramdataframe for use by HSDMIX_solve
   if (input$veloselect == 'Linear') {
-    Vv = input$Vv*velocity_conv[input$VelocityUnits]
+    Vv = input$Vv * velocity_conv[input$VelocityUnits]
   } else {
     Vv = input$Fv * volumetric_conv[input$FlowrateUnits]/(pi/4 * ((input$Dv * length_conv[input$DiameterUnits])**2))
   }
