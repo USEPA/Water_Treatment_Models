@@ -912,31 +912,45 @@ influent_organizer<-function(influent, influent_hours){
 
 
 #------------------------------------------------------------------------------#
-#HSDMIX Prep
+#Model Prep
 #This function makes sure that the appropriate data frames are created
 #and that they have the converted values 
 #------------------------------------------------------------------------------#
 
-HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
-  ## prepare paramdataframe for use by HSDMIX_solve
+model_prep <- function (input, iondata, concdata, nt_report) {
+  ## prepare paramdataframe for use by solve functions
   if (input$veloselect == 'Linear') {
     Vv = input$Vv * velocity_conv[input$VelocityUnits]
   } else {
     Vv = input$Fv * volumetric_conv[input$FlowrateUnits]/(pi/4 * ((input$Dv * length_conv[input$DiameterUnits])**2))
   }
   
-  paramdataframe <- data.frame(
-    name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
-    value=c(input$Qv,
-            input$EBEDv,
-            input$Lv*length_conv[input$LengthUnits],
-            Vv,
-            input$rbv*length_conv[input$rbunits], NA, NA,
-            input$nrv,
-            input$nzv, 1),
-    units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, input$timeunits)
-  )
-  
+  if (input$model=="HSDM") {
+    paramdataframe <- data.frame(
+      name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
+      value=c(input$Qv,
+      input$EBEDv,
+      input$Lv*length_conv[input$LengthUnits],
+      Vv,
+      input$rbv*length_conv[input$rbunits], NA, NA,
+      input$nrv,
+      input$nzv, 1),
+      units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, input$timeunits)
+    ) 
+  } else if (input$model=="PSDM") {
+    paramdataframe <- data.frame(
+      name=c("Q", "EBED", "EPOR", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
+      value=c(input$Qv,
+      input$EBEDv,
+      input$EPORv,
+      input$Lv*length_conv[input$LengthUnits],
+      Vv,
+      input$rbv*length_conv[input$rbunits], NA, NA,
+      input$nrv,
+      input$nzv, 1),
+      units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, NA, input$timeunits)
+    )
+  }
   
   ## check that ions and concdata match
   error <- 0
@@ -976,94 +990,24 @@ HSDMIX_prep <- function (input, iondata, concdata, nt_report) {
       ## convert Ds to cm/s^2
       corr_ions[item, 'Ds'] <- iondata[item, 'Ds'] * ds_conv[iondata[item, 'Ds_units']]
       
+      if (input$model=="PSDM") {
+        # Dp units are the same as Ds
+        corr_ions[item, 'Dp'] <- iondata[item, 'Dp'] * ds_conv[iondata[item, 'Dp_units']]
+      }
     }
   }
   
   
   timeconverter <- time_conv[input$timeunits2]  ### TODO: Is this really necessary, or doing what we think it is doing? 
   
-  
-  if (error == 0) {
-    return (HSDMIX_solve(paramdataframe, corr_ions, corr_cin, timeconverter, nt_report))
-  } else {
-    return (error)
-  }
-}
 
-
-
-PSDMIX_prep<-function(input, iondata, concdata, nt_report){
-  # prepare paramdataframe for use by HSDMIX_solve
-  if (input$veloselect == 'Linear') {
-    Vv = input$Vv*velocity_conv[input$VelocityUnits]
-  } else {
-    Vv = input$Fv * volumetric_conv[input$FlowrateUnits]/(pi/4 * ((input$Dv * length_conv[input$DiameterUnits])**2))
-  }
-  
-  
-  paramdataframe<-data.frame(name=c("Q", "EBED", "EPOR", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
-                             value=c(input$Qv,
-                                     input$EBEDv,
-                                     input$EPORv,
-                                     input$Lv*length_conv[input$LengthUnits],
-                                     Vv,
-                                     input$rbv*length_conv[input$rbunits], NA, NA,
-                                     input$nrv,
-                                     input$nzv, 1),
-                             units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, NA, input$timeunits)
-  )
-  
-  
-  # check that ions and concdata match
-  error <- 0
-  for (item in 1:nrow(iondata)) {
-    ## checking ions are in concentration
-    if (!(iondata[item, 'name'] %in% colnames(concdata))) {
-      print(paste0(iondata[item, 'name'], " not found in Concentration Data Columns"))
-      error <- error + 1
-    }
-  }
-  
-  for (item in colnames(concdata)) {
-    ## checking concentration ions in ion list
-    if (item != "time") {
-      if (!(item %in% iondata[, 'name'])) {
-        print(paste0(item, " not found in Ion Data"))
-        error <- error + 1
-      }
-    }
-  }
-  
-  print(paste0("Number of errors: ", error))
-  
-  ## replicate inputs, will change in next section
-  corr_ions <- iondata
-  corr_cin <- concdata
-  
-  ## we now know that compounds are in both lists, assuming error == 0
   if (error == 0) {
-    corr_cin <- cin_correct(iondata, concdata)
-    for (item in 1:nrow(iondata)) {
-      
-      ### TODO: Need to check the mass transfer unit conversions
-      ## convert kL to cm/s
-      corr_ions[item, 'kL'] <- iondata[item, 'kL'] * kL_conv[iondata[item, 'kL_units']]
-      
-      ## convert Ds to cm/s^2
-      corr_ions[item, 'Ds'] <- iondata[item, 'Ds'] * ds_conv[iondata[item, 'Ds_units']]
-      
-      # Dp units are the same as Ds
-      corr_ions[item, 'Dp'] <- iondata[item, 'Dp'] * ds_conv[iondata[item, 'Dp_units']]
-      
+    if (input$model=="HSDM") {
+      return (HSDMIX_solve(paramdataframe, corr_ions, corr_cin, timeconverter, nt_report))
     }
-  }
-  
-  
-  timeconverter <- time_conv[input$timeunits2]  ### TODO: Is this really necessary, or doing what we think it is doing?
-  
-  
-  if (error == 0) {
-    return (PSDMIX_solve(paramdataframe, corr_ions, corr_cin, timeconverter, nt_report))
+    else if (input$model=="PSDM") {
+      return (PSDMIX_solve(paramdataframe, corr_ions, corr_cin, timeconverter, nt_report))
+    }
   } else {
     return (error)
   }
@@ -2069,19 +2013,14 @@ server <- function(input, output, session) {
   
   
   #------------------------------------------------------------------------------#
-  #CALLING THE HSDMIX FUNCTION#
+  #CALLING THE MODEL FUNCTION#
   #------------------------------------------------------------------------------#
   
-  #HSDMIX values is stored in this reactiveVal "out"
+  #model values is stored in this reactiveVal "out"
   out<-reactiveVal()
   
   observeEvent(input$run_button, {
-    if(input$model=="HSDM"){
-      out(HSDMIX_prep(input, iondat(), cindat(), nt_report))
-    }
-    else{
-      out(PSDMIX_prep(input, iondat(), cindat(), nt_report))
-    }
+    out(model_prep(input, iondat(), cindat(), nt_report))
   })
   
   
@@ -2094,7 +2033,7 @@ server <- function(input, output, session) {
   #------------------------------------------------------------------------------#
   #                 IEX CONCENTRATION OUTPUT DATAFRAME
   #------------------------------------------------------------------------------#
-  ### TODO: add better error handling HSDMIX_prep can now return an 'error' value which is an integer, or the full data
+  ### TODO: add better error handling model_prep can now return an 'error' value which is an integer, or the full data
   #### only want to proceed if it isn't an error state
   
   timeframe<-reactive({data.frame(hours=out()[[1]])})
