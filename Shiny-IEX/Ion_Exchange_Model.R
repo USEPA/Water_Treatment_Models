@@ -1496,7 +1496,6 @@ tags$style(HTML("
                             
                             ),
                    tabPanel("Alkalinity",
-                            
                             br(),
                             h4("Bicarbonate Concentration of Alkalinity"),
                             textOutput("AlkConv"),
@@ -1506,11 +1505,11 @@ tags$style(HTML("
                                      numericInput("alkvalue", "Alkalinity Value", 5),
                                      numericInput("pH", "pH", 7)),
                               column(4, offset=1,
-                                     selectInput("alkunits", "Concentration Units", c("meq", "mg/L")),
+                                     selectInput("alkunits", "Concentration Units", c("meq/L", "CaCO3")),
                                      
                                      # div(style ="
                                      #          margin-top:2em",
-                                         h5("Bicarbonate Concentration (meq)"),
+                                         h5("Bicarbonate Concentration (meq/L)"),
                                      # div(style ="
                                      #          margin-top:-1em",
                                          textOutput("bicarbcin"), br()),
@@ -1902,7 +1901,7 @@ server <- function(input, output, session) {
   calcium_carb_alpha<-reactive({k1*h_plus()/(h_plus()**2 + k1*h_plus()+k1*k2)})
   
   observe({
-    if(input$alkunits=='meq'){
+    if(input$alkunits=='meq/L'){
       bicarbconverted(calcium_carb_alpha()*input$alkvalue)
     }
     else{
