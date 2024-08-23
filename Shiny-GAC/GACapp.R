@@ -768,8 +768,8 @@ ui <- fluidPage(
             ),
 
             #Properties Tab
-            tabPanel("Ions",
-              h4("Ions List"),
+            tabPanel("Compounds",
+              h4("Compounds List"),
               dataEditUI("edit-1"),
               br(),
               h4("K Data"),
