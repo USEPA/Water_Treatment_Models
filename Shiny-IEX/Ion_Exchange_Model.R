@@ -1291,9 +1291,8 @@ tags$style(HTML("
   .tabbable > .nav > li > a                  {background-color: #D3D3D3;  color:black}
 # ")),
   
+  useShinyjs(),
   navbarPage("",
-    
-    useShinyjs(),
     
     #tabPanel("",),
     
