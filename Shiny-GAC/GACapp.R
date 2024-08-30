@@ -555,6 +555,20 @@ effdat_prep<-function(eff_pivoted) {
 }
 
 
+#------------------------------------------------------------------------------#
+                                  #columnspecs_prep
+#This function combines column name, values, and units into one data frame and
+#orders it in the format used in the columnSpecs sheet of the Excel file
+#------------------------------------------------------------------------------#  
+columnspecs_prep<-function(brunits, LengthUnits, wunits, FlowrateUnits, DiameterUnits, brv, EPORv, psdfrv, pdv, adv, Lv, wv, Fv, Dv, tortuv, conc_units, tunits2){
+  data.frame(
+    name=c('CarbondID', 'radius', 'porosity', 'psdfr', 'particleDensity', 'apparentDensity', 'length', 'weight', 'flowrate', 'diameter', 'tortuosity', 'influentID', 'effluentID', 'units', 'time'),
+    values=c('F400', brv, EPORv, psdfrv, pdv, adv, Lv, wv, Fv, Dv, tortuv, 'influent', 'effluent', conc_units, tunits2),
+    units=c(NA, brunits, NA, NA, 'g/ml', 'g/ml', LengthUnits, wunits, FlowrateUnits, DiameterUnits, NA, NA, NA, NA, NA)
+  )
+}
+
+
 
 
 wd<-getwd()
@@ -1312,22 +1326,9 @@ server <- function(input, output, session) {
     effdat_prep(effdat()%>%pivot_longer(!time, names_to='compound', values_to='concentration'))
   })
   
-  #TO DO: Make column_data_units, column_data_names, and column_inputs into one function outside of server
-  column_data_units<-reactive({data.frame(units=c(NA, input$brunits, NA, NA, 'g/ml', 'g/ml',
-                                                  input$LengthUnits, input$wunits, input$FlowrateUnits,
-                                                  input$DiameterUnits, NA, NA, NA, NA, NA))})
-  column_data_names<-data.frame(name=c('CarbondID', 'radius', 'porosity', 'psdfr',
-                                                 'particleDensity', 'apparentDensity', 'length', 'weight',
-                                                 'flowrate', 'diameter', 'tortuosity', 'influentID', 'effluentID',
-                                                 'units', 'time'))
-  column_inputs<-reactive({data.frame(values=c('F400', input$brv, input$EPORv, input$psdfrv, input$pdv, input$adv,
-                                               input$Lv, input$wv, input$Fv, input$Dv, input$tortuv, 'influent', 'effluent',
-                                               input$conc_units, input$tunits2))})
-  
-  
-  columnspecssave<-reactive({
-    df<-cbind(column_data_names, column_inputs(), column_data_units())
-    colnames(df)<-c('name', 'value', 'units')
+  columnspecssave <- reactive({
+    df<-columnspecs_prep(input$brunits, input$LengthUnits, input$wunits, input$FlowrateUnits, input$DiameterUnits, input$brv, input$EPORv, input$psdfrv, input$pdv, input$adv, input$Lv, input$wv, input$Fv, input$Dv, input$tortuv, input$conc_units, input$tunits2)
+    colnames(df) <- c('name', 'value', 'units')
     return(df)
   })
   
