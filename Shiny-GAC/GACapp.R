@@ -1328,7 +1328,7 @@ server <- function(input, output, session) {
   })
   
   effdatsave<-reactive({
-    eff_pivoted<-effdat()%>%pivot_longer(!time, names_to='comound', values_to='concentration')
+    eff_pivoted<-effdat()%>%pivot_longer(!time, names_to='compound', values_to='concentration')
     eff_pivoted<-cbind("effluent", eff_pivoted)
     colnames(eff_pivoted)<-c('type', 'time', 'compound', 'concentration')
     eff_pivoted_ordered<-eff_pivoted[,c('type', 'time', 'concentration', 'compound')]
