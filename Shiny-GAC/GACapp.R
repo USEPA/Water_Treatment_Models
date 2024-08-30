@@ -529,6 +529,32 @@ c_points_cc0<-function(concdata, effluent){
 }
 
 
+#------------------------------------------------------------------------------#
+                              #infdat_prep
+#This function orders influent data in the format used in the data sheet of
+#the Excel file
+#------------------------------------------------------------------------------#
+infdat_prep<-function(inf_pivoted) {
+    inf_pivoted<-cbind("influent", inf_pivoted)
+    colnames(inf_pivoted)<-c('type', 'time', 'compound', 'concentration')
+    inf_pivoted_ordered<-inf_pivoted[, c('type', 'time', 'concentration', 'compound')]
+    return(inf_pivoted_ordered)
+}
+
+
+#------------------------------------------------------------------------------#
+                              #effdat_prep
+#This function orders effluent data in the format used in the data sheet of
+#the Excel file
+#------------------------------------------------------------------------------#
+effdat_prep<-function(eff_pivoted) {
+  eff_pivoted<-cbind("effluent", eff_pivoted)
+  colnames(eff_pivoted)<-c('type', 'time', 'compound', 'concentration')
+  eff_pivoted_ordered<-eff_pivoted[, c('type', 'time', 'concentration', 'compound')]
+  return(eff_pivoted_ordered)
+}
+
+
 
 
 wd<-getwd()
@@ -1278,22 +1304,12 @@ server <- function(input, output, session) {
 #The model.
 #------------------------------------------------------------------------------#
   
-  ## TO DO : Make infdatsave and effdatsave a function outside of the server
-  
-  infdatsave<-reactive({
-    inf_pivoted<-infdat()%>%pivot_longer(!time, names_to='compound',values_to='concentration')
-    inf_pivoted<-cbind("influent",inf_pivoted)
-    colnames(inf_pivoted)<-c('type', 'time', 'compound', 'concentration')
-    inf_pivoted_ordered<-inf_pivoted[,c('type', 'time', 'concentration', 'compound')]
-    return(inf_pivoted_ordered)
+  infdatsave <- reactive({
+    infdat_prep(infdat()%>%pivot_longer(!time, names_to='compound',values_to='concentration'))
   })
-  
-  effdatsave<-reactive({
-    eff_pivoted<-effdat()%>%pivot_longer(!time, names_to='comound', values_to='concentration')
-    eff_pivoted<-cbind("effluent", eff_pivoted)
-    colnames(eff_pivoted)<-c('type', 'time', 'compound', 'concentration')
-    eff_pivoted_ordered<-eff_pivoted[,c('type', 'time', 'concentration', 'compound')]
-    return(eff_pivoted_ordered)
+
+  effdatsave <- reactive({
+    effdat_prep(effdat()%>%pivot_longer(!time, names_to='compound', values_to='concentration'))
   })
   
   #TO DO: Make column_data_units, column_data_names, and column_inputs into one function outside of server
