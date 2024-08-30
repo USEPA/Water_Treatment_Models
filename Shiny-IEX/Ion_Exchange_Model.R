@@ -57,8 +57,9 @@ m2min2cm2s<-(m2cm^2) / (min2sec)
 gal2ml<-3785.411784
 mgd2mlps<-1e6 * gal2ml/day2sec          #mgd to ml/sec
 l2ml <- 1000.
-k1<-10^(-6.42)
-k2<-10^(-10.43)
+K1<-10^-6.352
+K2<-10^-10.329
+KW<-10^-14
 
 #~~~~~~~~~~~~~~~~~~~ end unit conversions
 
@@ -1504,7 +1505,7 @@ tags$style(HTML("
                                      numericInput("alkvalue", "Alkalinity Value", 5),
                                      numericInput("pH", "pH", 7)),
                               column(4, offset=1,
-                                     selectInput("alkunits", "Concentration Units", c("meq/L", "CaCO3")),
+                                     selectInput("alkunits", "Concentration Units", c("meq/L", "mg/L CaCO3")),
                                      
                                      # div(style ="
                                      #          margin-top:2em",
@@ -1887,32 +1888,41 @@ server <- function(input, output, session) {
   velocityvar<-reactiveVal()
   
   #------------------------------------------------------------------------------#
-  #IBICARBONATE TO ALKALINITY CONVERTER#
+  #BICARBONATE TO ALKALINITY CONVERTER#
   #------------------------------------------------------------------------------#  
   
+
+  bicarbconverted <- reactiveVal()
+  bicarbmeq2mgl <- 50.045001
   
-  bicarbconverted<-reactiveVal()
-  bicarbmeq2mgl<-50.045001
-  
-  h_plus<-reactiveVal()
+  h_plus <- reactiveVal() # M
   observe({h_plus(10^-input$pH)})
-  
-  calcium_carb_alpha<-reactive({k1*h_plus()/(h_plus()**2 + k1*h_plus()+k1*k2)})
+  oh_minus <- reactive(KW / h_plus()) # M
+
+  alpha_0_TOTCO3 <- reactive(1 / (1 + K1 / h_plus() + K1 * K2 / h_plus()^2))
+  alpha_1_TOTCO3 <- reactive(1 / (1 + h_plus() / K1 + K2 / h_plus()))
+  alpha_2_TOTCO3 <- reactive(1 / (1 + h_plus() / K2 + h_plus()^2 / (K1 * K2)))
+
+  TOTCO3_M <- reactiveVal() # M
+  observe({TOTCO3_M((input$alkvalue / 50000 + h_plus() - oh_minus()) / (alpha_1_TOTCO3() + 2 * alpha_2_TOTCO3()))})
+  TOTCO3_mM <- reactive(1000 * TOTCO3_M()) # mM
+  TOTCO3_mg_C_L <- reactive(12 * TOTCO3_mM()) # mg C/L
+
+  HCO3_mM_L <- reactive(alpha_1_TOTCO3() * TOTCO3_mM()) # mM
   
   observe({
-    if(input$alkunits=='meq/L'){
-      bicarbconverted(calcium_carb_alpha()*input$alkvalue)
-    }
-    else{
-      bicarbconverted(calcium_carb_alpha()*input$alkvalue/bicarbmeq2mgl) #mw/valence -> mw
+    if(input$alkunits == 'meq/L') {
+      bicarbconverted(HCO3_mM_L() * bicarbmeq2mgl) # mM to mg/L CaCO3
+    } else if(input$alkunits == 'mg/L CaCO3') {
+      bicarbconverted(HCO3_mM_L()) # mg/L CaCO3
     }
   })
   
+
+  output$bicarbcin<-renderText(bicarbconverted()) # mM
+  output$bicarbcinmgl<-renderText(bicarbconverted() * 61) # mM to mg HCO3-/L
   
-  output$bicarbcin<-renderText(bicarbconverted())
-  output$bicarbcinmgl<-renderText(bicarbconverted()*bicarbmeq2mgl)
-  
-  
+
   
   #------------------------------------------------------------------------------#
   #IONS TAB DATA HANDLING#
