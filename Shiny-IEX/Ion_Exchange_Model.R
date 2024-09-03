@@ -1504,27 +1504,17 @@ tags$style(HTML("
                               column(4,
                                      numericInput("alkvalue", "Alkalinity Value", 5),
                                      numericInput("pH", "pH", 7)),
-                              column(4, offset=1,
-                                     selectInput("alkunits", "Concentration Units", c("meq/L", "mg/L CaCO3")),
-                                     
-                                     # div(style ="
-                                     #          margin-top:2em",
-                                         h5("Bicarbonate Concentration (meq/L)"),
-                                     # div(style ="
-                                     #          margin-top:-1em",
-                                         textOutput("bicarbcin"), br()),
-                          
-                            
-                              
-                              
-                              column(4, offset=1,
-                                     # div(style ="
-                                     #          margin-top:2em",
-                                         h5("Bicarbonate Concentration (mg/L)"),
-                                   
-                                     # div(style ="
-                                     #          margin-top:-1em",
-                                         textOutput("bicarbcinmgl")),
+                              column(4,
+                                     selectInput("alkunits", "Concentration Units", c("meq/L", "mg/L CaCO3"))),
+                            ),
+                            hr(),
+                            fluidRow(
+                              column(4, 
+                                     h5("Bicarbonate Concentration (meq/L)"),
+                                     textOutput("bicarbcin")),
+                              column(4,
+                                     h5("Bicarbonate Concentration (mg/L)"),
+                                     textOutput("bicarbcinmgl")),
                               br()
                               
                             )#fluid row
