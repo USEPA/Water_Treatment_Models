@@ -251,7 +251,7 @@ column_data<-function(input){
 #------------------------------------------------------------------------------#
 
 effluent_data_processor<-function(effluent){
-  if(nrow(effluent)>1){                                      #If effluent data is not empty
+  if (nrow(effluent) > 1) {                                      #If effluent data is not empty
     
     #mydata<-mass_converter_mgl(ion, effluent)                              #convert to mgl
     mydata<-effluent
@@ -267,9 +267,7 @@ effluent_data_processor<-function(effluent){
     
     return(effframe)
     
-  }
-  
-  else{
+  } else {
     
     effframe<-data.frame(hours=NA, name=NA, conc=NA)
     
@@ -347,17 +345,14 @@ influent_organizer<-function(influent){
 
 process_output<-function(dat, input){
   
-  if(nrow(dat)>1){
+  if (nrow(dat) > 1) {
     
     
     dat2<-dat%>%pivot_longer(!time, names_to="name", values_to="conc")
     colnames(dat2)<-c("hours", "name", "conc")
     
     return(dat2)
-  }
-  
-  
-  else{
+  } else {
     totaldat<-dat
   }
   
@@ -369,11 +364,9 @@ process_output<-function(dat, input){
 #------------------------------------------------------------------------------#
 output_conv<-function(dat, input){
   
-  if(nrow(dat)>1){
+  if (nrow(dat) > 1) {
     dat$conc<-dat$conc*mass_conv[input$conc_units]
-  }
-  
-  else{
+  } else {
     dat<-dat
   }
   
@@ -439,7 +432,7 @@ create_plotly<-function(frame1, frame2, frame3){
 #------------------------------------------------------------------------------#  
 cc0_conv_ngl<-function(concdata, dataoutput){
   
-  if(nrow(dataoutput)>1){
+  if (nrow(dataoutput) > 1) {
     df<-concdata
     output<-dataoutput[, colnames(dataoutput)[colnames(dataoutput) != 'time']]
     output_time<-dataoutput['time']
@@ -450,9 +443,7 @@ cc0_conv_ngl<-function(concdata, dataoutput){
     output_in_cc0<-cbind(output_time, output_in_cc0_dat)
     colnames(output_in_cc0)<-colnames(concdata)
     return(output_in_cc0)
-  }
-  
-  else{
+  } else {
     output_in_cc0<-data.frame(time=c(NA),name=c(NA),conc=c(NA))
     return(output_in_cc0)
   }
@@ -467,7 +458,7 @@ cc0_conv_ngl<-function(concdata, dataoutput){
 #------------------------------------------------------------------------------#  
 c_points_cc0<-function(concdata, effluent){
   
-  if(nrow(effluent)>1){
+  if (nrow(effluent) > 1) {
     
     df<-concdata
     c0_values<-df[1,2:ncol(df)]
@@ -483,9 +474,7 @@ c_points_cc0<-function(concdata, effluent){
     
     return(effluent_cc0_df)
     
-  }
-  
-  else{
+  } else {
     effluent_cc0_df<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
     return(effluent_cc0_df)
   }
@@ -866,7 +855,9 @@ server <- function(input, output, session) {
   #GUI rejects a file upload that is not an xlsx
   output$reject<-renderPrint({
     req(input$file1)
-    if(input$file1$type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"){ stop("Please upload a .xlsx file")}
+    if (input$file1$type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") { 
+      stop("Please upload a .xlsx file")
+    }
   })
   
   ### TODO: Should the reject be within the process_files? Or somehow before that.... so merging the above 2 items?
@@ -1061,15 +1052,14 @@ server <- function(input, output, session) {
   output$FitK<-renderTable(kdataframe)
   
   observeEvent(input$fitting,{
-    if(nrow(out())>2){
+    if (nrow(out()) > 2) {
       out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
       output_fit(out_fit()[[1]])
       kdata_fit(out_fit()[[2]])
       kdataframe<-cbind(kdataframe, kdata_fit())
       kdata_fit_save(kdataframe)
       output$FitK<-renderTable({kdataframe})
-    }
-    else{
+    } else {
       output$FitK<-renderText({'No fitting data available'})
     }
   })
@@ -1149,7 +1139,7 @@ server <- function(input, output, session) {
   
   observe({
     ### convert y-axis/mass units for graphing
-    if(input$OCunits=="c/c0"){
+    if (input$OCunits == "c/c0") {
       ## just replicates the returned data
       outputchemicals$conc<-computed_data_cc0()$conc
       outputeffluent$conc<- effluent_data_cc0()$conc
@@ -1172,26 +1162,24 @@ server <- function(input, output, session) {
 #------------------------------------------------------------------------------#
   
   computational_processed<-reactive({
-    if(input$computeddata==TRUE){
+    if (input$computeddata == TRUE) {
       plotdata<-computed_data()
       plotdata$conc<-outputchemicals$conc
       plotdata$hours<-outputchemicals$hours
       plotdata
-    }
-    else{
+    } else {
       plotdata<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
     }
   })
   
   
   effluent_processed<-reactive({
-    if(input$effluentdata==TRUE){
+    if (input$effluentdata == TRUE) {
       plot_data3<-effdat_plot()
       plot_data3$conc<-outputeffluent$conc
       plot_data3$hours<- outputeffluent$hours
       plot_data3
-    }
-    else{
+    } else {
       plot_data3 <- data.frame(hours=c(NA), name=c(NA), conc=c(NA))
       plot_data3
     }
@@ -1200,13 +1188,12 @@ server <- function(input, output, session) {
   
   
   influent_processed<-reactive({
-    if(input$influentdata==TRUE){
+    if (input$influentdata == TRUE) {
       plot_data4<-influent_plot()
       plot_data4$conc<-outputinfluent$conc
       plot_data4$hours<-outputinfluent$hours
       plot_data4
-    }
-    else{
+    } else {
       plot_data4 <- data.frame(hours=c(NA), name=c(NA), conc=c(NA))
       plot_data4
     }
