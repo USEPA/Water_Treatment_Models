@@ -51,24 +51,6 @@ m2min2cm2s<-(m2cm^2) / (min2sec)
 gal2ml<-3785.411784
 mgd2mlps<-1e6 * gal2ml/day2sec          #mgd to ml/sec
 l2ml <- 1000.
-k1<-10^(-6.42)
-k2<-10^(-10.43)
-
-cm3s2gpm<-0.01585
-m3s2gpm<-15850.32314
-ft3s2gpm<-448.8309
-mLs2gpm<-0.01585
-Lmin2gpm<-0.264172
-mLmin2gpm<-0.000264
-mgd2gpm<-694.44
-
-m2ft<-3.28084
-cm2ft<-m2ft/100
-mm2ft<-cm2ft/10
-in2ft<-1/12
-
-kg2lb<-2.204
-g2lb<-0.002204
 
 #~~~~~~~~~~~~~~~~~~~ end unit conversions
 
@@ -111,24 +93,6 @@ weightvector<-c("kg", "g", "lb")
 
 weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.204)
 
-foul_params=list('water'=list('Organic Free'=list(1.,0.,0.,0.),
-                              'Rhine'=list(0.35, -6.15e-8, 0.65, -8.93e-5),
-                              'Portage'=list(0.510,-9.21e-7, 0.490, -2.80e-5),
-                              'Karlsruhe'=list(0.65, -6.71e-7, 0.35, -1.00e-4),
-                              'Wausau'=list(0.83, -9.12e-7, 0.17, -2.65e-4),
-                              'Houghton'=list(0.66, -1.55e-7, 0.34, -7.29e-5)
-),
-'chemical'=list('halogenated alkanes'=list(1.2, -0.2),
-                'halogenated alkanes QSPR'=list(1.22, -.012),
-                'halogenated alkenes'=list(1.0, 0.0),
-                'trihalo-methanes'=list(1.0, 0.0),
-                'aromatics'=list(0.9, 0.1),
-                'nitro compounds'=list(0.75, 0.25),
-                'chlorinated hydrocarbon'=list(0.59, 0.41),
-                'phenols'=list(0.65, 0.35),
-                'PNAs'=list(0.32, 0.68),
-                'pesticides'=list(0., 0.05),
-                'PFAS'=list(0.82, 0.12)))
 
 
 
