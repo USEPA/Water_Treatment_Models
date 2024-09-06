@@ -254,15 +254,11 @@ effluent_data_processor<-function(effluent){
     effframe<-cbind(timevec, concframe)
     
     colnames(effframe)<-c("hours", "name", "conc")
-    
-    return(effframe)
-    
   } else {
-    
     effframe<-data.frame(hours=NA, name=NA, conc=NA)
-    
-    return(effframe)
   }
+
+  return(effframe)
 }
 
 
@@ -416,11 +412,11 @@ cc0_conv_ngl<-function(concdata, dataoutput){
     output_in_cc0_dat<-mapply('/', output, c0_values)
     output_in_cc0<-cbind(output_time, output_in_cc0_dat)
     colnames(output_in_cc0)<-colnames(concdata)
-    return(output_in_cc0)
   } else {
     output_in_cc0<-data.frame(time=c(NA),name=c(NA),conc=c(NA))
-    return(output_in_cc0)
   }
+
+  return(output_in_cc0)
 }  
 
 
@@ -443,12 +439,11 @@ c_points_cc0<-function(concdata, effluent){
     effluent_cc0_df<-cbind(effluent_time, effluent_cc0)
     
     colnames(effluent_cc0_df)<-colnames(concdata)
-    
-    return(effluent_cc0_df)
   } else {
     effluent_cc0_df<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
-    return(effluent_cc0_df)
   }
+
+  return(effluent_cc0_df)
 }
 
 
