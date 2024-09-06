@@ -822,7 +822,7 @@ ui <- fluidPage(
           
           downloadButton("save_button", "Save Data"),
           
-          actionButton("Stop2", "Stop App", icon=icon("square"), style="color: #000000; background-color: #ff0000; border-color: #e60000")                    
+          actionButton("Stop", "Stop App", icon=icon("square"), style="color: #000000; background-color: #ff0000; border-color: #e60000")                    
         ),
 
 #------------------------------------------------------------------------------#
@@ -885,9 +885,7 @@ server <- function(input, output, session) {
     stopApp()
   })
   
-  observeEvent(input$Stop2,{
-    stopApp()
-  })
+
   
 
   fileuploadedname<-read.csv("temp_file/filename.csv")
