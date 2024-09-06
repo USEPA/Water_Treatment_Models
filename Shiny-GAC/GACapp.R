@@ -109,8 +109,6 @@ reticulate::source_python("GAC_Shiny_helper.py")
 #------------------------------------------------------------------------------#
 
 read_in_files<-function(input, file){
-
-  
   Properties<-read_excel(file, sheet='Properties')
   Kdata<-read_excel(file, sheet='Kdata')
   columnSpecs<-read_excel(file, sheet='columnSpecs')
@@ -151,8 +149,6 @@ read_in_files<-function(input, file){
       write.csv(file_name, 'temp_file/filename.csv', row.names=FALSE)#, col.names=FALSE)
     })
   })
-  
-  
 }
 
 
@@ -234,12 +230,7 @@ column_data<-function(input){
     )
   )
   
-  
-  
-  
-  
   return(columndataframe)
-  
 }
 
 #------------------------------------------------------------------------------#
@@ -252,7 +243,6 @@ column_data<-function(input){
 
 effluent_data_processor<-function(effluent){
   if (nrow(effluent) > 1) {                                      #If effluent data is not empty
-    
     #mydata<-mass_converter_mgl(ion, effluent)                              #convert to mgl
     mydata<-effluent
     colnames(mydata)<-paste(colnames(mydata), "effluent", sep="_")#Distinguish the names from the simulated data
@@ -272,7 +262,6 @@ effluent_data_processor<-function(effluent){
     effframe<-data.frame(hours=NA, name=NA, conc=NA)
     
     return(effframe)
-    
   }
 }
 
@@ -285,7 +274,6 @@ effluent_data_processor<-function(effluent){
 #------------------------------------------------------------------------------#
 
 influent_chemical_renamer<-function(influent){
-  
   names<-colnames(influent)
   
   cindata<-data.frame(influent[,2:ncol(influent)])
@@ -307,13 +295,11 @@ influent_chemical_renamer<-function(influent){
 #------------------------------------------------------------------------------#
 
 fitted_chemical_renamer<-function(fitted_data){
-  
   for(chemical in 1:nrow(fitted_data)){
     fitted_data[chemical,'name']<-paste(fitted_data[chemical,'name'],'fitted',sep="_")
   }
   
   return(fitted_data)
-  
 }
 
 
@@ -324,7 +310,6 @@ fitted_chemical_renamer<-function(fitted_data){
 #------------------------------------------------------------------------------#
 
 influent_organizer<-function(influent){
-  
   cindat_organized<-tidyr::gather(influent[2:ncol(influent)])
   cin_time<-influent[,1]
   cin_prepped<-cbind(cin_time, cindat_organized)
@@ -332,7 +317,6 @@ influent_organizer<-function(influent){
   colnames(cin_prepped)<-c("hours", "name", "conc")
   
   return(cin_prepped)
-  
 }
 
 
@@ -344,10 +328,7 @@ influent_organizer<-function(influent){
 #------------------------------------------------------------------------------#
 
 process_output<-function(dat, input){
-  
   if (nrow(dat) > 1) {
-    
-    
     dat2<-dat%>%pivot_longer(!time, names_to="name", values_to="conc")
     colnames(dat2)<-c("hours", "name", "conc")
     
@@ -355,7 +336,6 @@ process_output<-function(dat, input){
   } else {
     totaldat<-dat
   }
-  
 }
 
 #------------------------------------------------------------------------------#
@@ -363,7 +343,6 @@ process_output<-function(dat, input){
 #This function takes the data from the analysis and puts the data into ngl units
 #------------------------------------------------------------------------------#
 output_conv<-function(dat, input){
-  
   if (nrow(dat) > 1) {
     dat$conc<-dat$conc*mass_conv[input$conc_units]
   } else {
@@ -391,7 +370,6 @@ get_bv_in_sec <- function(input) {
   
   ## divide converted length by velocity to get BV in seconds
   return(input$Lv*length_conv[input$LengthUnits]/Vv)
-  
 }
 
 
@@ -405,8 +383,6 @@ get_bv_in_sec <- function(input) {
 #This may be useful
 #------------------------------------------------------------------------------#
 create_plotly<-function(frame1, frame2, frame3){
-  
-  
   #Create a subset of data that 
   computationaldata<-frame1
   effluentdata<-frame2
@@ -419,9 +395,7 @@ create_plotly<-function(frame1, frame2, frame3){
     add_trace(data=effluentdata, x=~hours, y=~conc, mode='markers')%>%
     add_trace(data=influentdata, x=~hours, y=~conc, mode='lines+markers')
   
-  
   return(counterionfig)
-  
 }
 
 
@@ -457,9 +431,7 @@ cc0_conv_ngl<-function(concdata, dataoutput){
 #into units of c/c0
 #------------------------------------------------------------------------------#  
 c_points_cc0<-function(concdata, effluent){
-  
   if (nrow(effluent) > 1) {
-    
     df<-concdata
     c0_values<-df[1,2:ncol(df)]
     
@@ -473,12 +445,10 @@ c_points_cc0<-function(concdata, effluent){
     colnames(effluent_cc0_df)<-colnames(concdata)
     
     return(effluent_cc0_df)
-    
   } else {
     effluent_cc0_df<-data.frame(hours=c(NA), name=c(NA), conc=c(NA))
     return(effluent_cc0_df)
   }
-  
 }
 
 
@@ -1128,7 +1098,6 @@ server <- function(input, output, session) {
       outputchemicals$hours <- computed_data()$hours/ (bv_conv / hour2sec) / 1e3
       outputeffluent$hours<- effdat_plot()$hours/ (bv_conv / hour2sec) / 1e3
       outputinfluent$hours<-influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  
-      
     } else {
       outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])
       outputeffluent$hours<- effdat_plot()$hours* (time_conv[input$timeunits])
@@ -1149,7 +1118,6 @@ server <- function(input, output, session) {
       outputeffluent$conc <- effdat_plot()$conc/mass_conv[input$OCunits]
       outputinfluent$conc <- influent_plot()$conc/mass_conv[input$OCunits]
     }
-    
   })
   
   
@@ -1267,9 +1235,6 @@ server <- function(input, output, session) {
       write_xlsx(sheets, file)
     }
   )
-  
-  
-  
 }
 
 shinyApp(ui, server)
