@@ -945,64 +945,24 @@ server <- function(input, output, session) {
 #------------------------------------------------------------------------------#
 
   
-  test_df<-data.frame(C=c('v','flowrate','diameter'))
-  flags<-reactive({test_df$C %in% columnSpecs()$name}) ##flags are in order [1] velocity [2] flowrate and [3] diameter
-  
-  #TO DO: Only have 1 velocity, flowrate and diameter variable
-  
-  velocity<-reactiveVal()
-  velocityvector2<-reactiveVal()
-  velocityvector3<-reactiveVal()
-  
-  flowrate<-reactiveVal()
-  flowrate2<-reactiveVal()
-  flowrate3<-reactiveVal()
-  
-  diameter<-reactiveVal()
-  diameter2<-reactiveVal()
-  diameter3<-reactiveVal()
-  
-  
-  observe({if (flags()[1]){
-    # velocity read in
-    velocity(filter(columnSpecs(), name=='v')$value)
-    updateNumericInput(session, "Vv", value=velocity())
-    
-    velocityvector2(c(filter(columnSpecs(), name=='v')$units, velocityvector))
-    velocityvector3<-unique(velocityvector2())
-    
-    updateSelectInput(session, "VelocityUnits", choices=velocityvector3())
-    
-    ##add toggle of velocity selector
-    updateRadioButtons(session, "veloselect", selected="Linear")
-    
-  }
-    else if(flags()[2] & flags()[3]){
-      
-      
-      updateNumericInput(session, "Fv", value=flowrate())
-      updateNumericInput(session, "Dv", value=diameter())
-      
-      
-      flowrate2(c(filter(columnSpecs(), name=='flowrate')$units, flowratevector))
-      flowrate3(unique(flowrate2()))
-      
-      diameter2(c(filter(columnSpecs(), name=='diameter')$units, diametervector))
-      diameter3(unique(diameter2()))
-      
-      updateSelectInput(session, "FlowrateUnits", choices=flowrate3())
-      updateSelectInput(session, "DiameterUnits", choices=diameter3())                                     
-      
-      updateRadioButtons(session, "veloselect", selected="Volumetric")
-    }
-    else{
-    }
-    
-  })
-  
+  test_df <- data.frame(C=c('v', 'flowrate'))
+  flags <- reactive({test_df$C %in% columnSpecs()$name})
+
   observe({
-    toggleState("Vv", condition=input$veloselect!="Volumetric")
-    toggleState("Fv", condition=input$veloselect!="Linear")
+    if (flags()[1]) {
+      updateNumericInput(session, "Vv", value = filter(columnSpecs(), name == 'v')$value)
+      updateSelectInput(session, "VelocityUnits", choices = unique(c(filter(columnSpecs(), name == 'v')$units, velocityvector)))
+      updateRadioButtons(session, "veloselect", selected = "Linear")
+    } else if (flags()[2]) {                         
+      updateNumericInput(session, "Fv", value = filter(columnSpecs(), name == 'flowrate')$value)
+      updateSelectInput(session, "FlowrateUnits", choices = unique(c(filter(columnSpecs(), name == 'flowrate')$units, flowratevector)))
+      updateRadioButtons(session, "veloselect", selected = "Volumetric")
+    }
+  })
+
+  observe({
+    toggleState("Vv", condition = input$veloselect != "Volumetric")
+    toggleState("Fv", condition = input$veloselect != "Linear")
   })
   
   #------------------------------------------------------------------------------#
