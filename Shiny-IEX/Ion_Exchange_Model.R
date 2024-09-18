@@ -1439,16 +1439,16 @@ tags$style(HTML("
                                        decimalCharacter = ".")),
                               column(3,
                                      
-                                     selectInput("LengthUnits", "Length Units", c("cm", "m", "mm", "in", "ft")),
-                                     div(style ="
-                                               margin-top:-0.33em", 
-                                         selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2"))),
-                                     # div(style ="
-                                     #           margin-top:-0.01em",          
-                                         selectInput("DiameterUnits","Diameter Units",c("cm", "m", "in", "ft")),
-                                     # div(style ="
-                                     #           margin-top:-1em", 
-                                         selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
+                                          selectInput("LengthUnits", "Length Units", c("cm", "m", "mm", "in", "ft")),
+                                      # div(style ="
+                                      #           margin-top:-0.33em", 
+                                          selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")),
+                                      # div(style ="
+                                      #           margin-top:-0.01em",          
+                                          selectInput("DiameterUnits","Diameter Units",c("cm", "m", "in", "ft")),
+                                      # div(style ="
+                                      #           margin-top:-1em", 
+                                          selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
                             
                             
                             # column(3,
@@ -1569,7 +1569,8 @@ tags$style(HTML("
              h5("Developed By"),
              textOutput("how2use6"),
              textOutput("how2use7"),
-             textOutput("how2use8"))
+             textOutput("how2use8"),
+             textOutput("how2use9"))
              
              
     
@@ -1669,6 +1670,7 @@ server <- function(input, output, session) {
   output$how2use6<-renderText("David Colantonio")
   output$how2use7<-renderText("Levi Haupert")
   output$how2use8<-renderText("Jonathan Burkhardt")
+  output$how2use9<-renderText("Cole Sandlin")
   
   output$CounterIonPlot<-eventReactive(input$run_button, {
     print("The above graph shows the concentration of major inorganic ions over time predicted from the Ion Exchange Model.")
