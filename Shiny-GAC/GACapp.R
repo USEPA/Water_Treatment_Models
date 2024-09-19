@@ -609,17 +609,17 @@ ui <- fluidPage(
                                      br(),
                                      
                                      fluidRow(
-                                       column(2,HTML(paste0("<h4>","<strong>", "Resin Characteristics", "</strong>", "</h4>"))),
+                                       column(2,HTML(paste0("<h4>","<strong>", "Media Characteristics", "</strong>", "</h4>"))),
                                        column(1,),
                                        column(3,shinyWidgets::autonumericInput(
                                          inputId = "brv",
-                                         label="Bead Radius",
+                                         label="Particle Radius",
                                          value = 0.0513,
                                          decimalPlaces = 4,
                                          digitGroupSeparator = ",",
                                          decimalCharacter = ".")),
                                        
-                                       column(3, selectInput("brunits", "Bead Radius Units", c("cm", "m", "mm", "in", "ft")))),
+                                       column(3, selectInput("brunits", "Particle Radius Units", c("cm", "m", "mm", "in", "ft")))),
                                      
                                      fluidRow(
                                        column(2, ),
