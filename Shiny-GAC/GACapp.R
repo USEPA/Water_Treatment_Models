@@ -672,8 +672,7 @@ tags$style(HTML("
               br(), br(),
               
               fluidRow(
-                column(2, HTML(paste0("<h4>","<strong>", "Media Characteristics", "</strong>", "</h4>"))),
-                column(1,),
+                column(3, HTML(paste0("<h4>","<strong>", "Media Characteristics", "</strong>", "</h4>"))),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "brv",
                   label="Particle Radius",
@@ -685,8 +684,7 @@ tags$style(HTML("
                 column(3, selectInput("prunits", "Particle Radius Units", c("cm", "m", "mm", "in", "ft")))),
               
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "EPORv",
                   label="Bed Porosity",
@@ -698,8 +696,7 @@ tags$style(HTML("
                 ))),
               
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "pdv",
                   label="Particle Density",
@@ -712,8 +709,7 @@ tags$style(HTML("
                 column(3, selectInput("pdunits", "Particle Density Units", c("g/ml")))),
               
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "adv",
                   label="Apparent Density",
@@ -726,8 +722,7 @@ tags$style(HTML("
                 column(3, selectInput("adunits", "App. Density Units", c("g/ml")))),
               
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "psdfrv",
                   label="PSDFR",
@@ -741,8 +736,7 @@ tags$style(HTML("
               hr(),
               
               fluidRow(
-                column(2, HTML(paste0("<h4>","<strong>", "Column Specifications", "</strong>", "</h4>"))),
-                column(1,),                                          
+                column(3, HTML(paste0("<h4>","<strong>", "Column Specifications", "</strong>", "</h4>"))),                                        
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "Lv",
                   label="Length",
@@ -755,8 +749,7 @@ tags$style(HTML("
 
               fluidRow(
                 #This radio button toggles between Linear and volumetric flowrate
-                column(2, radioButtons("veloselect", "", c("Volumetric", "Linear"))),
-                column(1,),                                          
+                column(3, radioButtons("veloselect", "", c("Volumetric", "Linear"))),                                        
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "Vv",
                   label="Velocity",
@@ -768,8 +761,7 @@ tags$style(HTML("
                 column(3, selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")))),
                 
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "Dv",
                   label="Diameter",
@@ -781,8 +773,7 @@ tags$style(HTML("
                 column(3, selectInput("DiameterUnits","Diameter Units",c("cm", "ft","mm", "m", "in")))),
 
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "Fv",
                   label="Flow Rate",
@@ -794,8 +785,7 @@ tags$style(HTML("
                 column(3, selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
 
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "wv",
                   label="Weight",
@@ -808,8 +798,7 @@ tags$style(HTML("
                 column(3, selectInput("wunits", "Weight Units", c("g", "kg", "lbs", "oz")))),
                                 
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "tortuv",
                   label="Tortuosity",
@@ -821,13 +810,11 @@ tags$style(HTML("
                 ))),
               
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, selectInput("conc_units", "Concentration Units", c("ug", "ng", "mg")))),
 
               fluidRow(
-                column(2,),
-                column(1,),
+                column(3,),
                 column(3, selectInput("tunits2", "Time Units", c("days", "hours")))),       
             ),
 
