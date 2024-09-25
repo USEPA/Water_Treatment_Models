@@ -516,7 +516,6 @@ read_in_files(input, paste0("config.xlsx"))
 ui <- fluidPage(
 
 
-# Experimental feature
 # Adds the EPA banner to the model
 HTML("<html lang = 'en'>"),
 
@@ -1115,7 +1114,26 @@ server <- function(input, output, session) {
   out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
   
   observeEvent(input$run_button, {
-    out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+    # Error handling
+    errorflag <- 0
+    coldensity <- (input$wv*weight_conv[input$wunits]) / (pi * (input$Dv*length_conv[input$DiameterUnits]/2)^2 * (input$Lv*length_conv[input$LengthUnits]))
+    appdensity <- input$adv*density_conv[input$adunits]
+    if (coldensity > appdensity) {
+      errorflag <- 1
+      showNotification("Error: Apparent Density value is too low.", type = "error")
+    } 
+    if (!(input$WFouling %in% wfoulingvector)) {
+      errorflag <- 1
+      showNotification("Error: Water type is not accepted. Please select one from the list.", type = "error")
+    } 
+    if (!(input$CFouling %in% cfoulingvector)) {
+      errorflag <- 1
+      showNotification("Error: Chemical type is not accepted. Please select one from the list.", type = "error")
+    } 
+    if (errorflag != 1) {
+      showNotification("Running model.", type = "message") # Notifies the user that the model is being run
+      out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+    }
   })
   
   
@@ -1140,6 +1158,8 @@ server <- function(input, output, session) {
   
   observeEvent(input$fitting,{
     if (nrow(out()) > 2) {
+      showNotification("This might take several minutes.", type = "warning")
+      showNotification("Fitting data.", type = "message")
       out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
       output_fit(out_fit()[[1]])
       kdata_fit(out_fit()[[2]])
@@ -1167,9 +1187,14 @@ server <- function(input, output, session) {
     write.csv(kdat_fitted(), paste(file_direc, 'Kdata.csv', sep=''), row.names=FALSE)
     kdat<- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep=''))
     dataOutputServer("output-2", data = kdat)
-    out(out_fit()[[1]])
-    write.csv(data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling)), paste(file_direc, 'Foulingdata.csv', sep=''), row.names=FALSE) # Saves water fouling data to an Excel file to be read-in after the session is reloaded # Experimental feature
-    session$reload() # When K data is used, the session is reloaded in order to update the DataEditR tables # Experimental feature
+    if ((read.csv("temp_file/Kdata.csv")[1,2]) == 0) {
+      showNotification("Error: K Data is empty.", type = "error")
+    } else {
+      showNotification("Updating K Data.", type = "message")
+      out(out_fit()[[1]])
+      write.csv(data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling)), paste(file_direc, 'Foulingdata.csv', sep=''), row.names=FALSE) # Saves water fouling data to an Excel file to be read-in after the session is reloaded
+      session$reload() # When K Data is used, the session is reloaded in order to update the DataEditR tables
+    }
   })
   
   
