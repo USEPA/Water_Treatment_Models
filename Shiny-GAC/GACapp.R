@@ -1133,6 +1133,7 @@ server <- function(input, output, session) {
     if (errorflag != 1) {
       showNotification("Running model.", type = "message") # Notifies the user that the model is being run
       out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+      updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
     }
   })
   
@@ -1166,6 +1167,7 @@ server <- function(input, output, session) {
       kdataframe<-cbind(kdataframe, kdata_fit())
       kdata_fit_save(kdataframe)
       output$FitK<-renderTable({kdataframe})
+      updateTabsetPanel(session, "inTabset", selected = "Fitted Data") # Switches to Fitted Data tab when fit button is pressed
     } else {
       output$FitK<-renderText({'No fitting data available'})
     }
