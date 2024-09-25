@@ -1168,6 +1168,8 @@ server <- function(input, output, session) {
     kdat<- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep=''))
     dataOutputServer("output-2", data = kdat)
     out(out_fit()[[1]])
+    write.csv(data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling)), paste(file_direc, 'Foulingdata.csv', sep=''), row.names=FALSE) # Saves water fouling data to an Excel file to be read-in after the session is reloaded # Experimental feature
+    session$reload() # When K data is used, the session is reloaded in order to update the DataEditR tables # Experimental feature
   })
   
   
