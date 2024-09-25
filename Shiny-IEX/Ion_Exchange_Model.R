@@ -90,7 +90,7 @@ velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft
 timevector <- c("hr","day")
 flowratevector<-c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")
 diametervector<-c("cm", "m", "mm", "in", "ft")
-modelvector<-c("HSDM", "PSDM")
+modelvector<-c("Gel-Type (HSDM)", "Macroporous (PSDM)")
 
 
 #------------------------------------------------------------------------------#
@@ -926,7 +926,7 @@ model_prep <- function (input, iondata, concdata, nt_report) {
     Vv = input$Fv * volumetric_conv[input$FlowrateUnits]/(pi/4 * ((input$Dv * length_conv[input$DiameterUnits])**2))
   }
   
-  if (input$model=="HSDM") {
+  if (input$model=="Gel-Type (HSDM)") {
     paramdataframe <- data.frame(
       name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
       value=c(input$Qv,
@@ -938,7 +938,7 @@ model_prep <- function (input, iondata, concdata, nt_report) {
       input$nzv, 1),
       units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, input$timeunits)
     ) 
-  } else if (input$model=="PSDM") {
+  } else if (input$model=="Macroporous (PSDM)") {
     paramdataframe <- data.frame(
       name=c("Q", "EBED", "EPOR", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
       value=c(input$Qv,
@@ -991,7 +991,7 @@ model_prep <- function (input, iondata, concdata, nt_report) {
       ## convert Ds to cm/s^2
       corr_ions[item, 'Ds'] <- iondata[item, 'Ds'] * ds_conv[iondata[item, 'Ds_units']]
       
-      if (input$model=="PSDM") {
+      if (input$model=="Macroporous (PSDM)") {
         # Dp units are the same as Ds
         corr_ions[item, 'Dp'] <- iondata[item, 'Dp'] * ds_conv[iondata[item, 'Dp_units']]
       }
@@ -1003,10 +1003,10 @@ model_prep <- function (input, iondata, concdata, nt_report) {
   
 
   if (error == 0) {
-    if (input$model=="HSDM") {
+    if (input$model=="Gel-Type (HSDM)") {
       return (HSDMIX_solve(paramdataframe, corr_ions, corr_cin, timeconverter, nt_report))
     }
-    else if (input$model=="PSDM") {
+    else if (input$model=="Macroporous (PSDM)") {
       return (PSDMIX_solve(paramdataframe, corr_ions, corr_cin, timeconverter, nt_report))
     }
   } else {
@@ -1301,7 +1301,7 @@ tags$style(HTML("
              
              sidebarLayout(
                sidebarPanel(
-                 selectInput("model", "Model Selection", c("HSDM", "PSDM")),
+                 selectInput("model", "Model Selection", c("Gel-Type (HSDM)", "Macroporous (PSDM)")),
                  fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
                  tableOutput("selectedfile"),
                   br(),
@@ -1618,7 +1618,7 @@ server <- function(input, output, session) {
   # })
   
   observe({
-    toggleState("EPORv", condition=input$model!="HSDM")
+    toggleState("EPORv", condition=input$model!="Gel-Type (HSDM)")
   })
   
   
