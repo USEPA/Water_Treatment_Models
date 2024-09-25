@@ -90,6 +90,8 @@ flowratevector<-c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm",
 diametervector<-c("cm", "m", "mm", "in", "ft")
 density_conv<-c("g/ml"=1)
 weightvector<-c("kg", "g", "lb")
+wfoulingvector <- c("Organic Free", "Rhine", "Portage", "Karlsruhe", "Wausau", "Houghton") # Used to store accepted water types
+cfoulingvector <- c("halogenated alkenes", "halogenated alkanes", "halogenated alkanes QSPR", "trihalo-methanes", "aromatics", "nitro compounds", "chlorinated hydrocarbon", "phenols", "PNAs", "pesticides", "PFAS") # Used to store accepted chemical types
 
 weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.204)
 
@@ -148,6 +150,17 @@ read_in_files<-function(input, file){
       file_name <- data.frame(name=c(file))
       write.csv(file_name, 'temp_file/filename.csv', row.names=FALSE)#, col.names=FALSE)
     })
+  })
+
+  # Attempts to read-in fouling data from Excel file, if it doesn't exist it sets it to default values
+  tryCatch({
+    foulingdata<-read_excel(file, sheet='Fouling Data')
+    write.csv(foulingdata, 'temp_file/Foulingdata.csv', row.names=FALSE)
+  },
+  error=function(err){
+    print(err)
+    foulingdata <- data.frame(WaterFouling=c('Organic Free'), ChemicalFouling=c('halogenated alkenes'))
+    write.csv(foulingdata, "temp_file/Foulingdata.csv", row.names=FALSE)
   })
 }
 
@@ -1026,6 +1039,16 @@ server <- function(input, output, session) {
     diamv<-c(filter(columnSpecs(), name=='diameter')$units, diametervector)
     return(unique(diamv))})
   
+  # Updates water type select input choiecs
+  wfoulingvec<-reactive({
+    wfoulingv<-c(select(read.csv("temp_file/Foulingdata.csv"), WaterFouling), wfoulingvector)
+    return(unique(wfoulingv))})
+
+  # Updates chemical type select input choices
+  cfoulingvec<-reactive({
+    cfoulingv<-c(select(read.csv("temp_file/Foulingdata.csv"), ChemicalFouling), cfoulingvector)
+    return(unique(cfoulingv))})
+  
   #------------------------------------------------------------------------------#
         #Updating default values with the values that were uploaded#
 #------------------------------------------------------------------------------#    
@@ -1045,6 +1068,8 @@ server <- function(input, output, session) {
     updateSelectInput(session, "wunits", choices=weightvec())
     updateSelectInput(session, "FlowrateUnits", choices=flowvec())
     updateSelectInput(session, "DiameterUnits", choices=diamvec())
+    updateSelectInput(session, "WFouling", choices = wfoulingvec(), selected = select(read.csv("temp_file/Foulingdata.csv"), WaterFouling)) # Updates water type select input
+    updateSelectInput(session, "CFouling", choices = cfoulingvec(), selected = select(read.csv("temp_file/Foulingdata.csv"), ChemicalFouling)) # Updates chemical type select input
   })
   
   
