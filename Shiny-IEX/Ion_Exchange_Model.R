@@ -1335,8 +1335,7 @@ tags$style(HTML("
                             
                             fluidRow(
                               column(3,HTML(paste0("<h4>","<strong>", "Resin Characteristics", "</strong>", "</h4>"))),
-                              column(1,),
-                              column(2,shinyWidgets::autonumericInput(
+                              column(3,shinyWidgets::autonumericInput(
                                 inputId = "Qv",
                                 label="Resin Capacity",
                                 value = 1400,
@@ -1348,8 +1347,7 @@ tags$style(HTML("
                             
                             fluidRow(
                               column(3, ),
-                              column(1,),
-                              column(2, shinyWidgets::autonumericInput(
+                              column(3, shinyWidgets::autonumericInput(
                                 inputId = "rbv",
                                 label="Bead Radius",
                                 value = 0.03375,
@@ -1361,8 +1359,7 @@ tags$style(HTML("
                             
                             fluidRow(
                               column(3, ),
-                              column(1,),
-                              column(2, shinyWidgets::autonumericInput(
+                              column(3, shinyWidgets::autonumericInput(
                                 inputId = "EBEDv",
                                 label="Bed Porosity",
                                 value = 0.35,
@@ -1375,8 +1372,7 @@ tags$style(HTML("
                             
                             fluidRow(
                               column(3, ),
-                              column(1,),
-                              column(2, shinyWidgets::autonumericInput(
+                              column(3, shinyWidgets::autonumericInput(
                                 inputId = "EPORv",
                                 label="Bead Porosity",
                                 value = 0.2,
@@ -1400,9 +1396,8 @@ tags$style(HTML("
                                      br(),
                                      radioButtons("veloselect", "", c("Linear", "Volumetric"))),
                               
-                              column(1,),
                               
-                              column(2, #offset=1,
+                              column(3, #offset=1,
                                      
                                      shinyWidgets::autonumericInput(
                                        inputId = "Lv",
