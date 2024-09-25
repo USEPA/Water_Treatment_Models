@@ -973,7 +973,9 @@ server <- function(input, output, session) {
 
   observe({
     toggleState("Vv", condition = input$veloselect != "Volumetric")
+    toggleState("VelocityUnits", condition = input$veloselect != "Volumetric") # Velocity units are grayed out if velocity is not being used
     toggleState("Fv", condition = input$veloselect != "Linear")
+    toggleState("FlowrateUnits", condition = input$veloselect != "Linear") # Flowrate units are grayed out if flowrate is not being used
   })
   
   #------------------------------------------------------------------------------#
