@@ -924,14 +924,6 @@ server <- function(input, output, session) {
     
   })
   
-  #GUI rejects a file upload that is not an xlsx
-  output$reject<-renderPrint({
-    req(input$file1)
-    if (input$file1$type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet") { 
-      stop("Please upload a .xlsx file")
-    }
-  })
-  
   ### TODO: Should the reject be within the process_files? Or somehow before that.... so merging the above 2 items?
   
   #When a file is uploaded, the session is reloaded. We do this because there does
