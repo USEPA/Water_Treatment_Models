@@ -207,7 +207,7 @@ column_data<-function(input){
            
     ),
     value=c('Carbon',
-            input$brv*length_conv[input$brunits],
+            input$brv*length_conv[input$prunits],
             input$EPORv,
             input$psdfrv,
             input$pdv*density_conv[input$pdunits],
@@ -478,11 +478,11 @@ effdat_prep<-function(eff_pivoted) {
 #This function combines column name, values, and units into one data frame and
 #orders it in the format used in the columnSpecs sheet of the Excel file
 #------------------------------------------------------------------------------#  
-columnspecs_prep<-function(brunits, LengthUnits, wunits, FlowrateUnits, DiameterUnits, brv, EPORv, psdfrv, pdv, adv, Lv, wv, Fv, Dv, tortuv, conc_units, tunits2){
+columnspecs_prep<-function(prunits, LengthUnits, wunits, FlowrateUnits, DiameterUnits, brv, EPORv, psdfrv, pdv, adv, Lv, wv, Fv, Dv, tortuv, conc_units, tunits2){
   data.frame(
     name=c('CarbondID', 'radius', 'porosity', 'psdfr', 'particleDensity', 'apparentDensity', 'length', 'weight', 'flowrate', 'diameter', 'tortuosity', 'influentID', 'effluentID', 'units', 'time'),
     values=c('F400', brv, EPORv, psdfrv, pdv, adv, Lv, wv, Fv, Dv, tortuv, 'influent', 'effluent', conc_units, tunits2),
-    units=c(NA, brunits, NA, NA, 'g/ml', 'g/ml', LengthUnits, wunits, FlowrateUnits, DiameterUnits, NA, NA, NA, NA, NA)
+    units=c(NA, prunits, NA, NA, 'g/ml', 'g/ml', LengthUnits, wunits, FlowrateUnits, DiameterUnits, NA, NA, NA, NA, NA)
   )
 }
 
@@ -566,17 +566,17 @@ ui <- fluidPage(
               br(), br(),
               
               fluidRow(
-                column(2, HTML(paste0("<h4>","<strong>", "Resin Characteristics", "</strong>", "</h4>"))),
+                column(2, HTML(paste0("<h4>","<strong>", "Media Characteristics", "</strong>", "</h4>"))),
                 column(1,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "brv",
-                  label="Bead Radius",
+                  label="Particle Radius",
                   value = 0.0513,
                   decimalPlaces = 4,
                   digitGroupSeparator = ",",
                   decimalCharacter = "."
                 )),
-                column(3, selectInput("brunits", "Bead Radius Units", c("cm", "m", "mm", "in", "ft")))),
+                column(3, selectInput("prunits", "Particle Radius Units", c("cm", "m", "mm", "in", "ft")))),
               
               fluidRow(
                 column(2,),
@@ -1199,7 +1199,7 @@ server <- function(input, output, session) {
   })
   
   columnspecssave <- reactive({
-    df<-columnspecs_prep(input$brunits, input$LengthUnits, input$wunits, input$FlowrateUnits, input$DiameterUnits, input$brv, input$EPORv, input$psdfrv, input$pdv, input$adv, input$Lv, input$wv, input$Fv, input$Dv, input$tortuv, input$conc_units, input$tunits2)
+    df<-columnspecs_prep(input$prunits, input$LengthUnits, input$wunits, input$FlowrateUnits, input$DiameterUnits, input$brv, input$EPORv, input$psdfrv, input$pdv, input$adv, input$Lv, input$wv, input$Fv, input$Dv, input$tortuv, input$conc_units, input$tunits2)
     colnames(df) <- c('name', 'value', 'units')
     return(df)
   })
