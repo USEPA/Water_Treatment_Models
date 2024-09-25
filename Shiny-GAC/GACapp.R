@@ -623,289 +623,291 @@ tags$style(HTML("
   useShinyjs(),
   navbarPage("",
 
+    tabsetPanel(id = "inTabset", # Allows for automatic switching between tab panels
 #------------------------------------------------------------------------------#
                                     #Input Tab#
 #------------------------------------------------------------------------------#             
-    tabPanel("Input",
+      tabPanel("Input",
 
-#------------------------------------------------------------------------------#
-                              #Side Bar on Input Tab#
-#------------------------------------------------------------------------------#                      
-      sidebarLayout(
-        sidebarPanel(
-          fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
-          tableOutput("selectedfile"),
+  #------------------------------------------------------------------------------#
+                                #Side Bar on Input Tab#
+  #------------------------------------------------------------------------------#                      
+        sidebarLayout(
+          sidebarPanel(
+            fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
+            tableOutput("selectedfile"),
 
-          br(),
+            br(),
 
-          h4("Fouling"),  
-             
-          selectInput("WFouling", "Water Type", list(
-            'Organic Free',
-            'Rhine',
-            'Portage',
-            'Karlsruhe',
-            'Wausau',
-            'Houghton')),
-          
-          selectInput("CFouling", "Chemical Type", list(
-            'halogenated alkenes',
-            'halogenated alkanes',
-            'halogenated alkanes QSPR',
-            'trihalo-methanes',
-            'aromatics',
-            'nitro compounds',
-            'chlorinated hydrocarbon',
-            'phenols',
-            'PNAs',
-            'pesticides',
-            'PFAS')),
+            h4("Fouling"),  
+              
+            selectInput("WFouling", "Water Type", list(
+              'Organic Free',
+              'Rhine',
+              'Portage',
+              'Karlsruhe',
+              'Wausau',
+              'Houghton')),
             
-          br(),
-          
-          sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
-          sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
-          
-          br(),
-          
-          actionButton("run_button", "Run Analysis", icon=icon("play")),
-          
-          br(), br(),
-          
-          actionButton("Stop", "Stop App", icon=icon("square"), style="color: #000000; background-color: #ff0000; border-color: #e60000")
-        ),
+            selectInput("CFouling", "Chemical Type", list(
+              'halogenated alkenes',
+              'halogenated alkanes',
+              'halogenated alkanes QSPR',
+              'trihalo-methanes',
+              'aromatics',
+              'nitro compounds',
+              'chlorinated hydrocarbon',
+              'phenols',
+              'PNAs',
+              'pesticides',
+              'PFAS')),
+              
+            br(),
+            
+            sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
+            sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
+            
+            br(),
+            
+            actionButton("run_button", "Run Analysis", icon=icon("play")),
+            
+            br(), br(),
+            
+            actionButton("Stop", "Stop App", icon=icon("square"), style="color: #000000; background-color: #ff0000; border-color: #e60000")
+          ),
 
-#------------------------------------------------------------------------------#
-                            #Main Panel on Input Tab#
-#------------------------------------------------------------------------------#                      
-        mainPanel(
-          tabsetPanel(
-            tabPanel("Column Parameters",
-              
-              br(), br(),
-              
-              fluidRow(
-                column(3, HTML(paste0("<h4>","<strong>", "Media Characteristics", "</strong>", "</h4>"))),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "prv",
-                  label="Particle Radius",
-                  value = 0.0513,
-                  decimalPlaces = 4,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                )),
-                column(3, selectInput("prunits", "Particle Radius Units", c("cm", "m", "mm", "in", "ft")))),
-              
-              fluidRow(
-                column(3,),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "EPORv",
-                  label="Bed Porosity",
-                  value = "0.641",
-                  currencySymbolPlacement = "p",
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                ))),
-              
-              fluidRow(
-                column(3,),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "pdv",
-                  label="Particle Density",
-                  value = 0.803,
-                  currencySymbolPlacement = "p",
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                )),
-                column(3, selectInput("pdunits", "Particle Density Units", c("g/ml")))),
-              
-              fluidRow(
-                column(3,),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "adv",
-                  label="Apparent Density",
-                  value = 0.5,
-                  currencySymbolPlacement = "p",
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                )),
-                column(3, selectInput("adunits", "App. Density Units", c("g/ml")))),
-              
-              fluidRow(
-                column(3,),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "psdfrv",
-                  label="PSDFR",
-                  value = 5,
-                  currencySymbolPlacement = "p",
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                ))),
-              
-              hr(),
-              
-              fluidRow(
-                column(3, HTML(paste0("<h4>","<strong>", "Column Specifications", "</strong>", "</h4>"))),                                        
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "Lv",
-                  label="Length",
-                  value = 8,
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                )),
-                column(3, selectInput("LengthUnits", "Length Units", c("cm", "ft", "m", "mm", "in")))),
-
-              fluidRow(
-                #This radio button toggles between Linear and volumetric flowrate
-                column(3, radioButtons("veloselect", "", c("Volumetric", "Linear"))),                                        
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "Vv",
-                  label="Velocity",
-                  value = 0.123,
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                )),
-                column(3, selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")))),
+  #------------------------------------------------------------------------------#
+                              #Main Panel on Input Tab#
+  #------------------------------------------------------------------------------#                      
+          mainPanel(
+            tabsetPanel(
+              tabPanel("Column Parameters",
                 
-              fluidRow(
-                column(3,),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "Dv",
-                  label="Diameter",
-                  value = 10,
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                )),
-                column(3, selectInput("DiameterUnits","Diameter Units",c("cm", "ft","mm", "m", "in")))),
+                br(), br(),
+                
+                fluidRow(
+                  column(3, HTML(paste0("<h4>","<strong>", "Media Characteristics", "</strong>", "</h4>"))),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "prv",
+                    label="Particle Radius",
+                    value = 0.0513,
+                    decimalPlaces = 4,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  )),
+                  column(3, selectInput("prunits", "Particle Radius Units", c("cm", "m", "mm", "in", "ft")))),
+                
+                fluidRow(
+                  column(3,),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "EPORv",
+                    label="Bed Porosity",
+                    value = "0.641",
+                    currencySymbolPlacement = "p",
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  ))),
+                
+                fluidRow(
+                  column(3,),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "pdv",
+                    label="Particle Density",
+                    value = 0.803,
+                    currencySymbolPlacement = "p",
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  )),
+                  column(3, selectInput("pdunits", "Particle Density Units", c("g/ml")))),
+                
+                fluidRow(
+                  column(3,),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "adv",
+                    label="Apparent Density",
+                    value = 0.5,
+                    currencySymbolPlacement = "p",
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  )),
+                  column(3, selectInput("adunits", "App. Density Units", c("g/ml")))),
+                
+                fluidRow(
+                  column(3,),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "psdfrv",
+                    label="PSDFR",
+                    value = 5,
+                    currencySymbolPlacement = "p",
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  ))),
+                
+                hr(),
+                
+                fluidRow(
+                  column(3, HTML(paste0("<h4>","<strong>", "Column Specifications", "</strong>", "</h4>"))),                                        
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "Lv",
+                    label="Length",
+                    value = 8,
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  )),
+                  column(3, selectInput("LengthUnits", "Length Units", c("cm", "ft", "m", "mm", "in")))),
 
-              fluidRow(
-                column(3,),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "Fv",
-                  label="Flow Rate",
-                  value = 500,
-                  decimalPlaces = 2,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                )),
-                column(3, selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
+                fluidRow(
+                  #This radio button toggles between Linear and volumetric flowrate
+                  column(3, radioButtons("veloselect", "", c("Volumetric", "Linear"))),                                        
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "Vv",
+                    label="Velocity",
+                    value = 0.123,
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  )),
+                  column(3, selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")))),
+                  
+                fluidRow(
+                  column(3,),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "Dv",
+                    label="Diameter",
+                    value = 10,
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  )),
+                  column(3, selectInput("DiameterUnits","Diameter Units",c("cm", "ft","mm", "m", "in")))),
 
-              fluidRow(
-                column(3,),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "wv",
-                  label="Weight",
-                  value = 8500,
-                  currencySymbolPlacement = "p",
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                )),
-                column(3, selectInput("wunits", "Weight Units", c("g", "kg", "lbs", "oz")))),
-                                
-              fluidRow(
-                column(3,),
-                column(3, shinyWidgets::autonumericInput(
-                  inputId = "tortuv",
-                  label="Tortuosity",
-                  value = 1,
-                  currencySymbolPlacement = "p",
-                  decimalPlaces = 3,
-                  digitGroupSeparator = ",",
-                  decimalCharacter = "."
-                ))),
-              
-              fluidRow(
-                column(3,),
-                column(3, selectInput("conc_units", "Concentration Units", c("ug", "ng", "mg")))),
+                fluidRow(
+                  column(3,),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "Fv",
+                    label="Flow Rate",
+                    value = 500,
+                    decimalPlaces = 2,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  )),
+                  column(3, selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
 
-              fluidRow(
-                column(3,),
-                column(3, selectInput("tunits2", "Time Units", c("days", "hours")))),       
-            ),
+                fluidRow(
+                  column(3,),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "wv",
+                    label="Weight",
+                    value = 8500,
+                    currencySymbolPlacement = "p",
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  )),
+                  column(3, selectInput("wunits", "Weight Units", c("g", "kg", "lbs", "oz")))),
+                                  
+                fluidRow(
+                  column(3,),
+                  column(3, shinyWidgets::autonumericInput(
+                    inputId = "tortuv",
+                    label="Tortuosity",
+                    value = 1,
+                    currencySymbolPlacement = "p",
+                    decimalPlaces = 3,
+                    digitGroupSeparator = ",",
+                    decimalCharacter = "."
+                  ))),
+                
+                fluidRow(
+                  column(3,),
+                  column(3, selectInput("conc_units", "Concentration Units", c("ug", "ng", "mg")))),
 
-            #Properties Tab
-            tabPanel("Compounds",
-              h4("Compound List"),
-              dataEditUI("edit-1"),
-              br(),
-              h4("K Data"),
-              dataEditUI("edit-2"),
-              br(),
-              h4("Influent Concentration Data"),
-              dataEditUI("edit-3"),
-              br(),
-              h4("Effluent Concentration Data"),
-              dataEditUI("edit-4")      
-            ),
+                fluidRow(
+                  column(3,),
+                  column(3, selectInput("tunits2", "Time Units", c("days", "hours")))),       
+              ),
+
+              #Properties Tab
+              tabPanel("Compounds",
+                h4("Compound List"),
+                dataEditUI("edit-1"),
+                br(),
+                h4("K Data"),
+                dataEditUI("edit-2"),
+                br(),
+                h4("Influent Concentration Data"),
+                dataEditUI("edit-3"),
+                br(),
+                h4("Effluent Concentration Data"),
+                dataEditUI("edit-4")      
+              ),
+            )
+          )
+        )                
+      ),
+
+  #------------------------------------------------------------------------------#
+                                  #Output Tab#
+  #------------------------------------------------------------------------------#             
+      tabPanel("Output",
+
+  #------------------------------------------------------------------------------#
+                            #Side Bar on Output Tab#
+  #------------------------------------------------------------------------------#                        
+        sidebarLayout(
+          sidebarPanel(
+            selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
+            selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
+            
+            br(),
+            
+            checkboxInput("computeddata", "Computed Data", TRUE),
+            checkboxInput("effluentdata", "Effluent Data", FALSE),
+            checkboxInput("influentdata", "Influent Data", FALSE),
+            
+            br(),
+            
+            HTML(paste0("<h5>","<strong>", "Effluent Fitting", "</strong>", "</h5>")),
+            
+            radioButtons("xn", "Options for 1/n increment", choices=c(0.01, 0.025, 0.05), inline=TRUE),
+            sliderInput("pm", "Range of K values to test (± %)",0, 50, 30, step=5),
+            
+            actionButton('fitting', 'Fit Data'),
+            
+            br(), br(), br(),
+            
+            downloadButton("save_button", "Save Data"),
+            
+            actionButton("Stop", "Stop App", icon=icon("square"), style="color: #000000; background-color: #ff0000; border-color: #e60000")                    
+          ),
+
+  #------------------------------------------------------------------------------#
+                        #Main Panel on Output Tab#
+  #------------------------------------------------------------------------------#                             
+          mainPanel(
+            shinycssloaders::withSpinner(plotlyOutput("Plot")),#Counterions
+
+            br(),
+
+            textOutput("CounterIonPlot"),    
+            plotlyOutput('Plot2'),      
           )
         )
-      )                
-    ),
+      ),
 
-#------------------------------------------------------------------------------#
-                                #Output Tab#
-#------------------------------------------------------------------------------#             
-    tabPanel("Output",
-
-#------------------------------------------------------------------------------#
-                          #Side Bar on Output Tab#
-#------------------------------------------------------------------------------#                        
-      sidebarLayout(
-        sidebarPanel(
-          selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
-          selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
-          
-          br(),
-          
-          checkboxInput("computeddata", "Computed Data", TRUE),
-          checkboxInput("effluentdata", "Effluent Data", FALSE),
-          checkboxInput("influentdata", "Influent Data", FALSE),
-          
-          br(),
-          
-          HTML(paste0("<h5>","<strong>", "Effluent Fitting", "</strong>", "</h5>")),
-          
-          radioButtons("xn", "Options for 1/n increment", choices=c(0.01, 0.025, 0.05), inline=TRUE),
-          sliderInput("pm", "Range of K values to test (± %)",0, 50, 30, step=5),
-          
-          actionButton('fitting', 'Fit Data'),
-          
-          br(), br(), br(),
-          
-          downloadButton("save_button", "Save Data"),
-          
-          actionButton("Stop", "Stop App", icon=icon("square"), style="color: #000000; background-color: #ff0000; border-color: #e60000")                    
-        ),
-
-#------------------------------------------------------------------------------#
-                      #Main Panel on Output Tab#
-#------------------------------------------------------------------------------#                             
-        mainPanel(
-          shinycssloaders::withSpinner(plotlyOutput("Plot")),#Counterions
-
-          br(),
-
-          textOutput("CounterIonPlot"),    
-          plotlyOutput('Plot2'),      
-        )
-      )
-    ),
-
-#------------------------------------------------------------------------------#
-                                #Fitted Data Tab#
-#------------------------------------------------------------------------------#               
-    tabPanel('Fitted Data', shinycssloaders::withSpinner(uiOutput('FitK')),
-      actionButton('Use', 'Use Data'),
-      h6('Note: This will replace the K Data in the ions tab on the Input tab and the modeled output on the Output tab.')           
-    )     
+  #------------------------------------------------------------------------------#
+                                  #Fitted Data Tab#
+  #------------------------------------------------------------------------------#               
+      tabPanel('Fitted Data', shinycssloaders::withSpinner(uiOutput('FitK')),
+        actionButton('Use', 'Use Data'),
+        h6('Note: This will replace the K Data in the ions tab on the Input tab and the modeled output on the Output tab.')           
+      )     
+    )
   )
 )
 
