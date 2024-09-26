@@ -1037,6 +1037,28 @@ HSDMIX_in_hours_mgl<-function(HSDMIXoutput, ions, time){
   
 }
 
+# Converts output concentration units to match Ion List
+HSDMIX_in_hours_meq_ng<-function(HSDMIXoutput, ions, time){
+
+  allchems_meq<-HSDMIXoutput
+  iondata<-ions
+  timedata<-time
+  
+  PFOA_mass_meq<-subset(iondata, name == "PFOA")$mw/subset(iondata, name == "PFOA")$valence
+
+  correctedchemsframe<-data.frame(allchems_meq)
+  correctedchemsframe$PFOA <- correctedchemsframe$PFOA * PFOA_mass_meq / mass_conv["ng"] # meq to ng
+  allchem<-cbind(time, correctedchemsframe)
+  allchemgathered<-tidyr::gather(correctedchemsframe)
+  nameandconcs<-data.frame(name=allchemgathered[,1],
+                           conc=allchemgathered[,2])
+  
+  allchemicalsmgl<-cbind(timedata, nameandconcs)
+  
+  return(allchemicalsmgl)
+  
+}
+
 
 
 HSDMIX_cc0<-function(HSDMIXoutput, c0values){
@@ -1530,6 +1552,7 @@ tags$style(HTML("
                  checkboxInput("effluentdata", "Effluent Data", FALSE),
                  checkboxInput("influentdata", "Influent Data", FALSE),
                  
+                 selectInput("saveunits", "Save Units", c("Input Concentration Units (meq & ng)", "Output Concentration Units (mg/L)")), # Allows user to select which units are used in the save file
                  downloadButton("save_button", "Save Data")
                ),
                
@@ -2046,6 +2069,7 @@ server <- function(input, output, session) {
   })
   
   allchemicals_hours_mgl<-reactive({HSDMIX_in_hours_mgl(allchemicals_hours_meq(), iondat(), timeframe())})
+  allchemicals_hours_meq_ng<-reactive({HSDMIX_in_hours_meq_ng(allchemicals_hours_meq(), iondat(), timeframe())})
   
   
   #------------------------------------------------------------------------------#
@@ -2275,7 +2299,11 @@ server <- function(input, output, session) {
   
   
   outputsave<-reactive({
-    chemicalsforsaving<-tidyr::spread(allchemicals_hours_mgl(), "name", "conc")
+    if (input$saveunits == "Input Concentration Units (meq & ng)") { 
+      chemicalsforsaving<-tidyr::spread(allchemicals_hours_meq_ng(), "name", "conc")
+    } else if (input$saveunits == "Output Concentration Units (mg/L)") { 
+      chemicalsforsaving<-tidyr::spread(allchemicals_hours_mgl(), "name", "conc")
+    }
     justnames<-colnames(chemicalsforsaving)
     fixednames<-c("time", justnames[2:length(justnames)])
     colnames(chemicalsforsaving)<-fixednames
