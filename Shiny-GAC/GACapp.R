@@ -1105,11 +1105,11 @@ server <- function(input, output, session) {
 #------------------------------------------------------------------------------#  
   out<-reactiveVal(data.frame(Chemicals=c(0,0), time=c(0,0)))
   
-  observeEvent(input$run_button, {
-    # Error handling
+  error_handling <- eventReactive(input$run_button, {
     errorflag <- 0
     coldensity <- (input$wv*weight_conv[input$wunits]) / (pi * (input$Dv*length_conv[input$DiameterUnits]/2)^2 * (input$Lv*length_conv[input$LengthUnits]))
     appdensity <- input$adv*density_conv[input$adunits]
+
     if (coldensity > appdensity) {
       errorflag <- 1
       showNotification("Error: Apparent Density value is too low.", type = "error")
@@ -1121,8 +1121,13 @@ server <- function(input, output, session) {
     if (!(input$CFouling %in% cfoulingvector)) {
       errorflag <- 1
       showNotification("Error: Chemical type is not accepted. Please select one from the list.", type = "error")
-    } 
-    if (errorflag != 1) {
+    }
+
+    errorflag
+  })
+  
+  observeEvent(input$run_button, {
+    if (error_handling() != 1) {
       showNotification("Running model.", type = "message") # Notifies the user that the model is being run
       out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
       updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
