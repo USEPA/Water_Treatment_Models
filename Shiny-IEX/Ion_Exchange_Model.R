@@ -2040,7 +2040,12 @@ server <- function(input, output, session) {
   out<-reactiveVal()
   
   observeEvent(input$run_button, {
+    if (input$model == "PSDM") {
+      showNotification("This might take several minutes.", type = "warning")
+    }
+    showNotification("Running model.", type = "message") # Notifies the user that the model is being run # Experimental feature
     out(model_prep(input, iondat(), cindat(), nt_report))
+    updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
   })
   
   
