@@ -2039,13 +2039,36 @@ server <- function(input, output, session) {
   #model values is stored in this reactiveVal "out"
   out<-reactiveVal()
   
-  observeEvent(input$run_button, {
-    if (input$model == "Macroporous (PSDM)") {
-      showNotification("This might take several minutes.", type = "warning")
+  error_handling <- eventReactive(input$run_button, {
+    errorflag <- 0
+
+    for (item in 1:nrow(iondat())) {
+      if (!(iondat()[item, 'name'] %in% colnames(cindat()))) {
+        errorflag <- 1
+        showNotification(paste0("Error: ", paste0(iondat()[item, 'name'], " not found in Influent Concentration Points.")), type = "error")
+      }
     }
-    showNotification("Running model.", type = "message") # Notifies the user that the model is being run # Experimental feature
-    out(model_prep(input, iondat(), cindat(), nt_report))
-    updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
+    for (item in colnames(cindat())) {
+      if (item != "time") {
+        if (!(item %in% iondat()[, 'name'])) {
+          errorflag <- 1
+          showNotification(paste0("Error: ", paste0(item, " not found in Ion List.")), type = "error")
+        }
+      }
+    }
+
+    errorflag
+  })
+  
+  observeEvent(input$run_button, {
+    if (error_handling() != 1) {
+      if (input$model == "Macroporous (PSDM)") {
+        showNotification("This might take several minutes.", type = "warning")
+      }
+      showNotification("Running model.", type = "message") # Notifies the user that the model is being run # Experimental feature
+      out(model_prep(input, iondat(), cindat(), nt_report))
+      updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
+    }
   })
   
   
@@ -2066,17 +2089,26 @@ server <- function(input, output, session) {
   
   
   #HSDMIX outputs a list, so this takes the list and binds them into a dataframe
-  allchemicals_hours_meq<-eventReactive(input$run_button, {for (x in 1:nrow(iondat())){
-    conc<-out()[[2]][, liquid_id(), x, outlet_id()]
-    allchemicalconcs[[x]]<-conc
-  }
+  allchemicals_hours_meq<-eventReactive(input$run_button, {
+    for (x in 1:nrow(iondat())){
+      conc<-out()[[2]][, liquid_id(), x, outlet_id()]
+      allchemicalconcs[[x]]<-conc
+    }
     allconcdf<-data.frame(allchemicalconcs)
     colnames(allconcdf)<-iondat()$name
     allconcdf
   })
   
-  allchemicals_hours_mgl<-reactive({HSDMIX_in_hours_mgl(allchemicals_hours_meq(), iondat(), timeframe())})
-  allchemicals_hours_meq_ng<-reactive({HSDMIX_in_hours_meq_ng(allchemicals_hours_meq(), iondat(), timeframe())})
+  allchemicals_hours_mgl<-reactive({
+    if (error_handling() != 1) {
+      HSDMIX_in_hours_mgl(allchemicals_hours_meq(), iondat(), timeframe())
+    }
+  })
+  allchemicals_hours_meq_ng<-reactive({
+    if (error_handling() != 1) {
+      HSDMIX_in_hours_meq_ng(allchemicals_hours_meq(), iondat(), timeframe())
+    }
+  })
   
   
   #------------------------------------------------------------------------------#
@@ -2131,7 +2163,11 @@ server <- function(input, output, session) {
   
   
   counteriondata<-reactive({allchemicals_hours_mgl()[0:counterIon_loc(),]})
-  iondata<-reactive({allchemicals_hours_mgl()[addIon_loc():nrow(allchemicals_hours_mgl()),]})
+  iondata<-reactive({
+    if (error_handling() != 1) {
+      allchemicals_hours_mgl()[addIon_loc():nrow(allchemicals_hours_mgl()),]
+    }
+  })
   
   counteriondatacc0<-reactive({computedcc0()[0:counterIon_loc(),]})
   iondatacc0<-reactive({computedcc0()[addIon_loc():nrow(allchemicals_hours_mgl()),]})
@@ -2144,22 +2180,24 @@ server <- function(input, output, session) {
   
   
   observe({
-    ## convert time units for graphing
-    # calculating kBV
-    if (input$timeunits == "Bed Volumes (x1000)") {
-      bv_conv <- get_bv_in_sec(input)
-      outputcounterions$time <- counteriondata()$hours / (bv_conv / hour2sec) / 1e3
-      outputions$time <- iondata()$hours / (bv_conv / hour2sec) / 1e3
-      
-      outputeffluent$time<- effdat_hours()$time/ (bv_conv / hour2sec) / 1e3
-      outputinfluent$hours<-cin_mgl_hours_prep()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
-      
-    } else {
-      outputcounterions$time <- counteriondata()$hours / (time_conv[input$timeunits] / hour2sec)
-      outputions$time <- iondata()$hours / (time_conv[input$timeunits] / hour2sec)
-      
-      outputeffluent$time<- effdat_hours()$time/ (time_conv[input$timeunits] / hour2sec)
-      outputinfluent$hours<-cin_mgl_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec) ## should this be $time?
+    if (error_handling() != 1) {
+      ## convert time units for graphing
+      # calculating kBV
+      if (input$timeunits == "Bed Volumes (x1000)") {
+        bv_conv <- get_bv_in_sec(input)
+        outputcounterions$time <- counteriondata()$hours / (bv_conv / hour2sec) / 1e3
+        outputions$time <- iondata()$hours / (bv_conv / hour2sec) / 1e3
+        
+        outputeffluent$time<- effdat_hours()$time/ (bv_conv / hour2sec) / 1e3
+        outputinfluent$hours<-cin_mgl_hours_prep()$hours  / (bv_conv / hour2sec) / 1e3  ## should this be $time?
+        
+      } else {
+        outputcounterions$time <- counteriondata()$hours / (time_conv[input$timeunits] / hour2sec)
+        outputions$time <- iondata()$hours / (time_conv[input$timeunits] / hour2sec)
+        
+        outputeffluent$time<- effdat_hours()$time/ (time_conv[input$timeunits] / hour2sec)
+        outputinfluent$hours<-cin_mgl_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec) ## should this be $time?
+      }
     }
   })
   
@@ -2169,22 +2207,23 @@ server <- function(input, output, session) {
   
   
   observe({
-    ### convert y-axis/mass units for graphing
-    if(input$OCunits=="c/c0"){
-      ## just replicates the returned data
-      outputcounterions$conc <-  counteriondatacc0()$conc
-      outputions$conc<-iondatacc0()$conc
-      
-      outputeffluent$conc<- effluentcc0()$conc
-      outputinfluent$conc <- influentcc0()$conc#influentcc04()$conc
-    } else {
-      outputcounterions$conc <- counteriondata()$conc / mass_conv[input$OCunits]
-      outputions$conc <- iondata()$conc / mass_conv[input$OCunits]
-      
-      outputeffluent$conc <- effdat_hours()$conc/mass_conv[input$OCunits]
-      outputinfluent$conc <- cin_mgl_hours_prep()$conc/mass_conv[input$OCunits]
+    if (error_handling() != 1) {
+      ### convert y-axis/mass units for graphing
+      if(input$OCunits=="c/c0"){
+        ## just replicates the returned data
+        outputcounterions$conc <-  counteriondatacc0()$conc
+        outputions$conc<-iondatacc0()$conc
+        
+        outputeffluent$conc<- effluentcc0()$conc
+        outputinfluent$conc <- influentcc0()$conc#influentcc04()$conc
+      } else {
+        outputcounterions$conc <- counteriondata()$conc / mass_conv[input$OCunits]
+        outputions$conc <- iondata()$conc / mass_conv[input$OCunits]
+        
+        outputeffluent$conc <- effdat_hours()$conc/mass_conv[input$OCunits]
+        outputinfluent$conc <- cin_mgl_hours_prep()$conc/mass_conv[input$OCunits]
+      }
     }
-    
   })
   
   
@@ -2271,19 +2310,31 @@ server <- function(input, output, session) {
   
   
   
-  fig<-reactive({create_plotly(counterion_data_processed(), effluent_processed(), cindat_converter_counter())})
-  counterionfigure<-reactive({fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
-                                             legend=list(orientation='h', y=1), hovermode='x unified',
-                                             xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
-                                             yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
-                                                        exponentformat='e', gridcolor = 'ffff'))})
+  fig<-reactive({
+    if (error_handling() != 1) {
+      create_plotly(counterion_data_processed(), effluent_processed(), cindat_converter_counter())
+    }
+    })
+  counterionfigure<-reactive({
+    if (error_handling() != 1) {
+      fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
+                     legend=list(orientation='h', y=1), hovermode='x unified',
+                     xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
+                     yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
+                                exponentformat='e', gridcolor = 'ffff'))
+    }
+  })
   
   bonusfig<-reactive({create_plotly2(ion_data_processed(), effluent_processed(), cindat_converter_ion())})
-  ionfigure<-reactive({bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
-                                           legend=list(orientation='h', y=1), hovermode='x unified',
-                                           xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
-                                           yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
-                                                      exponentformat='e', gridcolor = 'ffff'))})
+  ionfigure<-reactive({
+    if (error_handling() != 1) {
+      bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
+                          legend=list(orientation='h', y=1), hovermode='x unified',
+                          xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
+                          yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
+                                     exponentformat='e', gridcolor = 'ffff'))
+    }
+  })
   
   
   
