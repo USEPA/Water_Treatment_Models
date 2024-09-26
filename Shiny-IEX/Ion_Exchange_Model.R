@@ -701,7 +701,7 @@ read_name<-function(name2){
   
   df<-data.frame(name=c(name2))
   
-  write.csv(df, "filename.csv")
+  write.csv(df, "temp_file/filename.csv")
 }
 
 
@@ -714,9 +714,9 @@ process_files <- function (input, file) {
   ions<-read_xlsx(file, sheet="ions")
   cin<-read_xlsx(file, sheet="Cin")
   
-  write.csv(params, "paramsheet.csv", row.names=FALSE)
-  write.csv(ions, "ionsheet.csv", row.names=FALSE)
-  write.csv(cin, "cinsheet.csv", row.names=FALSE)
+  write.csv(params, "temp_file/paramsheet.csv", row.names=FALSE)
+  write.csv(ions, "temp_file/ionsheet.csv", row.names=FALSE)
+  write.csv(cin, "temp_file/cinsheet.csv", row.names=FALSE)
 
   
   #Checks for effluent data, if unavailable use empty dataset
@@ -726,7 +726,7 @@ process_files <- function (input, file) {
   tryCatch({
     
     eff<-read_xlsx(file, sheet='effluent')
-    write.csv(eff, "effluent.csv", row.names=FALSE)
+    write.csv(eff, "temp_file/effluent.csv", row.names=FALSE)
     
   },
   
@@ -735,7 +735,7 @@ process_files <- function (input, file) {
   },
   error=function(err){
     
-    write.csv(effluent, "effluent.csv", row.names=FALSE)
+    write.csv(effluent, "temp_file/effluent.csv", row.names=FALSE)
     
   })
   
@@ -743,7 +743,7 @@ process_files <- function (input, file) {
   tryCatch({
     
     filename<-read_xlsx(file, sheet="name")
-    write.csv(empty_name, "filename.csv", row.names=FALSE)
+    write.csv(empty_name, "temp_file/filename.csv", row.names=FALSE)
     
   },
   warning=function(war){
@@ -753,7 +753,7 @@ process_files <- function (input, file) {
     
     namedata<-data.frame(name=c(input$file1$name))
     
-    write.csv(namedata, "filename.csv", row.names=FALSE)
+    write.csv(namedata, "temp_file/filename.csv", row.names=FALSE)
     
   })
   
@@ -1692,16 +1692,16 @@ server <- function(input, output, session) {
     
     name2<-input$file1$name
     nametable<-data.frame(name=c(name2))
-    write.csv(nametable, "filename.csv")
+    write.csv(nametable, "temp_file/filename.csv")
     print(nametable)
     
   })
   
   
-  print(read.csv("filename.csv"))
+  print(read.csv("temp_file/filename.csv"))
   
  # fileuploadedname<-filter(read.csv("filename.csv"), name=='v')$value)
-  fileuploadedname<-read.csv("filename.csv")
+  fileuploadedname<-read.csv("temp_file/filename.csv")
   output$selectedfile<-renderTable(fileuploadedname)
   
   
@@ -1738,7 +1738,7 @@ server <- function(input, output, session) {
   
   #When the param sheet is read in, make it a reactiveVal so that the data can
   #Be saved between refreshes and edited
-  paramsheet<-reactiveVal(read.csv("paramsheet.csv"))
+  paramsheet<-reactiveVal(read.csv("temp_file/paramsheet.csv"))
   
   
   ##Flow rate V. Linear Velocity
@@ -1915,7 +1915,7 @@ server <- function(input, output, session) {
   #IONS TAB DATA HANDLING#
   #------------------------------------------------------------------------------#  
   
-  iondat<- dataEditServer("edit-1", data = "ionsheet.csv")
+  iondat<- dataEditServer("edit-1", data = "temp_file/ionsheet.csv")
   dataOutputServer("output-1", data = iondat)
   
   
@@ -1927,7 +1927,7 @@ server <- function(input, output, session) {
   #To break it up
   #------------------------------------------------------------------------------#   
   
-  cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
+  cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="temp_file/cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
   dataOutputServer("output-2", data = cindat)
   
   #Convert the cin data time to hours if it is not already
@@ -1971,7 +1971,7 @@ server <- function(input, output, session) {
   #EFFLUENT TAB HANDLING#
   #------------------------------------------------------------------------------# 
   
-  effluentdat<-dataEditServer("edit-3",read_args=list(colClasses=c("numeric")), data="effluent.csv")
+  effluentdat<-dataEditServer("edit-3",read_args=list(colClasses=c("numeric")), data="temp_file/effluent.csv")
   dataOutputServer("output-1", data=effluentdat)
   
   #Put effluent data into plot data format
