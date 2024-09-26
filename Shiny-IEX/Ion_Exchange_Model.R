@@ -2056,6 +2056,14 @@ server <- function(input, output, session) {
         }
       }
     }
+    if (any(is.na(iondat()))) {
+      errorflag <- 1
+      showNotification("Error: Ion List is missing data.", type = "error")
+    }
+    if (any(is.na(cindat()))) {
+      errorflag <- 1
+      showNotification("Error: Influent Concentration Points is missing data.", type = "error")
+    }
 
     errorflag
   })
