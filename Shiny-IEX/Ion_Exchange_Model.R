@@ -2040,7 +2040,7 @@ server <- function(input, output, session) {
   out<-reactiveVal()
   
   observeEvent(input$run_button, {
-    if (input$model == "PSDM") {
+    if (input$model == "Macroporous (PSDM)") {
       showNotification("This might take several minutes.", type = "warning")
     }
     showNotification("Running model.", type = "message") # Notifies the user that the model is being run # Experimental feature
