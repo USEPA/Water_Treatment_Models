@@ -904,7 +904,7 @@ tags$style(HTML("
   #------------------------------------------------------------------------------#               
       tabPanel('Fitted Data', shinycssloaders::withSpinner(uiOutput('FitK')),
         actionButton('Use', 'Use Data'),
-        h6('Note: This will replace the K Data in the ions tab on the Input tab and the modeled output on the Output tab.')           
+        h6('Note: This will replace the K Data in the compounds tab on the Input tab and the modeled output on the Output tab. The model must be run again to view the updated output.')           
       )     
     )
   )
