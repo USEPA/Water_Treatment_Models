@@ -1553,7 +1553,7 @@ tags$style(HTML("
                   checkboxInput("effluentdata", "Effluent Data", FALSE),
                   checkboxInput("influentdata", "Influent Data", FALSE),
                   
-                  selectInput("saveunits", "Save Units", c("Input Concentration Units (meq & ng)", "Output Concentration Units (mg/L)")), # Allows user to select which units are used in the save file
+                  selectInput("saveunits", "Save Units", c("Input Concentration Units", "Output Concentration Units")), # Allows user to select which units are used in the save file
                   downloadButton("save_button", "Save Data")
                 ),
                 
@@ -2368,9 +2368,9 @@ server <- function(input, output, session) {
   
   
   outputsave<-reactive({
-    if (input$saveunits == "Input Concentration Units (meq & ng)") { 
+    if (input$saveunits == "Input Concentration Units") { 
       chemicalsforsaving<-tidyr::spread(allchemicals_hours_meq_ng(), "name", "conc")
-    } else if (input$saveunits == "Output Concentration Units (mg/L)") { 
+    } else if (input$saveunits == "Output Concentration Units") { 
       chemicalsforsaving<-tidyr::spread(allchemicals_hours_mgl(), "name", "conc")
     }
     justnames<-colnames(chemicalsforsaving)
