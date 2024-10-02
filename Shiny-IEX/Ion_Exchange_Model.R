@@ -667,7 +667,7 @@ PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   }
   
   # Integration ----
-  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "bdf")
+  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "lsode") ## replace lsodes ## CDS
   # XXX: is there something we can do with diagnose(out) ?
   
   t_out = out[ , 1]/60/60 # hours
@@ -2082,7 +2082,7 @@ server <- function(input, output, session) {
       if (input$model == "Macroporous (PSDM)") {
         showNotification("This might take several minutes.", type = "warning")
       }
-      showNotification("Running model.", type = "message") # Notifies the user that the model is being run # Experimental feature
+      showNotification("Running model.", type = "message") # Notifies the user that the model is being run
       out(model_prep(input, iondat(), cindat(), nt_report))
       updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
     }
