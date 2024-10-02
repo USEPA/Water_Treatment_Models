@@ -2367,10 +2367,17 @@ server <- function(input, output, session) {
   outputOptions(output, "Plot", suspendWhenHidden = FALSE)
   outputOptions(output, "ExtraChemicals", suspendWhenHidden = FALSE)
   
-  paramdf<-reactive({data.frame(name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
-                                value=c(input$Qv, input$EBEDv, input$Lv, input$Vv, input$rbv, NA, NA, input$nrv, input$nzv, input$timeunits2),
-                                units=c(input$qunits, NA, input$LengthUnits, input$VelocityUnits, input$rbunits, NA, "cm2/s", NA, NA, input$timeunits2)
-  )})
+  paramdf<-reactive({
+    if (input$model=="Gel-Type (HSDM)") {
+      data.frame(name=c("Q", "EBED", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
+                 value=c(input$Qv, input$EBEDv, input$Lv, input$Vv, input$rbv, NA, NA, input$nrv, input$nzv, input$timeunits2),
+                 units=c(input$qunits, NA, input$LengthUnits, input$VelocityUnits, input$rbunits, NA, "cm2/s", NA, NA, input$timeunits2))
+    } else if (input$model=="Macroporous (PSDM)") {
+      data.frame(name=c("Q", "EBED", "EPOR", "L", "v", "rb", "kL", "Ds", "nr", "nz", "time"),
+                 value=c(input$Qv, input$EBEDv, input$EPORv, input$Lv, input$Vv, input$rbv, NA, NA, input$nrv, input$nzv, input$timeunits2),
+                 units=c(input$qunits, NA, NA, input$LengthUnits, input$VelocityUnits, input$rbunits, NA, "cm2/s", NA, NA, input$timeunits2))
+    }
+  })
   
   
   outputsave<-reactive({
