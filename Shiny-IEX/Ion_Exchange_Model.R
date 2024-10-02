@@ -465,14 +465,17 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   
   t_out = out[ , 1]/60/60 # hours
   x_out = out[ , 2:(NEQ+1)]
+  x_out_empty = out[ , 2:(NEQ+1)]*0
   dim(x_out) <- c(nt_report, (NR+1), NION, NZ)
+  dim(x_out_empty) <- c(nt_report, (NR+1), NION, NZ)
   
-  # Check charge blances at outlet at end of simulation XXX: Maybe move inside of HSDMIX?
-  stopifnot(all.equal(sum(x_out[nt_report, NR, , NZ]), Q))
-  stopifnot(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))
-  #stopifnot(all.equal(sum(x_out[nt_report, LIQUID, , NZ]), CT)) # XXX: TODO: tricky for timevarying infl.
-  
-  return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
+  # Check charge balances at outlet at end of simulation XXX: Maybe move inside of HSDMIX?
+  if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
+    return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
+  } else {
+    showNotification("Error: There was a problem running this model.", type = "error")
+    return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
+  }
 }
 
 #------------------------------------------------------------------------------#
@@ -669,14 +672,17 @@ PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   
   t_out = out[ , 1]/60/60 # hours
   x_out = out[ , 2:(NEQ+1)]
+  x_out_empty = out[ , 2:(NEQ+1)]*0
   dim(x_out) <- c(nt_report, (NR+1), NION, NZ)
+  dim(x_out_empty) <- c(nt_report, (NR+1), NION, NZ)
   
-  # Check charge blances at outlet at end of simulation XXX: Maybe move inside of HSDMIX?
-  stopifnot(all.equal(sum(x_out[nt_report, NR, , NZ]), Q))
-  stopifnot(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))
-  #stopifnot(all.equal(sum(x_out[nt_report, LIQUID, , NZ]), CT)) # XXX: TODO: tricky for timevarying infl.
-  
-  return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
+  # Check charge balances at outlet at end of simulation XXX: Maybe move inside of HSDMIX?
+  if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
+    return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
+  } else {
+    showNotification("Error: There was a problem running this model.", type = "error")
+    return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
+  }
 }
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
