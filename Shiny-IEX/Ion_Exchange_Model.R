@@ -1808,7 +1808,7 @@ server <- function(input, output, session) {
       velocityvector2(c(filter(paramsheet(), name=='v')$units, velocityvector))
       velocityvector3<-unique(velocityvector2())
       
-      updateSelectInput(session, "VelocityUnits", choices=velocityvector3())
+      updateSelectInput(session, "VelocityUnits", choices=velocityvector3(), selected = c(filter(paramsheet(), name=='v')$units))
       
       ##add toggle of velocity selector
       updateRadioButtons(session, "veloselect", selected="Linear")
@@ -1826,8 +1826,8 @@ server <- function(input, output, session) {
       diameter2(c(filter(paramsheet(), name=='diam')$units, diametervector))
       diameter3(unique(diameter2()))
       
-      updateSelectInput(session, "FlowrateUnits", choices=flowrate3())
-      updateSelectInput(session, "DiameterUnits", choices=diameter3())                                     
+      updateSelectInput(session, "FlowrateUnits", choices=flowrate3(), selected = c(filter(paramsheet(), name=='flrt')$units))
+      updateSelectInput(session, "DiameterUnits", choices=diameter3, selected = c(filter(paramsheet(), name=='diam')$units)())                                     
       
       updateRadioButtons(session, "veloselect", selected="Volumetric")
     }
