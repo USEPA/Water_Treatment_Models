@@ -1777,8 +1777,8 @@ server <- function(input, output, session) {
   ##Given that we can have one option, both options, or neither
   
   
-  test_df<-data.frame(C=c('v','flrt','diam'))
-  flags<-reactive({test_df$C %in% paramsheet()$name}) ##flags are in order [1] velocity [2] flowrate and [3] diameter
+  test_df<-data.frame(C=c('EPOR','v','flrt','diam'))
+  flags<-reactive({test_df$C %in% paramsheet()$name}) ##flags are in order [1] pellet porosity [2] velocity [3] flowrate and [4] diameter
   
   velocity<-reactiveVal()
   velocityvector2<-reactiveVal()
@@ -1793,22 +1793,26 @@ server <- function(input, output, session) {
   diameter3<-reactiveVal()
   
   
-  observe({if (flags()[1]){
-    # velocity read in
-    velocity(filter(paramsheet(), name=='v')$value)
-    updateNumericInput(session, "Vv", value=velocity())
-    
-    velocityvector2(c(filter(paramsheet(), name=='v')$units, velocityvector))
-    velocityvector3<-unique(velocityvector2())
-    
-    updateSelectInput(session, "VelocityUnits", choices=velocityvector3())
-    
-    ##add toggle of velocity selector
-    updateRadioButtons(session, "veloselect", selected="Linear")
-    
-  }
-    else if(flags()[2] & flags()[3]){
+  observe({
+    # Set model automatically based on presence of EPOR
+    if (flags()[1]){
+      updateSelectInput(session, "model", selected = "Macroporous (PSDM)")
+    } else {
+      updateSelectInput(session, "model", selected = "Gel-Type (HSDM)")
+    }
+    if (flags()[2]){
+      # velocity read in
+      velocity(filter(paramsheet(), name=='v')$value)
+      updateNumericInput(session, "Vv", value=velocity())
       
+      velocityvector2(c(filter(paramsheet(), name=='v')$units, velocityvector))
+      velocityvector3<-unique(velocityvector2())
+      
+      updateSelectInput(session, "VelocityUnits", choices=velocityvector3())
+      
+      ##add toggle of velocity selector
+      updateRadioButtons(session, "veloselect", selected="Linear")
+    } else if(flags()[3] & flags()[4]){
       flowrate(filter(paramsheet(), name=='flrt')$value)
       diameter(filter(paramsheet(), name=='diam')$value)
       
@@ -1830,7 +1834,6 @@ server <- function(input, output, session) {
     else{
       print("Warning: No flow data provided, defaults used")
     }
-    
   })
   
   
@@ -1871,14 +1874,14 @@ server <- function(input, output, session) {
   #with the users input.
   
   
-  modelvec<-reactive({
+  # modelvec<-reactive({
     
-    model<-c(filter(paramsheet(), name=="model")$value, modelvector)
-    updatedmodel<-unique(model)
+  #   model<-c(filter(paramsheet(), name=="model")$value, modelvector)
+  #   updatedmodel<-unique(model)
     
-    updatedmodel
+  #   updatedmodel
     
-  })
+  # })
   
   
   lengthvector2<-reactive({c(filter(paramsheet(), name=="L")$units, lengthvector)})
@@ -1894,7 +1897,7 @@ server <- function(input, output, session) {
     updateSelectInput(session, "rbunits", choices=rbvector2())
     updateSelectInput(session, "LengthUnits", choices=lengthvector3())
     updateSelectInput(session, "timeunits2", choices=timevector3())
-    updateSelectInput(session, "model", choices=modelvec())
+    # updateSelectInput(session, "model", choices=modelvec())
   })
   
   observe({
