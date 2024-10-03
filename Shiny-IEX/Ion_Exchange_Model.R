@@ -2385,9 +2385,15 @@ server <- function(input, output, session) {
   
   outputsave<-reactive({
     if (input$saveunits == "Input Concentration Units") { 
-      chemicalsforsaving<-tidyr::spread(allchemicals_hours_meq_ng(), "name", "conc")
+      # This is necessary to revert tbe automatic alphabetical sorting done by spread()
+      cols <- c(colnames(allchemicals_hours_meq_ng())[!(colnames(allchemicals_hours_meq_ng()) %in% c("name", "conc"))], unique(allchemicals_hours_meq_ng()$name))
+      chemicalsforsaving <- tidyr::spread(allchemicals_hours_meq_ng(), name, conc)
+      chemicalsforsaving <- chemicalsforsaving[,cols]
     } else if (input$saveunits == "Output Concentration Units") { 
-      chemicalsforsaving<-tidyr::spread(allchemicals_hours_mgl(), "name", "conc")
+      # This is necessary to revert tbe automatic alphabetical sorting done by spread()
+      cols <- c(colnames(allchemicals_hours_mgl())[!(colnames(allchemicals_hours_meq_ng()) %in% c("name", "conc"))], unique(allchemicals_hours_meq_ng()$name))
+      chemicalsforsaving <- tidyr::spread(allchemicals_hours_mgl(), name, conc)
+      chemicalsforsaving <- chemicalsforsaving[,cols]
     }
     justnames<-colnames(chemicalsforsaving)
     fixednames<-c("time", justnames[2:length(justnames)])
