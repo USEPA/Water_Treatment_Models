@@ -1321,288 +1321,286 @@ tags$style(HTML("
 # ")),
   
   useShinyjs(),
-  navbarPage("",
+  navbarPage("", id = "inTabset", # Allows for automatic switching between tab panels
     
     #tabPanel("",),
     
-    tabsetPanel(id = "inTabset", # Allows for automatic switching between tab panels
-      tabPanel("Input",
-              
-              sidebarLayout(
-                sidebarPanel(
-                  selectInput("model", "Model Selection", c("Gel-Type (HSDM)", "Macroporous (PSDM)")),
-                  fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
-                  tableOutput("selectedfile"),
-                    br(),
-                  sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
-                  sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
-                  
+    tabPanel("Input",
+            
+            sidebarLayout(
+              sidebarPanel(
+                selectInput("model", "Model Selection", c("Gel-Type (HSDM)", "Macroporous (PSDM)")),
+                fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
+                tableOutput("selectedfile"),
                   br(),
-                  
-                  actionButton("run_button", "Run Analysis", icon=icon("play")),
-                  textOutput("ionadded"),
-                  textOutput("concentrationadded"),
-                  textOutput("analysisran")
-                ),
+                sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
+                sliderInput("nzv", "Axial Collocation Points", 3, 18, 13),
                 
-                mainPanel(
-                  tabsetPanel(
-                    tabPanel("Column Parameters",
-                              
-                              br(),
-                              
-                              #--------------------------Resin Characteristics-------------------------------#  
-                              
-                              
-                              
-                              
-                              
-                              br(),
-                              
-                              
-                              
-                              
-                              fluidRow(
-                                column(3,HTML(paste0("<h4>","<strong>", "Resin Characteristics", "</strong>", "</h4>"))),
-                                column(3,shinyWidgets::autonumericInput(
-                                  inputId = "Qv",
-                                  label="Resin Capacity",
-                                  value = 1400,
-                                  decimalPlaces = 2,
-                                  digitGroupSeparator = ",",
-                                  decimalCharacter = ".")),
-                                column(3, selectInput("qunits", "Resin Capacity Units", c("meq/L")))),
-                              
-                              
-                              fluidRow(
-                                column(3, ),
-                                column(3, shinyWidgets::autonumericInput(
-                                  inputId = "rbv",
-                                  label="Bead Radius",
-                                  value = 0.03375,
-                                  decimalPlaces = 5,
-                                  digitGroupSeparator = ",",
-                                  decimalCharacter = ".")),
-                                column(3, selectInput("rbunits", "Bead Radius Units", c("cm", "m", "mm", "in", "ft")))),
-                              
-                              
-                              fluidRow(
-                                column(3, ),
-                                column(3, shinyWidgets::autonumericInput(
-                                  inputId = "EBEDv",
-                                  label="Bed Porosity",
-                                  value = 0.35,
-                                  currencySymbolPlacement = "p",
-                                  decimalPlaces = 3,
-                                  digitGroupSeparator = ",",
-                                  decimalCharacter = "."
-                                ))),
-                              
-                              
-                              fluidRow(
-                                column(3, ),
-                                column(3, shinyWidgets::autonumericInput(
-                                  inputId = "EPORv",
-                                  label="Bead Porosity",
-                                  value = 0.2,
-                                  currencySymbolPlacement = "p",
-                                  decimalPlaces = 3,
-                                  digitGroupSeparator = ",",
-                                  decimalCharacter = "."
-                                ))),
-                              
-                              #------------------------------------------------------------------------------#                                       
-                              
-                              hr(),
-                              #Parameters Row 2#
-                              #--------------------------Column Specifications-------------------------------#                                     
-                              fluidRow(
-                                column(3,
-                                      
-                                      HTML(paste0("<h4>","<strong>", "Column Specifications", "</strong>", "</h4>")),
-                                      
-                                      #This radio button toggles between Linear and volumetric flowrate
-                                      br(),
-                                      radioButtons("veloselect", "", c("Linear", "Volumetric"))),
-                                
-                                
-                                column(3, #offset=1,
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Lv",
-                                        label="Length",
-                                        value = 14.765, 
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."),
-                                      
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Vv",
-                                        label="Velocity",
-                                        value = 0.123, 
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."),
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Dv",
-                                        label="Diameter",
-                                        value = 4, 
-                                        decimalPlaces = 3,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = "."),
-                                      
-                                      
-                                      shinyWidgets::autonumericInput(
-                                        inputId = "Fv",
-                                        label="Flow Rate",
-                                        value = 1.546, 
-                                        decimalPlaces = 5,
-                                        digitGroupSeparator = ",",
-                                        decimalCharacter = ".")),
-                                column(3,
-                                      
-                                            selectInput("LengthUnits", "Length Units", c("cm", "m", "mm", "in", "ft")),
-                                        # div(style ="
-                                        #           margin-top:-0.33em", 
-                                            selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")),
-                                        # div(style ="
-                                        #           margin-top:-0.01em",          
-                                            selectInput("DiameterUnits","Diameter Units",c("cm", "m", "in", "ft")),
-                                        # div(style ="
-                                        #           margin-top:-1em", 
-                                            selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
-                              
-                              
-                              # column(3,
-                              #        selectInput("LengthUnits", "", c("cm", "m", "mm", "in", "ft")),
-                              #        div(style="margin-top:-0.5em",
-                              #            selectInput("VelocityUnits", "", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2"))),
-                              #        
-                              #        div(style ="
-                              #        margin-top:-0.5em", 
-                              #            selectInput("DiameterUnits","",c("cm", "m", "in", "ft")),
-                              #            selectInput("FlowrateUnits","",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))))),
-                              #------------------------------------------------------------------------------#                                     
-                              
-                              hr(),
-                              #Parameters Row 4#
-                              
-                              fluidRow(
-                                column(3,
-                                      HTML(paste0("<h4>","<strong>", "Concentration Time", "</strong>", "</h4>"))),
-                                column(3,),
-                                column(3, 
-                                      selectInput("timeunits2", "Time Units", c("hr", "day")))),
-                              
-                              
-                              #------------------------------------------------------------------------------#
-                              #END COLUMN PARAMETERS#
-                              #------------------------------------------------------------------------------#                                       
-                              
-                              #------------------------------------------------------------------------------#
-                              #IONS TAB#
-                              #------------------------------------------------------------------------------#       
-                              
-                              ),
-                    tabPanel("Ions",
-                              
-                              br(),
-                              h4("Ion List"),
-                              dataEditUI("edit-1"),
-                              br(), br(),
-                              h4("Influent Concentration Points"),
-                              dataEditUI("edit-2"),
-                              br(), br(),
-                              h4("Effluent Concentration Points"),
-                              dataEditUI("edit-3")
-                              
-                              ),
-                    tabPanel("Alkalinity",
-                              br(),
-                              h4("Bicarbonate Concentration of Alkalinity"),
-                              textOutput("AlkConv"),
-                              br(),
-                              fluidRow(
-                                column(4,
-                                      numericInput("alkvalue", "Alkalinity Value", 5),
-                                      numericInput("pH", "pH", 7)),
-                                column(4,
-                                      selectInput("alkunits", "Concentration Units", c("meq/L", "mg/L CaCO3"))),
-                              ),
-                              hr(),
-                              fluidRow(
-                                column(4, 
-                                      h5("Bicarbonate Concentration (meq/L)"),
-                                      textOutput("bicarbcin")),
-                                column(4,
-                                      h5("Bicarbonate Concentration (mg/L)"),
-                                      textOutput("bicarbcinmgl")),
-                                br()
-                                
-                              )#fluid row
-                            )#tabPanel
-                            )#MainPanel
-                          )#Sidebarlayout
-                          )
-      ),
-      
-      tabPanel("Output",
-              
-              sidebarLayout(
-                sidebarPanel(
-                  selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
-                  selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
-                  
-                  checkboxInput("computeddata", "Computed Data", TRUE),
-                  checkboxInput("effluentdata", "Effluent Data", FALSE),
-                  checkboxInput("influentdata", "Influent Data", FALSE),
-                  
-                  selectInput("saveunits", "Save Units", c("Input Concentration Units", "Output Concentration Units")), # Allows user to select which units are used in the save file
-                  downloadButton("save_button", "Save Data")
-                ),
+                br(),
                 
-                mainPanel(
-                  
-                  shinycssloaders::withSpinner(
-                    plotlyOutput("Plot")),#Counterions
-                  br(),
-                  textOutput("CounterIonPlot"),
-                  br(),
-                  plotlyOutput("ExtraChemicals"),
-                  br(),
-                  textOutput("IonPlot")))
-              
+                actionButton("run_button", "Run Analysis", icon=icon("play")),
+                textOutput("ionadded"),
+                textOutput("concentrationadded"),
+                textOutput("analysisran")
               ),
-      
-      tabPanel("About",
               
-              h5("Ion Exchange Model"),
-              textOutput("about"),
-              br(),
-              tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Read more about the Ion Exchange Model"),
-              br(), br(),
-              #textOutput("how2use"),
-              h5("There are two ways to start this model:"),
-              textOutput("how2use2"),
-              br(),
-              textOutput("how2use3"),
-              textOutput("how2use4"),
-              br(),
-              #textOutput("how2use5"),
-              h5("Developed By"),
-              textOutput("how2use6"),
-              textOutput("how2use7"),
-              textOutput("how2use8"),
-              textOutput("how2use9"))
-             
-             
+              mainPanel(
+                tabsetPanel(
+                  tabPanel("Column Parameters",
+                            
+                            br(),
+                            
+                            #--------------------------Resin Characteristics-------------------------------#  
+                            
+                            
+                            
+                            
+                            
+                            br(),
+                            
+                            
+                            
+                            
+                            fluidRow(
+                              column(3,HTML(paste0("<h4>","<strong>", "Resin Characteristics", "</strong>", "</h4>"))),
+                              column(3,shinyWidgets::autonumericInput(
+                                inputId = "Qv",
+                                label="Resin Capacity",
+                                value = 1400,
+                                decimalPlaces = 2,
+                                digitGroupSeparator = ",",
+                                decimalCharacter = ".")),
+                              column(3, selectInput("qunits", "Resin Capacity Units", c("meq/L")))),
+                            
+                            
+                            fluidRow(
+                              column(3, ),
+                              column(3, shinyWidgets::autonumericInput(
+                                inputId = "rbv",
+                                label="Bead Radius",
+                                value = 0.03375,
+                                decimalPlaces = 5,
+                                digitGroupSeparator = ",",
+                                decimalCharacter = ".")),
+                              column(3, selectInput("rbunits", "Bead Radius Units", c("cm", "m", "mm", "in", "ft")))),
+                            
+                            
+                            fluidRow(
+                              column(3, ),
+                              column(3, shinyWidgets::autonumericInput(
+                                inputId = "EBEDv",
+                                label="Bed Porosity",
+                                value = 0.35,
+                                currencySymbolPlacement = "p",
+                                decimalPlaces = 3,
+                                digitGroupSeparator = ",",
+                                decimalCharacter = "."
+                              ))),
+                            
+                            
+                            fluidRow(
+                              column(3, ),
+                              column(3, shinyWidgets::autonumericInput(
+                                inputId = "EPORv",
+                                label="Bead Porosity",
+                                value = 0.2,
+                                currencySymbolPlacement = "p",
+                                decimalPlaces = 3,
+                                digitGroupSeparator = ",",
+                                decimalCharacter = "."
+                              ))),
+                            
+                            #------------------------------------------------------------------------------#                                       
+                            
+                            hr(),
+                            #Parameters Row 2#
+                            #--------------------------Column Specifications-------------------------------#                                     
+                            fluidRow(
+                              column(3,
+                                    
+                                    HTML(paste0("<h4>","<strong>", "Column Specifications", "</strong>", "</h4>")),
+                                    
+                                    #This radio button toggles between Linear and volumetric flowrate
+                                    br(),
+                                    radioButtons("veloselect", "", c("Linear", "Volumetric"))),
+                              
+                              
+                              column(3, #offset=1,
+                                    
+                                    shinyWidgets::autonumericInput(
+                                      inputId = "Lv",
+                                      label="Length",
+                                      value = 14.765, 
+                                      decimalPlaces = 3,
+                                      digitGroupSeparator = ",",
+                                      decimalCharacter = "."),
+                                    
+                                    
+                                    shinyWidgets::autonumericInput(
+                                      inputId = "Vv",
+                                      label="Velocity",
+                                      value = 0.123, 
+                                      decimalPlaces = 3,
+                                      digitGroupSeparator = ",",
+                                      decimalCharacter = "."),
+                                    
+                                    shinyWidgets::autonumericInput(
+                                      inputId = "Dv",
+                                      label="Diameter",
+                                      value = 4, 
+                                      decimalPlaces = 3,
+                                      digitGroupSeparator = ",",
+                                      decimalCharacter = "."),
+                                    
+                                    
+                                    shinyWidgets::autonumericInput(
+                                      inputId = "Fv",
+                                      label="Flow Rate",
+                                      value = 1.546, 
+                                      decimalPlaces = 5,
+                                      digitGroupSeparator = ",",
+                                      decimalCharacter = ".")),
+                              column(3,
+                                    
+                                          selectInput("LengthUnits", "Length Units", c("cm", "m", "mm", "in", "ft")),
+                                      # div(style ="
+                                      #           margin-top:-0.33em", 
+                                          selectInput("VelocityUnits", "Velocity Units", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")),
+                                      # div(style ="
+                                      #           margin-top:-0.01em",          
+                                          selectInput("DiameterUnits","Diameter Units",c("cm", "m", "in", "ft")),
+                                      # div(style ="
+                                      #           margin-top:-1em", 
+                                          selectInput("FlowrateUnits","Flow Rate Units",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")))),
+                            
+                            
+                            # column(3,
+                            #        selectInput("LengthUnits", "", c("cm", "m", "mm", "in", "ft")),
+                            #        div(style="margin-top:-0.5em",
+                            #            selectInput("VelocityUnits", "", c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2"))),
+                            #        
+                            #        div(style ="
+                            #        margin-top:-0.5em", 
+                            #            selectInput("DiameterUnits","",c("cm", "m", "in", "ft")),
+                            #            selectInput("FlowrateUnits","",c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd"))))),
+                            #------------------------------------------------------------------------------#                                     
+                            
+                            hr(),
+                            #Parameters Row 4#
+                            
+                            fluidRow(
+                              column(3,
+                                    HTML(paste0("<h4>","<strong>", "Concentration Time", "</strong>", "</h4>"))),
+                              column(3,),
+                              column(3, 
+                                    selectInput("timeunits2", "Time Units", c("hr", "day")))),
+                            
+                            
+                            #------------------------------------------------------------------------------#
+                            #END COLUMN PARAMETERS#
+                            #------------------------------------------------------------------------------#                                       
+                            
+                            #------------------------------------------------------------------------------#
+                            #IONS TAB#
+                            #------------------------------------------------------------------------------#       
+                            
+                            ),
+                  tabPanel("Ions",
+                            
+                            br(),
+                            h4("Ion List"),
+                            dataEditUI("edit-1"),
+                            br(), br(),
+                            h4("Influent Concentration Points"),
+                            dataEditUI("edit-2"),
+                            br(), br(),
+                            h4("Effluent Concentration Points"),
+                            dataEditUI("edit-3")
+                            
+                            ),
+                  tabPanel("Alkalinity",
+                            br(),
+                            h4("Bicarbonate Concentration of Alkalinity"),
+                            textOutput("AlkConv"),
+                            br(),
+                            fluidRow(
+                              column(4,
+                                    numericInput("alkvalue", "Alkalinity Value", 5),
+                                    numericInput("pH", "pH", 7)),
+                              column(4,
+                                    selectInput("alkunits", "Concentration Units", c("meq/L", "mg/L CaCO3"))),
+                            ),
+                            hr(),
+                            fluidRow(
+                              column(4, 
+                                    h5("Bicarbonate Concentration (meq/L)"),
+                                    textOutput("bicarbcin")),
+                              column(4,
+                                    h5("Bicarbonate Concentration (mg/L)"),
+                                    textOutput("bicarbcinmgl")),
+                              br()
+                              
+                            )#fluid row
+                          )#tabPanel
+                          )#MainPanel
+                        )#Sidebarlayout
+                        )
+    ),
     
-   
+    tabPanel("Output",
+            
+            sidebarLayout(
+              sidebarPanel(
+                selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
+                selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
+                
+                checkboxInput("computeddata", "Computed Data", TRUE),
+                checkboxInput("effluentdata", "Effluent Data", FALSE),
+                checkboxInput("influentdata", "Influent Data", FALSE),
+                
+                selectInput("saveunits", "Save Units", c("Input Concentration Units", "Output Concentration Units")), # Allows user to select which units are used in the save file
+                downloadButton("save_button", "Save Data")
+              ),
+              
+              mainPanel(
+                
+                shinycssloaders::withSpinner(
+                  plotlyOutput("Plot")),#Counterions
+                br(),
+                textOutput("CounterIonPlot"),
+                br(),
+                plotlyOutput("ExtraChemicals"),
+                br(),
+                textOutput("IonPlot")))
+            
+            ),
     
-    
-    )
+    tabPanel("About",
+            
+            h5("Ion Exchange Model"),
+            textOutput("about"),
+            br(),
+            tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Read more about the Ion Exchange Model"),
+            br(), br(),
+            #textOutput("how2use"),
+            h5("There are two ways to start this model:"),
+            textOutput("how2use2"),
+            br(),
+            textOutput("how2use3"),
+            textOutput("how2use4"),
+            br(),
+            #textOutput("how2use5"),
+            h5("Developed By"),
+            textOutput("how2use6"),
+            textOutput("how2use7"),
+            textOutput("how2use8"),
+            textOutput("how2use9"))
+            
+            
+  
+  
+  
+  
   )
  
 )
