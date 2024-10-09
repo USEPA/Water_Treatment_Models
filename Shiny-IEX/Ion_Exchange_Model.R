@@ -2086,7 +2086,7 @@ server <- function(input, output, session) {
       if (input$model == "Macroporous (PSDM)") {
         showNotification("This might take several minutes.", duration = notificationDuration, closeButton = TRUE, type = "warning")
       }
-      showNotification("Running model.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
+      showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
       out(model_prep(input, iondat(), cindat(), nt_report))
       updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
     }

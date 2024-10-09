@@ -1128,7 +1128,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$run_button, {
     if (error_handling() != 1) {
-      showNotification("Running model.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
+      showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
       out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
       updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
     }
