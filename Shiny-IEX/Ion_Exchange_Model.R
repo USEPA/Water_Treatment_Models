@@ -57,9 +57,6 @@ m2min2cm2s<-(m2cm^2) / (min2sec)
 gal2ml<-3785.411784
 mgd2mlps<-1e6 * gal2ml/day2sec          #mgd to ml/sec
 l2ml <- 1000.
-K1<-10^-6.352
-K2<-10^-10.329
-KW<-10^-14
 
 #~~~~~~~~~~~~~~~~~~~ end unit conversions
 
@@ -1914,6 +1911,10 @@ server <- function(input, output, session) {
   #------------------------------------------------------------------------------#  
   
 
+  K1<-10^-6.352
+  K2<-10^-10.329
+  KW<-10^-14
+  
   bicarbconverted <- reactiveVal()
   bicarbmeq2mgl <- 50.045001
   
