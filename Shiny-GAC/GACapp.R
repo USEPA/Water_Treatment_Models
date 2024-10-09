@@ -95,6 +95,8 @@ cfoulingvector <- c("halogenated alkenes", "halogenated alkanes", "halogenated a
 
 weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.204)
 
+notificationDuration <- 10 # Number of seconds to display the notification
+
 
 
 
@@ -1110,15 +1112,15 @@ server <- function(input, output, session) {
 
     if (coldensity > appdensity) {
       errorflag <- 1
-      showNotification("Error: Apparent Density value is too low.", type = "error")
+      showNotification("Error: Apparent Density value is too low.", duration = notificationDuration, closeButton = TRUE, type = "error")
     } 
     if (!(input$WFouling %in% wfoulingvector)) {
       errorflag <- 1
-      showNotification("Error: Water type is not accepted. Please select one from the list.", type = "error")
+      showNotification("Error: Water type is not accepted. Please select one from the list.", duration = notificationDuration, closeButton = TRUE, type = "error")
     } 
     if (!(input$CFouling %in% cfoulingvector)) {
       errorflag <- 1
-      showNotification("Error: Chemical type is not accepted. Please select one from the list.", type = "error")
+      showNotification("Error: Chemical type is not accepted. Please select one from the list.", duration = notificationDuration, closeButton = TRUE, type = "error")
     }
 
     errorflag
@@ -1126,7 +1128,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$run_button, {
     if (error_handling() != 1) {
-      showNotification("Running model.", type = "message") # Notifies the user that the model is being run
+      showNotification("Running model.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
       out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
       updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
     }
@@ -1154,8 +1156,8 @@ server <- function(input, output, session) {
   
   observeEvent(input$fitting,{
     if (nrow(out()) > 2) {
-      showNotification("This might take several minutes.", type = "warning")
-      showNotification("Fitting data.", type = "message")
+      showNotification("This might take several minutes.", duration = notificationDuration, closeButton = TRUE, type = "warning")
+      showNotification("Fitting data.", duration = notificationDuration, closeButton = TRUE, type = "message")
       out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
       output_fit(out_fit()[[1]])
       kdata_fit(out_fit()[[2]])
@@ -1185,9 +1187,9 @@ server <- function(input, output, session) {
     kdat<- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep=''))
     dataOutputServer("output-2", data = kdat)
     if ((read.csv("temp_file/Kdata.csv")[1,2]) == 0) {
-      showNotification("Error: K Data is empty.", type = "error")
+      showNotification("Error: K Data is empty.", duration = notificationDuration, closeButton = TRUE, type = "error")
     } else {
-      showNotification("Updating K Data.", type = "message")
+      showNotification("Updating K Data.", duration = notificationDuration, closeButton = TRUE, type = "message")
       out(out_fit()[[1]])
       write.csv(data.frame(WaterFouling=c(input$WFouling), ChemicalFouling=c(input$CFouling)), paste(file_direc, 'Foulingdata.csv', sep=''), row.names=FALSE) # Saves water fouling data to an Excel file to be read-in after the session is reloaded
       session$reload() # When K Data is used, the session is reloaded in order to update the DataEditR tables

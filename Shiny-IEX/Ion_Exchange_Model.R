@@ -89,6 +89,8 @@ flowratevector<-c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm",
 diametervector<-c("cm", "m", "mm", "in", "ft")
 modelvector<-c("Gel-Type (HSDM)", "Macroporous (PSDM)")
 
+notificationDuration <- 10 # Number of seconds to display the notification
+
 
 #------------------------------------------------------------------------------#
 #HSDMIX Function
@@ -470,7 +472,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
     return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
   } else {
-    showNotification("Error: There was a problem running this model.", type = "error")
+    showNotification("Error: There was a problem running this model.", duration = notificationDuration, closeButton = TRUE, type = "error")
     return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
   }
 }
@@ -677,7 +679,7 @@ PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
     return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
   } else {
-    showNotification("Error: There was a problem running this model.", type = "error")
+    showNotification("Error: There was a problem running this model.", duration = notificationDuration, closeButton = TRUE, type = "error")
     return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
   }
 }
@@ -2056,24 +2058,24 @@ server <- function(input, output, session) {
     for (item in 1:nrow(iondat())) {
       if (!(iondat()[item, 'name'] %in% colnames(cindat()))) {
         errorflag <- 1
-        showNotification(paste0("Error: ", paste0(iondat()[item, 'name'], " not found in Influent Concentration Points.")), type = "error")
+        showNotification(paste0("Error: ", paste0(iondat()[item, 'name'], " not found in Influent Concentration Points.")), duration = notificationDuration, closeButton = TRUE, type = "error")
       }
     }
     for (item in colnames(cindat())) {
       if (item != "time") {
         if (!(item %in% iondat()[, 'name'])) {
           errorflag <- 1
-          showNotification(paste0("Error: ", paste0(item, " not found in Ion List.")), type = "error")
+          showNotification(paste0("Error: ", paste0(item, " not found in Ion List.")), duration = notificationDuration, closeButton = TRUE, type = "error")
         }
       }
     }
     if (any(is.na(iondat()))) {
       errorflag <- 1
-      showNotification("Error: Ion List is missing data.", type = "error")
+      showNotification("Error: Ion List is missing data.", duration = notificationDuration, closeButton = TRUE, type = "error")
     }
     if (any(is.na(cindat()))) {
       errorflag <- 1
-      showNotification("Error: Influent Concentration Points is missing data.", type = "error")
+      showNotification("Error: Influent Concentration Points is missing data.", duration = notificationDuration, closeButton = TRUE, type = "error")
     }
 
     errorflag
@@ -2082,9 +2084,9 @@ server <- function(input, output, session) {
   observeEvent(input$run_button, {
     if (error_handling() != 1) {
       if (input$model == "Macroporous (PSDM)") {
-        showNotification("This might take several minutes.", type = "warning")
+        showNotification("This might take several minutes.", duration = notificationDuration, closeButton = TRUE, type = "warning")
       }
-      showNotification("Running model.", type = "message") # Notifies the user that the model is being run
+      showNotification("Running model.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
       out(model_prep(input, iondat(), cindat(), nt_report))
       updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
     }
