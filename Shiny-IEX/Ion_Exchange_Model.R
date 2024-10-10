@@ -1568,7 +1568,8 @@ tags$style(HTML("
                 br(),
                 textOutput("CounterIonPlot"),
                 br(),
-                plotlyOutput("ExtraChemicals"),
+                shinycssloaders::withSpinner(
+                  plotlyOutput("ExtraChemicals")),
                 br(),
                 textOutput("IonPlot")))
             
