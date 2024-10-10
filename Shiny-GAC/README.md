@@ -17,7 +17,9 @@ The Shiny-GAC Modeling Tool is used to model a granular activated carbon (GAC) u
 5. Optional: Example_TCE.xlsx
 
 ## Excel-based Input File
-The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny-GAC App looks for sheetnames of "Properties", "Kdata", "columnSpecs", and "data". If one or more of those sheets are not found then the app cannot be run using that input file. The App is loaded with default data (found in 'config.xlsx') if the user does not want to use an Excel-based file, which can be modified as needed within the GUI. 
+The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny-GAC App looks for sheetnames of "Properties", "Kdata", "columnSpecs", and "data". If one or more of those sheets are not found then the app cannot be run using that input file. The App is loaded with default data (found in 'config.xlsx') if the user does not want to use an Excel-based file, which can be modified as needed within the GUI.
+
+Find out where influent concentration gets converted in IEX
 
 <figure>
     <img src="DocumentPics/Properties.png"
@@ -68,7 +70,7 @@ In order for the tool to work the user must point their R Studio to a Python Int
          alt="Excel Input">
 </figure>
 
-4. Click "Ok" then "Apply"
+4. Click "Apply" then "OK"
 
 
 ## Quick Start
@@ -82,20 +84,20 @@ In order for the tool to work the user must point their R Studio to a Python Int
 ![Import File](DocumentPics/Slide1.PNG)
 
 
-3. (Optional) Change the parameters to match the specifications of your Granular Activated Carbon apparatus
+3. (Optional) Change the parameters to match the specifications of your Granular Activated Carbon apparatus. This can be done by typing in a number or using the scroll wheel to increment the number up or down.
 
 ![Inputs](DocumentPics/Slide2.PNG)
 
-4. (Optional) In the ions tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
+4. (Optional) In the compounds tab, add chemicals and concentration points to match your interest. These can be added or edited by right clicking the data table.
 
 ![Adjust](DocumentPics/IonsTab.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-5.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 3 total chemicals with 2 concentration points takes about 10-30 seconds.
+5.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. A notification window will appear in the bottom right corner to either indicate a successful run or give an error message. 3 total chemicals with 2 concentration points takes about 10-30 seconds.
 
 ![Run](DocumentPics/Slide5.PNG)
 
-6.	Switch to the Output tab (There should be a loading “spinner” to let you know it’s running)
+6.	The program will automatically switch to the Output tab when it is finished running or you can manually switch to the Output tab by clicking on it (There should be a loading “spinner” to let you know it’s running)
 
 ![waiting](DocumentPics/Slide6.PNG)
 
@@ -107,7 +109,7 @@ In order for the tool to work the user must point their R Studio to a Python Int
 
 ![plottraces](DocumentPics/Slide8.PNG)
 
-9. (Optional: Fitting the Data) The user can fit the K data to the any effluent data that is provided. To do this, simply click the 'Fit Data' button above the 'Save Data' button on the side bar panel. The fitted k data will then display on the 'Fitted Data' panel that the user can select on the header. Finally, a user may click 'Use Data' and this will rerun the analysis with the fitted data.
+9. (Optional: Fitting the Data) The user can fit the K data to the any effluent data that is provided. To do this, simply click the 'Fit Data' button above the 'Save Data' button on the side bar panel. The fitted k data will then display on the 'Fitted Data' panel that the user can select on the header. Finally, a user may click 'Use Data' and this will replace the data in the Compounds tab with the fitted k data. The user can then rerun the program to view the updated results.
 
 ![Fit](DocumentPics/Fit.PNG)
 ![Use](DocumentPics/Use.PNG)
@@ -141,14 +143,12 @@ The parameters tab is used to describe the physical constraints of the resin cha
 
 
 
-### Ions Tab
+### Compounds Tab
 
-The Ions tab contains information about the ions to be simulated. The Ions tab should contain any anionic species found in the system, as PSDM always models a simultaneous competitive exchange process (counterions like sulfate, nitrate, chloride, and bicarbonate must also be modeled in simulations). Ion characteristics (molecular weight, selectivity, valence, mass transfer coefficients) are stored in the "ions" tab in Excel-based input files and listed under "Ion List" within PSDM under the Input>Ions tab. information on concentrations within the system over time are stored in the "Cin" tab in Excel-based input files or "Concentration Points" within PSDM under the Input>Ions tab.
-
-**Note:** Order of rows in the ions table should match order of columns in the Cin table.
+The Compounds tab contains information about the compounds to be simulated. Compound characteristics \ are stored in the "Properties" tab in Excel-based input files and listed under "Compound List" within PSDM under the Input>Compounds tab. information on K data within the system over is stored in the "Kdata" tab in Excel-based input files or "K Data" within PSDM under the Input>Compounds tab.
 
 
-### Ion List
+### Compound List
 |  Input        	                |Column Name   | Description                                                                      |
 |---            				    |---        |---                                                                               |
 |Molecular Weight               |MW         |Molecular weight of ionic species. Gram per mol.                                          |           |

@@ -51,7 +51,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ![Model Selection](DocumentPics/modelselector.PNG)
 
-4. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
+4. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus. This can be done by typing in a number or using the scroll wheel to increment the number up or down.
 
 ![Inputs](DocumentPics/Slide2.PNG)
 
@@ -60,7 +60,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 ![Adjust](DocumentPics/IonsTab.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
+6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. A notification window will appear in the bottom right corner to either indicate a successful run or give an error message. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
 
 ![Run](DocumentPics/Slide5.PNG)
 
@@ -137,7 +137,7 @@ The Output tab provides a graphical output of results after a simulation is comp
 
 The graphs will dynamically update to reflect the current selection. If c/c0 is selected, the output is scaled relative to c0 (the initial concentrations), which is the first row of the "Concentration Points" table. "Bed volumes x1000" presents time in thousands of bed volumes treated, where bed volume is the empty bed volume of the media in the system (relating to bed length if velocity is specified, or bed length and diameter if flow rate is specified).
 
-The data can be exported by clicking the save button. This saves the data points to an excel file where the chemicals inputted into the analysis are the header and the columns are the corresponding concentration points with the first column being the corresponding time.
+The data can be exported by clicking the save button. There is a drop down selector to choose which units are used. This saves the data points to an excel file where the chemicals inputted into the analysis are the header and the columns are the corresponding concentration points with the first column being the corresponding time.
 
 To export the graph, the user can hover over the graph with their cursor which will display the graph settings in the top right. Clicking the camera icon will open up a file explorer where the user can save the graphic.
 
