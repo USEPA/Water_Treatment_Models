@@ -145,7 +145,7 @@ The parameters tab is used to describe the physical constraints of the resin cha
 
 ### Compounds Tab
 
-The Compounds tab contains information about the compounds to be simulated. Compound characteristics \ are stored in the "Properties" tab in Excel-based input files and listed under "Compound List" within PSDM under the Input>Compounds tab. information on K data within the system over is stored in the "Kdata" tab in Excel-based input files or "K Data" within PSDM under the Input>Compounds tab.
+The Compounds tab contains information about the compounds to be simulated. The Compounds tab should contain any compounds found in the system. Compound characteristics (molecular weight, molar volume, boiling point, density, solubility, vapor pressure) are stored in the "Properties" tab in Excel-based input files and listed under "Compound List" within PSDM under the Input>Compounds tab. information on K data within the system over is stored in the "Kdata" tab in Excel-based input files or "K Data" within PSDM under the Input>Compounds tab.
 
 
 ### Compound List
