@@ -71,6 +71,12 @@ time_conv <- c("Hours"=hour2day, "Days"=day2day, "Months"=month2day, "Years"=yea
                "hr"=hour2day, "day"=day2day, "month"=month2day, "year"=year2day,
                "hours"=hour2day, "days"=day2day, "hrs"=hour2day)
 
+kL_conv <- c("ft/s"=ft2cm, "m/s"=m2cm, "cm/s"=cm2cm, "in/s"=in2cm, 
+             "m/min"=mpmin2cmps, "ft/min"=ftpmin2cmps, "m/h"=mph2cmps,
+             "m/hr"=mph2cmps)
+ds_conv <- c("ft^2/s"=ft2ps2cm2ps, "m^2/s"=m2ps2cm2ps, "cm^2/s"=cm2cm,
+             "in^2/s"=in2ps2cm2ps)
+
 mass_conv <- c("meq"=1000, "meq/L"=1000, "mg"=1000, "ug"=1, "ng"=1e-3, "mg/L"=1000, "ug/L"=1, "ng/L"=1e-3) ### changed
 
 density_conv<-c("g/ml"=1)
