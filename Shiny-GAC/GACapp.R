@@ -466,7 +466,7 @@ columnspecs_prep <- function(prunits, LengthUnits, wunits, FlowrateUnits, Diamet
   )
 }
 
-read_in_files(input, paste0("config.xlsx"))
+read_in_files(input, paste0("GAC_config.xlsx"))
 
 #==============================================================================#
 #------------------------------------------------------------------------------#

@@ -1205,7 +1205,7 @@ mass_converter_mgl <- function (iondata, concs) {
 
 
 wd <- getwd()
-process_files(input, paste0("config.xlsx"))
+process_files(input, paste0("IEX_config.xlsx"))
 
 
 #process_effluent(paste0("config.xlsx"))
