@@ -103,19 +103,43 @@ reticulate::source_python("GAC_Shiny_helper.py")
 #pivoted to a data frame shape that is much easier to use with plotly
 #------------------------------------------------------------------------------#
 read_in_files <- function(input, file) {
-  Properties <- read_excel(file, sheet = 'Properties')
-  Kdata <- read_excel(file, sheet = 'Kdata')
-  columnSpecs <- read_excel(file, sheet= 'columnSpecs')
-  dat <- read_excel(file, sheet = 'data')
-  pivoted_influent <- pivot_wider(filter(dat, type == 'influent')[, 2:ncol(dat)], names_from = 'compound', values_from = 'concentration')
-  pivoted_effluent <- pivot_wider(filter(dat, type == 'effluent')[, 2:ncol(dat)], names_from = 'compound', values_from = 'concentration')
-  
-  write.csv(Properties, 'temp_file/Properties.csv', row.names=FALSE)
-  write.csv(Kdata, 'temp_file/Kdata.csv', row.names=FALSE)
-  write.csv(Kdata, 'temp_file/Kdata2.csv', row.names=FALSE)
-  write.csv(columnSpecs, 'temp_file/columnSpecs.csv', row.names=FALSE)
-  write.csv(pivoted_influent, 'temp_file/dat_influent.csv', row.names=FALSE)
-  write.csv(pivoted_effluent, 'temp_file/dat_effluent.csv', row.names=FALSE)
+  # Attempts to read-in sheets from Excel file, if sheet doesn't exist it reverts to default values
+  tryCatch({
+    Properties <- read_excel(file, sheet = 'Properties')
+    write.csv(Properties, 'temp_file/Properties.csv', row.names=FALSE)
+  },
+  error=function(err){
+    print(err)
+    showNotification("Error: Properties sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+  })
+  tryCatch({
+    Kdata <- read_excel(file, sheet = 'Kdata')
+    write.csv(Kdata, 'temp_file/Kdata.csv', row.names=FALSE)
+    write.csv(Kdata, 'temp_file/Kdata2.csv', row.names=FALSE)
+  },
+  error=function(err){
+    print(err)
+    showNotification("Error: Kdata sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+  })
+  tryCatch({
+    columnSpecs <- read_excel(file, sheet= 'columnSpecs')
+    write.csv(columnSpecs, 'temp_file/columnSpecs.csv', row.names=FALSE)
+  },
+  error=function(err){
+    print(err)
+    showNotification("Error: Properties sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+  })
+  tryCatch({
+    dat <- read_excel(file, sheet = 'data')
+    pivoted_influent <- pivot_wider(filter(dat, type == 'influent')[, 2:ncol(dat)], names_from = 'compound', values_from = 'concentration')
+    pivoted_effluent <- pivot_wider(filter(dat, type == 'effluent')[, 2:ncol(dat)], names_from = 'compound', values_from = 'concentration')
+    write.csv(pivoted_influent, 'temp_file/dat_influent.csv', row.names=FALSE)
+    write.csv(pivoted_effluent, 'temp_file/dat_effluent.csv', row.names=FALSE)
+  },
+  error=function(err){
+    print(err)
+    showNotification("Error: data sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+  })
   
   # Attempts to read-in name from Excel file, if it doesn't exist it sets it to the name of the Excel file
   tryCatch({

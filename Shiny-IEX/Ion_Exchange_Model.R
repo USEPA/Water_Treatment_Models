@@ -710,13 +710,31 @@ process_files <- function (input, file) {
   effluent<-data.frame(time=(0), CHLORIDE=(0))
   empty_name<-data.frame(name=c("No file Uploaded"))
   
-  params<-read_xlsx(file, sheet="params")
-  ions<-read_xlsx(file, sheet="ions")
-  cin<-read_xlsx(file, sheet="Cin")
-  
-  write.csv(params, "temp_file/paramsheet.csv", row.names=FALSE)
-  write.csv(ions, "temp_file/ionsheet.csv", row.names=FALSE)
-  write.csv(cin, "temp_file/cinsheet.csv", row.names=FALSE)
+  # Attempts to read-in sheets from Excel file, if sheet doesn't exist it reverts to default values
+  tryCatch({
+    params<-read_xlsx(file, sheet="params")
+    write.csv(params, "temp_file/paramsheet.csv", row.names=FALSE)
+  },
+  error=function(err){
+    print(err)
+    showNotification("Error: params sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+  })
+  tryCatch({
+    ions<-read_xlsx(file, sheet="ions")
+    write.csv(ions, "temp_file/ionsheet.csv", row.names=FALSE)
+  },
+  error=function(err){
+    print(err)
+    showNotification("Error: ions sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+  })
+  tryCatch({
+    cin<-read_xlsx(file, sheet="Cin")
+    write.csv(cin, "temp_file/cinsheet.csv", row.names=FALSE)
+  },
+  error=function(err){
+    print(err)
+    showNotification("Error: cin sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+  })
 
   
   #Checks for effluent data, if unavailable use empty dataset
