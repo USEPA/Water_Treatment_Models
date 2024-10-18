@@ -331,7 +331,12 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   EBCT <- L/v # empty bed contact time.
   tc <- 1.0 # characteristic time # vestigial?
   NEQ <- (NR+1) * NION * NZ
-  grid_dims = c((NR+1), NION, NZ)
+  grid_dims <- c((NR+1), NION, NZ)
+  norm_dim <- c(NR, NION, NZ)
+  axial_dim <- c(NION, NZ)
+
+  ones_nz_nion <- array(1, c((NZ-1), (NION-1)))
+  ones_nion_nz <- array(1, c((NION-1), (NZ-1)))
   
   dv_ions <- valence == 2
   mv_ions <- valence == 1
@@ -361,7 +366,16 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   
   # Derivative function ----
   diffun <- function(t, x, parms){
+    ## create empty arrays to fill
+    AZ_C <- array(0.0, axial_dim)
+    dx_dt <- array(0.0, grid_dims)
+    C_star <- array(0.0, axial_dim)
+    BR_q <- array(0.0, norm_dim)
+    dq_dt <- array(0.0, norm_dim)
+    J <- array(0.0, axial_dim) 
+    surf_term <- array(0.0, axial_dim)
     
+    # start activity
     dim(x) <- grid_dims
     C <- x[LIQUID, , ]
     q <- x[1:NR, , ]
@@ -375,28 +389,23 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
     }
     
     # advection collocation intermediate step
-    AZ_C <- array(0.0, c(NION, NZ))
-    for (ii in 1:NION) {
-      AZ_C[ii, ] <- AZ%*%C[ii, ]
-    }
+    AZ_C[1:NION, ] <- t(AZ%*%t(C))
     
     
-    dx_dt <- array(0.0, grid_dims)
     
-    C_star <- array(0.0, c(NION, NZ))
     if (2 %in% valence){
-      # divalent isotherm
-      for (ii in 2:NZ){
-        cc <- -CT_test[ii]
-        bb <- 1 + (1/qs[1, ii]) * sum(qs[mv_ions, ii]/KxA[mv_ions])
-        aa <- (1/qs[1,ii]**2) * qs[dv_ions, ii] / KxA[dv_ions]
-        denom <- -bb - sqrt(bb**2 - 4 * aa * cc)
-        C_star[1, ii] <- 2 * cc / denom
-      }
+      cc <- -CT_test[2:NZ]
+      bb <- 1 + (1/qs[1, 2:NZ]) * colSums(qs[mv_ions, 2:NZ]/KxA[mv_ions])
+      aa <- (1/qs[1,2:NZ]**2) * qs[dv_ions,2:NZ] / KxA[dv_ions]
+      denom <- -bb - sqrt(bb**2 - 4 * aa * cc)
+
+      C_star[1, 2:NZ] <- 2*(cc/denom)
+              
+      temp_sub_a <- qs[2:NION, 2:NZ]/KxA[2:NION]
+      temp_sub_b <- t(ones_nz_nion*(C_star[1, 2:NZ]/qs[1, 2:NZ]))**(ones_nion_nz*valence[2:NION])
       
-      for (ii in 2:NION){
-        C_star[ii, 2:NZ] <- qs[ii, 2:NZ]/KxA[ii]*(C_star[1, 2:NZ]/qs[1, 2:NZ])**valence[ii]
-      }
+      C_star[2:NION, 2:NZ] <- (temp_sub_a)*(temp_sub_b)
+
       
       
     } else {
@@ -413,10 +422,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
     }
     
     
-    J <- array(0.0, c(NION, NZ))
-    for (ii in 2:NION) {
-      J[ii , 2:NZ] <- -kL[ii] * (C[ii , 2:NZ] - C_star[ii , 2:NZ])
-    }
+    J[2:NION, 2:NZ] <- -kL[2:NION] * (C[2:NION, 2:NZ] - C_star[2:NION, 2:NZ])
     # surface flux calculation
     J[1, 2:NZ] <- - colSums(J[2:NION, 2:NZ]) # Implicitly calculate reference ion
     
@@ -425,31 +431,20 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
     dx_dt[LIQUID, , 2:NZ] <- (- v / L * AZ_C[ ,2:NZ] + (1 - EBED) * Jas[ ,2:NZ]) / EBED * tc
     
     
-    # internal diffusion (XXX: loops computationally slow)
-    BR_q <- array(0.0, c(NR, NION, NZ))
+    # internal diffusion
+    for (ii in 1:NION) {
+        temp <- BR%*%q[ , ii, 2:NZ]
+        dim(temp) <- c(NR, NZ-1)
+        BR_q[, ii, 2:NZ] <- temp
+    }
     
+    
+    dq_dt[ , 2:NION, ] <- Ds[2:NION] * tc / rb**2 * BR_q[ , 2:NION, ]
+    
+    temp <- aperm(dq_dt, c(2,1,3)) ## reorder so the colSums function gives the right result
+    dq_dt[1:(NR-1), 1, 2:NZ] <- -colSums(temp[2:NION, 1:(NR-1), 2:NZ])
     for (ii in 1:NION){
-      for (jj in 2:NZ){
-        BR_q[ , ii, jj] <- BR%*%q[ , ii, jj]
-      }
-    }
-    
-    dq_dt <- array(0.0, c(NR, NION, NZ))
-    for (ii in 2:NION){
-      dq_dt[ , ii, ] <- Ds[ii] * tc / rb**2 * BR_q[ , ii, ]
-    }
-    
-    #  dq_dt[ , 1, 2:NZ] <- -rowSums(dq_dt[ , 2:NION, 2:NZ]) # Implicitly calculate reference ion
-    # XXX: Why doesn't the above line work? It's not mathematically equivalent to the loop below?
-    for (ii in 1:(NR-1)){
-      dq_dt[ii, 1, 2:NZ] <- -colSums(dq_dt[ii, 2:NION, 2:NZ])
-    }
-    
-    surf_term <- array(0.0, c(NION, NZ))
-    for (ii in 1:NION){
-      for (jj in 2:NZ){
-        surf_term[ii, jj] <- WR[1:(NR-1)]%*%dq_dt[1:(NR-1), ii, jj]
-      }
+        surf_term[ii, 2:NZ] <- WR[1:(NR-1)]%*%dq_dt[1:(NR-1), ii, 2:NZ]
     }
     
     dx_dt[NR, , 2:NZ] <- (-tc / rb * J[ , 2:NZ] - surf_term[ , 2:NZ])/WR[NR]
