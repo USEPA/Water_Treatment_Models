@@ -12,7 +12,7 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
 2. Excel (recommended)
-3. Files: Ion_Exchange_Model.R, config.xlsx
+3. Files: Ion_Exchange_Model.R, IEX_config.xlsx
 4. Optional: example.xlsx
 
 ## Excel-based Input File
@@ -39,7 +39,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ## Quick Start
 
-1. In RStudio, click the "Run App" button in the top right corner of the window that contains the code
+1. In RStudio, click the "Run App" button in the top right corner of the window that contains the code. If you are using the web version you can jump to step 2.
 
 ![Start](DocumentPics/start.PNG)
 

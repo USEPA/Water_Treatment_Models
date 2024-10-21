@@ -13,11 +13,11 @@ The Shiny-GAC Modeling Tool is used to model a granular activated carbon (GAC) u
 1. R/R Studio (At least version 2022.7)
 2. Python (At least version 3.9.7)
 3. Excel (recommended)
-4. Files: GACapp.R, config.xlsx
+4. Files: GACapp.R, GAC_config.xlsx
 5. Optional: Example_TCE.xlsx
 
 ## Excel-based Input File
-The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny-GAC App looks for sheetnames of "Properties", "Kdata", "columnSpecs", and "data". If one or more of those sheets are not found then the app cannot be run using that input file. The Shiny-GAC App also looks for a sheetname of "Fouling Data" and if it is not found it sets the water type to organic free and the chemical type to halogenated alkenes. The App is loaded with default data (found in 'config.xlsx') if the user does not want to use an Excel-based file, which can be modified as needed within the GUI.
+The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny-GAC App looks for sheetnames of "Properties", "Kdata", "columnSpecs", and "data". If one or more of those sheets are not found then the app cannot be run using that input file. The Shiny-GAC App also looks for a sheetname of "Fouling Data" and if it is not found it sets the water type to organic free and the chemical type to halogenated alkenes. The App is loaded with default data (found in 'GAC_config.xlsx') if the user does not want to use an Excel-based file, which can be modified as needed within the GUI.
 
 Find out where influent concentration gets converted in IEX
 
@@ -47,7 +47,7 @@ Find out where influent concentration gets converted in IEX
 
 ## Set Up
 
-In order for the tool to work the user must point their R Studio to a Python Interpreter
+In order for the tool to work the user must point their R Studio to a Python Interpreter. If you are using the web version you can jump to Quick Start step 2.
 
 1. Open RStudio
 
