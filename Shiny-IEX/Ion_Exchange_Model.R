@@ -1595,7 +1595,7 @@ tags$style(HTML("
             h5("Ion Exchange Model"),
             textOutput("about"),
             br(),
-            tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Read more about the Ion Exchange Model"),
+            tags$a(href="https://github.com/USEPA/Water_Treatment_Models/", "Read more about the Ion Exchange Model", target="_blank"),
             br(), br(),
             #textOutput("how2use"),
             h5("There are two ways to start this model:"),
