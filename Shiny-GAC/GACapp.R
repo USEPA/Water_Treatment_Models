@@ -861,7 +861,7 @@ tags$style(HTML("
 #------------------------------------------------------------------------------#
                                 #Fitted Data Tab#
 #------------------------------------------------------------------------------#               
-    tabPanel('Fitted Data', shinycssloaders::withSpinner(uiOutput('FitK')),
+    tabPanel(HTML("Fitted Data</a></li><li><a href='https://github.com/USEPA/Water_Treatment_Models/blob/master/Shiny-GAC/README.md' target='_blank'>Help"), shinycssloaders::withSpinner(uiOutput('FitK')),
       actionButton('Use', 'Use Data'),
       h6('Note: This will replace the K Data in the compounds tab on the Input tab and the modeled output on the Output tab. The model must be run again to view the updated output.')           
     )     
@@ -1120,7 +1120,7 @@ server <- function(input, output, session) {
       kdataframe <- cbind(kdataframe, kdata_fit())
       kdata_fit_save(kdataframe)
       output$FitK <- renderTable({kdataframe})
-      updateTabsetPanel(session, "inTabset", selected = "Fitted Data") # Switches to Fitted Data tab when fit button is pressed
+      updateTabsetPanel(session, "inTabset", selected = HTML("Fitted Data</a></li><li><a href='https://github.com/USEPA/Water_Treatment_Models/blob/master/Shiny-GAC/README.md' target='_blank'>Help")) # Switches to Fitted Data tab when fit button is pressed
     } else {
       output$FitK <- renderText({'No fitting data available'})
     }

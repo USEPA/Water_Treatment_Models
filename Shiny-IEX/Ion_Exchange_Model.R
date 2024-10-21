@@ -1590,7 +1590,7 @@ tags$style(HTML("
             
             ),
     
-    tabPanel("About",
+    tabPanel(HTML("About</a></li><li><a href='https://github.com/USEPA/Water_Treatment_Models/blob/master/Shiny-IEX/README.md' target='_blank'>Help"),
             
             h5("Ion Exchange Model"),
             textOutput("about"),
