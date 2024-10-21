@@ -862,7 +862,7 @@ cin_correct<-function(ions, cins){
     mass_mult <- 1.
     mass_units <- ions[item, "conc_units"]  # convenience variable
     if (mass_units != 'meq') {
-      mass_mult <- mass_conv[mass_units] / (ions[item, "mw"]) * ions[item, "valence"]  ## TODO: check this math
+      mass_mult <- mass_conv[mass_units] / (ions[item, "mw"]) * ions[item, "valence"]
     }
     
     #should multiply a column by conversion factor
@@ -1002,7 +1002,6 @@ model_prep <- function (input, iondata, concdata, nt_report) {
     corr_cin <- cin_correct(iondata, concdata)
     for (item in 1:nrow(iondata)) {
       
-      ### TODO: Need to check the mass transfer unit conversions
       ## convert kL to cm/s
       corr_ions[item, 'kL'] <- iondata[item, 'kL'] * kL_conv[iondata[item, 'kL_units']]
       
@@ -1017,7 +1016,7 @@ model_prep <- function (input, iondata, concdata, nt_report) {
   }
   
   
-  timeconverter <- time_conv[input$timeunits2]  ### TODO: Is this really necessary, or doing what we think it is doing? 
+  timeconverter <- time_conv[input$timeunits2]
   
 
   if (error == 0) {
@@ -1174,7 +1173,7 @@ mass_converter_mgl <- function (iondata, concs) {
     mass_mult <- 1.
     mass_units <- iondata[item, "conc_units"]  # convenience variable
     if (mass_units == 'meq' || mass_units == 'meq/L') {
-      mass_mult <- (iondata[item, "mw"])/iondata[item, "valence"] ## TODO: check this math
+      mass_mult <- (iondata[item, "mw"])/iondata[item, "valence"]
     }
     else { 
       mass_mult <- mass_conv[iondata[item,'conc_units']]
@@ -1540,16 +1539,19 @@ tags$style(HTML("
                                     numericInput("alkvalue", "Alkalinity Value", 5),
                                     numericInput("pH", "pH", 7)),
                               column(4,
-                                    selectInput("alkunits", "Concentration Units", c("meq/L", "mg/L CaCO3"))),
+                                    selectInput("alkunits", "Concentration Units", "mg/L CaCO3")),
                             ),
                             hr(),
                             fluidRow(
                               column(4, 
                                     h5("Bicarbonate Concentration (meq/L)"),
                                     textOutput("bicarbcin")),
+                              column(4, 
+                                    h5("Bicarbonate Concentration (mg C/L)"),
+                                    textOutput("bicarbcin_mg_C_L")),
                               column(4,
-                                    h5("Bicarbonate Concentration (mg/L)"),
-                                    textOutput("bicarbcinmgl")),
+                                    h5("Bicarbonate Concentration (mg HCO3-/L)"),
+                                    textOutput("bicarbcin_mg_HCO3_L")),
                               br()
                               
                             )#fluid row
@@ -1752,9 +1754,7 @@ server <- function(input, output, session) {
     req(input$file1)
     if(input$file1$type != "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"){ stop("Please upload a .xlsx file")}
   })
-  
-  ### TODO: Should the reject be within the process_files? Or somehow before that.... so merging the above 2 items?
-  
+    
   #When a file is uploaded, the session is reloaded. We do this because there does
   #Not seem to be any other way to overwrite the DataEditR tables. See the process_file
   #Notes for further elaboration.
@@ -1932,7 +1932,7 @@ server <- function(input, output, session) {
   KW<-10^-14
   
   bicarbconverted <- reactiveVal()
-  bicarbmeq2mgl <- 50.045001
+  # bicarbmeq2mgl <- 50.045001
   
   h_plus <- reactiveVal() # M
   observe({h_plus(10^-input$pH)})
@@ -1950,16 +1950,19 @@ server <- function(input, output, session) {
   HCO3_mM_L <- reactive(alpha_1_TOTCO3() * TOTCO3_mM()) # mM
   
   observe({
-    if(input$alkunits == 'meq/L') {
-      bicarbconverted(HCO3_mM_L() * bicarbmeq2mgl) # mM to mg/L CaCO3
-    } else if(input$alkunits == 'mg/L CaCO3') {
-      bicarbconverted(HCO3_mM_L()) # mg/L CaCO3
-    }
+    # if(input$alkunits == 'meq/L') {
+    #   bicarbconverted(HCO3_mM_L() * bicarbmeq2mgl) # mM to mg/L CaCO3
+    # } else if(input$alkunits == 'mg/L CaCO3') {
+    #   bicarbconverted(HCO3_mM_L()) # mg/L CaCO3
+    # }
+
+    bicarbconverted(HCO3_mM_L()) # mg/L CaCO3
   })
   
 
   output$bicarbcin<-renderText(bicarbconverted()) # mM
-  output$bicarbcinmgl<-renderText(bicarbconverted() * 61) # mM to mg HCO3-/L
+  output$bicarbcin_mg_C_L<-renderText(bicarbconverted() * 12) # mM to mg C/L
+  output$bicarbcin_mg_HCO3_L<-renderText(bicarbconverted() * 61) # mM to mg HCO3-/L
   
 
   
@@ -2116,9 +2119,7 @@ server <- function(input, output, session) {
   #------------------------------------------------------------------------------#
   #                 IEX CONCENTRATION OUTPUT DATAFRAME
   #------------------------------------------------------------------------------#
-  ### TODO: add better error handling model_prep can now return an 'error' value which is an integer, or the full data
-  #### only want to proceed if it isn't an error state
-  
+
   timeframe<-reactive({data.frame(hours=out()[[1]])})
   allchemicalconcs<-list()
   
