@@ -19,7 +19,7 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
-    <img src="DocumentPics/excelsheet.PNG"
+    <img src="DocumentPics/excelsheet.png"
          alt="Excel Input">
 </figure>
 
@@ -71,13 +71,13 @@ The input for the Excel-based input file must be formatted like the one shown in
 8.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
 
 ![plot1](DocumentPics/Slide7.PNG)
-![plot2](DocumentPics/Slide8.PNG)
+![plot2](DocumentPics/Slide8.png)
 Output for IEX_config.xlsx
 
 9. The user can use the check boxes on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
 
-![plottraces1](DocumentPics/Slide9.PNG)
-![plottraces2](DocumentPics/Slide10.PNG)
+![plottraces1](DocumentPics/Slide9.png)
+![plottraces2](DocumentPics/Slide10.png)
 Output for example_input_medium.xlsx 
 
 
