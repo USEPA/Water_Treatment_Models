@@ -71,10 +71,12 @@ The input for the Excel-based input file must be formatted like the one shown in
 8.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
 
 ![plot](DocumentPics/Slide7.PNG)
+Output for IEX_config.xlsk
 
 9. The user can use the check boxes on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
 
 ![plottraces](DocumentPics/Slide8.PNG)
+Output for example_input_medium.xlsx 
 
 
 
