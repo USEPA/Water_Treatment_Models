@@ -34,7 +34,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 &nbsp;
 
 ## Available Models
-* HSDM: Homogeneous Suface Diffision Model - Used for gel-type resin systems
+* HSDM: Homogeneous Surface Diffusion Model - Used for gel-type resin systems
 * PSDM: Pore and Surface Diffusion Model - Used for macroporous resin systems
 
 ## Quick Start
@@ -185,7 +185,7 @@ A note on selection of flow convention: The entry field for the two conventions 
 
 #### Handling Alkalinity
 
-Bicarbonate is the chemical used in this model to measure alkalinity. Some users may find that they are interested in the alkalinity of their water and want to observe how it is affected over time. To do this, we can treat the Bicarbonate in the ions tab as alkalinity (this ion can be renamed manually in the xlsx file or within the app). The corresponding Bicarbonate concentration level will need to be calculated from the measured alkalinity. There is a Bicarbonate concentration calculator within the app that takes a pH level and returns the corresponding Bicarbonate concentration level. To breifly summarize, if the user has alkalinity and wants to use that in their model, use Bicarbonate in the ions tab and replace "BICARBONATE" with "ALKALINITY" then use the alkalinity calculator to find and replace the correpsonding pH with mass per volume.
+Bicarbonate is the chemical used in this model to measure alkalinity. Some users may find that they are interested in the alkalinity of their water and want to observe how it is affected over time. To do this, we can treat the Bicarbonate in the ions tab as alkalinity (this ion can be renamed manually in the xlsx file or within the app). The corresponding Bicarbonate concentration level will need to be calculated from the measured alkalinity. There is a Bicarbonate concentration calculator within the app that takes a pH level and returns the corresponding Bicarbonate concentration level. To briefly summarize, if the user has alkalinity and wants to use that in their model, use Bicarbonate in the ions tab and replace "BICARBONATE" with "ALKALINITY" then use the alkalinity calculator to find and replace the corresponding pH with mass per volume.
 
 ![alk1](DocumentPics/alk1.PNG)
 
