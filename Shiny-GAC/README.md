@@ -104,19 +104,19 @@ In order for the tool to work the user must point their R Studio to a Python Int
 7.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
 
 ![plot](DocumentPics/Slide7.PNG)
-Output for Example_Multi.xlsk
+Output for Example_Multi.xlsx
 
 8. The user can use the check boxes on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
 
 ![plottraces](DocumentPics/Slide8.PNG)
-Output for Example_Multi.xlsk
+Output for Example_Multi.xlsx
 
-9. (Optional: Fitting the Data) The user can fit the K data to the any effluent data that is provided. To do this, simply click the 'Fit Data' button above the 'Save Data' button on the side bar panel. The fitted k data will then display on the 'Fitted Data' panel that the user can select on the header. Finally, a user may click 'Use Data' and this will replace the data in the Compounds tab with the fitted k data. The user can then rerun the program to view the updated results.
+9. (Optional: Fitting the Data) The user can fit the K data to the any effluent data that is provided. To do this, simply click the 'Fit Data' button above the 'Save Data' button on the side bar panel. The fitted k data will then display on the 'Fitted Data' panel that the user can select on the header. Finally, a user may click 'Use Data' and this will replace the data in the Compounds tab with the fitted k data. The user can then rerun the program to view the updated results. There is an example fitter input file, called Example_fitter.xlsx, that can be found in the Examples folder.
 
 ![Fit](DocumentPics/Fit.PNG)
 ![Use](DocumentPics/Use.PNG)
 ![FitResults](DocumentPics/FitResults.PNG)
-Output for Example_fitter.xlsk
+Output for Example_fitter.xlsx
 
 
 ## Appendix
