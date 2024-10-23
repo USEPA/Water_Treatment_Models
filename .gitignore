@@ -22,5 +22,5 @@ Shiny-IEX/.RData
 Shiny-IEX/.Rhistory
 Shiny-GAC/.Rhistory
 Shiny-GAC/.RData
-Shiny-GAC/temp_file/*.csv
-Shiny-IEX/temp_file/*.csv
+/Shiny-GAC/temp_file/*.csv
+/Shiny-IEX/temp_file/*.csv
