@@ -477,206 +477,213 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
 #------------------------------------------------------------------------------#
 
 PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
-  NR <- filter(params, name == "nr")$value # numer of grid points along bead radius
-  NZ <- filter(params, name == "nz")$value # number of grid points along column axis.
-  
-  Q <- filter(params, name == "Q")$value # meq/L in resin beads
-  L <- filter(params, name == "L")$value # bed depth (cm)
-  v <- filter(params, name == "v")$value # superficial flow velocity (cm/s)
-  EBED <- filter(params, name == "EBED")$value # bed porosity
-  EPOR <- filter(params, name == "EPOR")$value # pellet porosity
-  rb <- filter(params, name == "rb")$value # bead radius (cm)
-  
-  # Ion info
-  # Presaturant ion (reference ion A) listed first
-  ion_names <- ions$name
-  KxA <- ions$KxA
-  valence <- ions$valence 
-  
-  # mass transport paramters
-  kL <- ions$kL # film transfer (cm/s)
-  Ds <- ions$Ds # surface diffusion (sq. cm/s)
-  Dp <- ions$Dp # pore diffusion (sq. cm/s)
-  
-  # XXX: Obviously, we will want to load influent concentrations in a more R-idiomatic way. 
-  # This is basically Fortran77 :/.
-  C_in_t <- data.matrix(Cin)
-  
-  # Derived parameters ----
-  Nt_interp <- dim(C_in_t)[1]
-  NION <- length(ion_names)
-  LIQUID <- NR + 1 # mnemonic device
-  
-  C_in_t[, 1] <- C_in_t[, 1] * inputtime # convert time specification from hours to seconds
-  
-  
-  t_max = C_in_t[Nt_interp, 1]
-  times <- seq(0.0, t_max*0.99, length.out = nt_report) # seconds
-  # times is just a bit short of hours_max to avoid problems with the interpolator.
-  
-  # XXX: Unfortunately, I can't find  whether deSolve has any way to provide the the timesteps the integrator actually takes
-  # so we have to manually define the time scales for the inorganic ions and/or the longer eluting compounds.
-  # This is super annoying for troubleshooting BDF or Radau computations 
-  # and really inefficient+inconvenient for stiff problems in general.
-  
-  C_in_0 <- C_in_t[1, 2:(NION+1)] # initial influent concentration (meq/L)
-  CT <- sum(C_in_0) # total charge equivalent concentration in feed
-  EBCT <- L/v # empty bed contact time.
-  tc <- 1.0 # characteristic time # vestigial?
-  NEQ <- (NR+1) * NION * NZ
-  grid_dims = c((NR+1), NION, NZ)
-  
-  dv_ions <- valence == 2
-  mv_ions <- valence == 1
-  mv_ions[1] <- FALSE # exclude presaturant (refrence ion)
-  
-  # Interpolating functions ----
-  # for tracking C_in during integration.
-  interp_list <- vector(mode = "list", length = NION)
-  for (ii in 1:NION){
-    interp_list[[ii]] <- approxfun(C_in_t[ , 1], y = C_in_t[ , ii+1])
-  }
-  
-  # Initialize grid ----
-  # Liquid phase is index (NR+1)
-  x0 <- array(0.0, grid_dims)
-  x0[LIQUID, , 1] <- C_in_0 # set inlet concentrations
-  x0[LIQUID, 1, 2:NZ] <- CT  # Rest of liquid in column is full of presaturant
-  x0[1:NR, 1, ] <- Q # resin intially loaded with presaturant
-  dim(x0) <- c(NEQ)
-  
-  # collocation ----
-  colloc <- rad_colloc(NR)
-  BR <- colloc[[1]]  # 1-d radial Laplacian
-  WR <- colloc[[2]]  # Gauss-Radau quadrature weights
-  AZ <- ax_colloc(NZ) # 1st derivative along Z
-  
-  
-  # Derivative function ----
-  diffun <- function(t, x, parms){
+    NR <- filter(params, name == "nr")$value # numer of grid points along bead radius
+    NZ <- filter(params, name == "nz")$value # number of grid points along column axis.
     
-    dim(x) <- grid_dims
-    C <- x[LIQUID, , ]
-    Y <- x[1:NR, , ]
-    q <- Y / (1 - EPOR)
+    Q <- filter(params, name == "Q")$value # meq/L in resin beads
+    L <- filter(params, name == "L")$value # bed depth (cm)
+    v <- filter(params, name == "v")$value # superficial flow velocity (cm/s)
+    EBED <- filter(params, name == "EBED")$value # bed porosity
+    EPOR <- filter(params, name == "EPOR")$value # pellet porosity
+    rb <- filter(params, name == "rb")$value # bead radius (cm)
+    
+    # Ion info
+    # Presaturant ion (reference ion A) listed first
+    ion_names <- ions$name
+    KxA <- ions$KxA
+    valence <- ions$valence 
+    
+    # mass transport paramters
+    kL <- ions$kL # film transfer (cm/s)
+    Ds <- ions$Ds # surface diffusion (sq. cm/s)
+    Dp <- ions$Dp # pore diffusion (sq. cm/s)
+    
+    # XXX: Obviously, we will want to load influent concentrations in a more R-idiomatic way. 
+    # This is basically Fortran77 :/.
+    C_in_t <- data.matrix(Cin)
+    
+    # Derived parameters ----
+    Nt_interp <- dim(C_in_t)[1]
+    NION <- length(ion_names)
+    LIQUID <- NR + 1 # mnemonic device
+    
+    C_in_t[, 1] <- C_in_t[, 1] * inputtime # convert time specification from hours to seconds
     
     
-    CT_test <- colSums(C)
+    t_max = C_in_t[Nt_interp, 1]
+    times <- seq(0.0, t_max*0.99, length.out = nt_report) # seconds
+    # times is just a bit short of hours_max to avoid problems with the interpolator.
     
-    # update influent concentrations
+    # XXX: Unfortunately, I can't find  whether deSolve has any way to provide the the timesteps the integrator actually takes
+    # so we have to manually define the time scales for the inorganic ions and/or the longer eluting compounds.
+    # This is super annoying for troubleshooting BDF or Radau computations 
+    # and really inefficient+inconvenient for stiff problems in general.
+    
+    C_in_0 <- C_in_t[1, 2:(NION+1)] # initial influent concentration (meq/L)
+    CT <- sum(C_in_0) # total charge equivalent concentration in feed
+    EBCT <- L/v # empty bed contact time.
+    tc <- 1.0 # characteristic time # vestigial?
+    NEQ <- (NR+1) * NION * NZ
+    grid_dims <- c((NR+1), NION, NZ)
+    norm_dim <- c(NR, NION, NZ)
+    axial_dim <- c(NION, NZ)
+    
+    ones_nz_nion <- array(1, c((NZ-1), (NION-1)))
+    ones_nion_nz <- array(1, c((NION-1), (NZ-1)))
+    
+    
+    dv_ions <- valence == 2
+    mv_ions <- valence == 1
+    mv_ions[1] <- FALSE # exclude presaturant (refrence ion)
+    
+    # Interpolating functions ----
+    # for tracking C_in during integration.
+    interp_list <- vector(mode = "list", length = NION)
     for (ii in 1:NION){
-      C[ii, 1] <- interp_list[[ii]](t)
+        interp_list[[ii]] <- approxfun(C_in_t[ , 1], y = C_in_t[ , ii+1])
     }
     
-    # advection collocation intermediate step
-    AZ_C <- array(0.0, c(NION, NZ))
-    for (ii in 1:NION) {
-      AZ_C[ii, ] <- AZ%*%C[ii, ]
-    }
+    # Initialize grid ----
+    # Liquid phase is index (NR+1)
+    x0 <- array(0.0, grid_dims)
+    x0[LIQUID, , 1] <- C_in_0 # set inlet concentrations
+    x0[LIQUID, 1, 2:NZ] <- CT  # Rest of liquid in column is full of presaturant
+    x0[1:NR, 1, ] <- Q # resin intially loaded with presaturant
+    dim(x0) <- c(NEQ)
+    
+    # collocation ----
+    colloc <- rad_colloc(NR)
+    BR <- colloc[[1]]  # 1-d radial Laplacian
+    WR <- colloc[[2]]  # Gauss-Radau quadrature weights
+    AZ <- ax_colloc(NZ) # 1st derivative along Z
     
     
-    dx_dt <- array(0.0, grid_dims)
-    
-    Cpore <- array(0.0, c(NR, NION, NZ))
-    
-    
-    if (2 %in% valence){
-      # divalent isotherm
-      for (jj in 1:NR){
-        for (ii in 2:NZ){
-          cc <- -CT_test[ii] 
-          bb <- 1 + (1/q[jj, 1, ii]) * sum(q[jj, mv_ions, ii]/KxA[mv_ions])
-          aa <- (1/q[jj,1,ii]**2) * q[jj,dv_ions, ii] / KxA[dv_ions]
-          denom <- -bb - sqrt(bb**2 - 4 * aa * cc)
-          Cpore[jj,1, ii] <- 2 * cc / denom
+    # Derivative function ----
+    diffun <- function(t, x, parms){
+        ## create empty arrays to fill                  ## Vectorizing CODE, JBB
+        AZ_C <- array(0.0, axial_dim)
+        dx_dt <- array(0.0, grid_dims)
+        Cpore <- array(0.0, norm_dim)
+        BR_Y <- array(0.0, norm_dim)
+        BR_Cpore <- array(0.0, norm_dim)
+        dY_dt <- array(0.0, norm_dim)
+        J <- array(0.0, axial_dim) 
+        surf_term <- array(0.0, axial_dim)
+        
+        ## start activity
+        dim(x) <- grid_dims
+        C <- x[LIQUID, , ]
+        Y <- x[1:NR, , ]
+        q <- Y / (1 - EPOR)
+        
+        CT_test <- colSums(C)
+        
+        # update influent concentrations
+        for (ii in 1:NION){
+            C[ii, 1] <- interp_list[[ii]](t)
         }
         
-        for (ii in 2:NION){
-          Cpore[jj, ii, 2:NZ] <- q[jj, ii, 2:NZ]/KxA[ii]*(Cpore[jj, 1, 2:NZ]/q[jj, 1, 2:NZ])**valence[ii]
+        # advection collocation intermediate step
+        AZ_C[1:NION, ] <- t(AZ%*%t(C))
+        
+        # temp_Cpore <- Cpore  ## need to comment out
+        
+        if (2 %in% valence){
+            # divalent isotherm                
+            for (jj in 1:NR){
+                
+                
+                ## Vectorized, JBB
+                cc <- -CT_test[2:NZ]
+                bb <- 1 + (1/q[jj, 1, 2:NZ])*colSums(q[jj, mv_ions, 2:NZ]/KxA[mv_ions])
+                aa <- (1/q[jj, 1, 2:NZ]**2)*q[jj, dv_ions, 2:NZ]/KxA[dv_ions]
+                denom <- -bb - sqrt(bb**2 - 4*aa*cc)
+                
+                Cpore[jj, 1, 2:NZ] <- 2*(cc/denom)
+                
+                temp_sub_a <- q[jj, 2:NION, 2:NZ]/KxA[2:NION]
+                temp_sub_b <- t(ones_nz_nion*(Cpore[jj, 1, 2:NZ]/q[jj, 1, 2:NZ]))**(ones_nion_nz*valence[2:NION])
+                Cpore[jj, 2:NION, 2:NZ] <- (temp_sub_a)*(temp_sub_b)
+                
+                
+                
+                
+                
+                
+            }
+            
+            
+        } else {
+            # monovalent isotherm
+            sum_terms <- array(0.0, c(NZ))
+            
+            for (jj in 1:NR){
+                for (ii in 2:NZ) {
+                    sum_terms[ii] <- sum(q[jj, ,ii] / KxA) / CT_test[ii]
+                }
+                
+                for (ii in 2:NION) {
+                    Cpore[jj, ii, 2:NZ] <- q[jj, ii, 2:NZ] / KxA[ii] / sum_terms[2:NZ]
+                }
+            }
         }
-      }
-      
-      
+        
+        C_star <- Cpore[NR, , ]  
+        
+        J[2:NION, 2:NZ] <- -kL[2:NION] * (C[2:NION, 2:NZ] - C_star[2:NION, 2:NZ])
+        
+        # surface flux calculation
+        J[1, 2:NZ] <- -colSums(J[2:NION, 2:NZ]) # Implicitly calculate reference ion
+        
+        Jas <- 3 / rb * J
+        
+        dx_dt[LIQUID, , 2:NZ] <- (- v / L * AZ_C[ ,2:NZ] + (1 - EBED) * Jas[ ,2:NZ]) / EBED * tc 
+        
+        # internal diffusion
+        for (ii in 1:NION) {
+            temp <- BR%*%Y[ , ii, 2:NZ]
+            dim(temp) <- c(NR, NZ-1)
+            BR_Y[, ii, 2:NZ] <- temp
+            
+            temp <- BR%*%Cpore[ , ii, 2:NZ]
+            dim(temp) <- c(NR, NZ-1)
+            BR_Cpore[ , ii, 2:NZ] <- temp
+        }
+        
+        
+        dY_dt[ , 2:NION, ] <- tc * (EPOR * (Dp[2:NION] - Ds[2:NION]) * BR_Cpore[ , 2:NION, ] + Ds[2:NION] * BR_Y[ , 2:NION, ]) / rb**2
+        
+        temp <- aperm(dY_dt, c(2,1,3)) ## reorder so the colSums function gives the right result
+        dY_dt[1:(NR-1), 1, 2:NZ] <- -colSums(temp[2:NION, 1:(NR-1), 2:NZ])
+        
+        for (ii in 1:NION){
+            surf_term[ii, 2:NZ] <- WR[1:(NR-1)]%*%dY_dt[1:(NR-1), ii, 2:NZ]
+        }
+        
+        dx_dt[NR, , 2:NZ] <- (-tc / rb * J[ , 2:NZ] - surf_term[ , 2:NZ])/WR[NR]
+        dx_dt[1:(NR-1), , 2:NZ] <- dY_dt[1:(NR-1), , 2:NZ]
+        
+        
+        list(dx_dt) # return derivatives
+    }
+    
+    # Integration ----
+    out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "lsode") ## changed from lsodes, unstable CDS/JBB
+    # XXX: is there something we can do with diagnose(out) ?
+    
+    t_out = out[ , 1]/60/60 # hours
+    x_out = out[ , 2:(NEQ+1)]
+    x_out_empty = out[ , 2:(NEQ+1)]*0
+    dim(x_out) <- c(nt_report, (NR+1), NION, NZ)
+    dim(x_out_empty) <- c(nt_report, (NR+1), NION, NZ)
+    
+    # Check charge balances at outlet at end of simulation XXX: Maybe move inside of HSDMIX?
+    if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
+        return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
     } else {
-      # monovalent isotherm  
-      sum_terms <- array(0.0, c(NZ))
-      
-      for (jj in 1:NR){
-        for (ii in 2:NZ) {
-          sum_terms[ii] <- sum(q[jj, ,ii] / KxA) / CT_test[ii]
-        }
-        
-        for (ii in 2:NION) {
-          Cpore[jj, ii, 2:NZ] <- q[jj, ii, 2:NZ] / KxA[ii] / sum_terms[2:NZ]
-        }
-      }
+        showNotification("Error: There was a problem running this model.", duration = notificationDuration, closeButton = TRUE, type = "error")
+        return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
     }
-    
-    C_star <- Cpore[NR, , ]  
-    
-    
-    J <- array(0.0, c(NION, NZ))  
-    for (ii in 2:NION) {
-      J[ii , 2:NZ] <- -kL[ii] * (C[ii , 2:NZ] - C_star[ii , 2:NZ])
-    }  
-    # surface flux calculation
-    J[1, 2:NZ] <- - colSums(J[2:NION, 2:NZ]) # Implicitly calculate reference ion
-    
-    Jas <- 3 / rb * J
-    
-    dx_dt[LIQUID, , 2:NZ] <- (- v / L * AZ_C[ ,2:NZ] + (1 - EBED) * Jas[ ,2:NZ]) / EBED * tc 
-    
-    
-    # internal diffusion (XXX: loops computationally slow)
-    BR_Y <- array(0.0, c(NR, NION, NZ))
-    BR_Cpore <- array(0.0, c(NR, NION, NZ))
-    for (ii in 1:NION){
-      for (jj in 2:NZ){
-        BR_Y[ , ii, jj] <- BR%*%Y[ , ii, jj]
-        BR_Cpore[ , ii, jj] <- BR%*%Cpore[ , ii, jj]
-      }
-    }
-    
-    
-    dY_dt <- array(0.0, c(NR, NION, NZ))
-    for (ii in 2:NION){
-      dY_dt[ , ii, ] <- tc * (EPOR * (Dp[ii] - Ds[ii]) * BR_Cpore[ , ii, ] + Ds[ii] * BR_Y[ , ii, ]) / rb**2
-    }
-    
-    for (ii in 1:(NR-1)){
-      dY_dt[ii, 1, 2:NZ] <- -colSums(dY_dt[ii, 2:NION, 2:NZ]) # Implicitly calculate reference ion
-    }
-    
-    surf_term <- array(0.0, c(NION, NZ))
-    for (ii in 1:NION){
-      for (jj in 2:NZ){
-        surf_term[ii, jj] <- WR[1:(NR-1)]%*%dY_dt[1:(NR-1), ii, jj]
-      }
-    }
-    
-    dx_dt[NR, , 2:NZ] <- (-tc / rb * J[ , 2:NZ] - surf_term[ , 2:NZ])/WR[NR]
-    dx_dt[1:(NR-1), , 2:NZ] <- dY_dt[1:(NR-1), , 2:NZ]
-    
-    list(dx_dt) # return derivatives
-  }
-  
-  # Integration ----
-  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "lsode") ## replace lsodes ## CDS
-  # XXX: is there something we can do with diagnose(out) ?
-  
-  t_out = out[ , 1]/60/60 # hours
-  x_out = out[ , 2:(NEQ+1)]
-  x_out_empty = out[ , 2:(NEQ+1)]*0
-  dim(x_out) <- c(nt_report, (NR+1), NION, NZ)
-  dim(x_out_empty) <- c(nt_report, (NR+1), NION, NZ)
-  
-  # Check charge balances at outlet at end of simulation XXX: Maybe move inside of HSDMIX?
-  if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
-    return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
-  } else {
-    showNotification("Error: There was a problem running this model.", duration = notificationDuration, closeButton = TRUE, type = "error")
-    return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
-  }
 }
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
