@@ -12,14 +12,14 @@ The Ion Exchange Model is a tool used to model a strong-base anion exchange unit
 ## Requirements 
 1. R/R Studio (At least version 2022.7)
 2. Excel (recommended)
-3. Files: Ion_Exchange_Model.R, config.xlsx
+3. Files: Ion_Exchange_Model.R, IEX_config.xlsx
 4. Optional: example.xlsx
 
 ## Excel-based Input File
 The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. HSDM looks for sheetnames of "params", "ions" and "Cin". If one or more of those sheets are not found then the app cannot be run using that input file. The app is loaded with default data if the user does not want to use an Excel-based file, and additional changes can be made within the GUI. There is a fourth optional sheet "effluent", which represents data from a previous model or experiment. This does not need to be present when the file is ran and is not required to exist in the excel sheet.
 
 <figure>
-    <img src="DocumentPics/excelsheet.PNG"
+    <img src="DocumentPics/excelsheet.png"
          alt="Excel Input">
 </figure>
 
@@ -34,12 +34,12 @@ The input for the Excel-based input file must be formatted like the one shown in
 &nbsp;
 
 ## Available Models
-* HSDM: Homogeneous Suface Diffision Model - Used for gel-type resin systems
+* HSDM: Homogeneous Surface Diffusion Model - Used for gel-type resin systems
 * PSDM: Pore and Surface Diffusion Model - Used for macroporous resin systems
 
 ## Quick Start
 
-1. In RStudio, click the "Run App" button in the top right corner of the window that contains the code
+1. In RStudio, click the "Run App" button in the top right corner of the window that contains the code. If you are using the web version you can jump to step 2.
 
 ![Start](DocumentPics/start.PNG)
 
@@ -51,7 +51,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 ![Model Selection](DocumentPics/modelselector.PNG)
 
-4. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus
+4. (Optional) Change the parameters to match the specifications of your Ion Exchange apparatus. This can be done by typing in a number or using the scroll wheel to increment the number up or down.
 
 ![Inputs](DocumentPics/Slide2.PNG)
 
@@ -60,7 +60,7 @@ The input for the Excel-based input file must be formatted like the one shown in
 ![Adjust](DocumentPics/IonsTab.PNG)
 ![IonEdit](DocumentPics/Slide4.PNG)
 
-6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
+6.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. A notification window will appear in the bottom right corner to either indicate a successful run or give an error message. 5 total chemicals with 2 concentration points takes about 1-2 minutes.
 
 ![Run](DocumentPics/Slide5.PNG)
 
@@ -70,11 +70,15 @@ The input for the Excel-based input file must be formatted like the one shown in
 
 8.	Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
 
-![plot](DocumentPics/Slide7.PNG)
+![plot1](DocumentPics/Slide7.PNG)
+![plot2](DocumentPics/Slide8.png)
+Output for IEX_config.xlsx
 
 9. The user can use the check boxes on the left to toggle the influent data and the effluent data (if available). Note that the user can toggle on and off individual traces on the graph by clicking on the desired data on the legend (data will be grayed out if it isn't displayed).
 
-![plottraces](DocumentPics/Slide8.PNG)
+![plottraces1](DocumentPics/Slide9.png)
+![plottraces2](DocumentPics/Slide10.png)
+Output for example_input_medium.xlsx 
 
 
 
@@ -137,7 +141,7 @@ The Output tab provides a graphical output of results after a simulation is comp
 
 The graphs will dynamically update to reflect the current selection. If c/c0 is selected, the output is scaled relative to c0 (the initial concentrations), which is the first row of the "Concentration Points" table. "Bed volumes x1000" presents time in thousands of bed volumes treated, where bed volume is the empty bed volume of the media in the system (relating to bed length if velocity is specified, or bed length and diameter if flow rate is specified).
 
-The data can be exported by clicking the save button. This saves the data points to an excel file where the chemicals inputted into the analysis are the header and the columns are the corresponding concentration points with the first column being the corresponding time.
+The data can be exported by clicking the save button. There is a drop down selector to choose which units are used. This saves the data points to an excel file where the chemicals inputted into the analysis are the header and the columns are the corresponding concentration points with the first column being the corresponding time.
 
 To export the graph, the user can hover over the graph with their cursor which will display the graph settings in the top right. Clicking the camera icon will open up a file explorer where the user can save the graphic.
 
@@ -181,7 +185,7 @@ A note on selection of flow convention: The entry field for the two conventions 
 
 #### Handling Alkalinity
 
-Bicarbonate is the chemical used in this model to measure alkalinity. Some users may find that they are interested in the alkalinity of their water and want to observe how it is affected over time. To do this, we can treat the Bicarbonate in the ions tab as alkalinity (this ion can be renamed manually in the xlsx file or within the app). The corresponding Bicarbonate concentration level will need to be calculated from the measured alkalinity. There is a Bicarbonate concentration calculator within the app that takes a pH level and returns the corresponding Bicarbonate concentration level. To breifly summarize, if the user has alkalinity and wants to use that in their model, use Bicarbonate in the ions tab and replace "BICARBONATE" with "ALKALINITY" then use the alkalinity calculator to find and replace the correpsonding pH with mass per volume.
+Bicarbonate is the chemical used in this model to measure alkalinity. Some users may find that they are interested in the alkalinity of their water and want to observe how it is affected over time. To do this, we can treat the Bicarbonate in the ions tab as alkalinity (this ion can be renamed manually in the xlsx file or within the app). The corresponding Bicarbonate concentration level will need to be calculated from the measured alkalinity. There is a Bicarbonate concentration calculator within the app that takes a pH level and returns the corresponding Bicarbonate concentration level. To briefly summarize, if the user has alkalinity and wants to use that in their model, use Bicarbonate in the ions tab and replace "BICARBONATE" with "ALKALINITY" then use the alkalinity calculator to find and replace the corresponding pH with mass per volume.
 
 ![alk1](DocumentPics/alk1.PNG)
 
@@ -202,3 +206,5 @@ David Colantonio
 Levi Haupert
 
 Jonathan Burkhardt
+
+Cole Sandlin
