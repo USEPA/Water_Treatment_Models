@@ -83,12 +83,17 @@ density_conv<-c("g/ml"=1)
 
 weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.204)
 
+prvector<-c("cm", "m", "mm", "in", "ft")
+pdvector<-c("g/ml")
+advector<-c("g/ml")
 lengthvector<-c("cm", "m", "mm", "in", "ft")
 velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")
 timevector <- c("hrs","days")
 flowratevector<-c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm", "mgd")
 diametervector<-c("cm", "m", "mm", "in", "ft")
+
 weightvector<-c("kg", "g", "lb")
+concentrationvector<-c("ug, ng, mg")
 wfoulingvector <- c("Organic Free", "Rhine", "Portage", "Karlsruhe", "Wausau", "Houghton") # Used to store accepted water types
 cfoulingvector <- c("halogenated alkenes", "halogenated alkanes", "halogenated alkanes QSPR", "trihalo-methanes", "aromatics", "nitro compounds", "chlorinated hydrocarbon", "phenols", "PNAs", "pesticides", "PFAS") # Used to store accepted chemical types
 
@@ -948,16 +953,27 @@ server <- function(input, output, session) {
   tortuosity <- reactive({filter(columnSpecs(), name == 'tortuosity')$value})
   influentID <- reactive({filter(columnSpecs(), name == 'influentID')$value})
   effluentID <- reactive({filter(columnSpecs(), name == 'effluentID')$value})
-  units <- reactive({filter(columnSpecs(), name == 'units')$value})
   time <- reactive({filter(columnSpecs(), name == 'time')$value})
   nrv <- reactive(7)
   nzv <- reactive(12)
   
   #String Values
-  radiusvector<-reactive({
-    rv <- c(filter(columnSpecs(), name == 'radius')$units, lengthvector)
-    
-    return(unique(rv))
+  prvec <- reactive({
+    prv <- c(filter(columnSpecs(), name == 'radius')$units, prvector)
+
+    return(unique(prv))
+  })
+
+  pdvec <- reactive({
+    pdv <- c(filter(columnSpecs(), name == 'particleDensity')$units, pdvector)
+
+    return(unique(pdv))
+  })
+
+  advec <- reactive({
+    adv <- c(filter(columnSpecs(), name == 'apparentDensity')$units, advector)
+
+    return(unique(adv))
   })
   
   lengthvec <- reactive({
@@ -970,6 +986,12 @@ server <- function(input, output, session) {
     wvec <- c(filter(columnSpecs(), name == 'weight')$units, weightvector)
 
     return(unique(wvec))
+  })
+
+  concvec <- reactive({
+    concv <- c(filter(columnSpecs(), name == 'units')$value, concentrationvector)
+
+    return(unique(concv))
   })
   
   timevec <- reactive({
@@ -989,7 +1011,7 @@ server <- function(input, output, session) {
 
     return(unique(diamv))
   })
-  
+
   # Updates water type select input choiecs
   wfoulingvec <- reactive({
     wfoulingv <- c(select(read.csv("temp_file/Foulingdata.csv"), WaterFouling), wfoulingvector)
@@ -1015,10 +1037,15 @@ server <- function(input, output, session) {
     updateNumericInput(session, "psdfrv", value = psdfr())
     updateNumericInput(session, "Lv", value = length())
     updateNumericInput(session, "wv", value = format(weight(), digits = 4, scientific = FALSE))
+    updateNumericInput(session, "Dv", value = diameter())
+    updateNumericInput(session, "tortuv", value = tortuosity())
     updateNumericInput(session, "nrv", value = nrv())
     updateNumericInput(session, "nzv", value = nzv())
-    updateSelectInput(session, "rbunits", choices = radiusvector())
+    updateSelectInput(session, "prunits", choices = prvec())
+    updateSelectInput(session, "pdunits", choices = pdvec())
+    updateSelectInput(session, "adunits", choices = advec())
     updateSelectInput(session, "LengthUnits", choices = lengthvec())
+    updateSelectInput(session, "conc_units", choices = concvec())
     updateSelectInput(session, "tunits2", choices = timevec())
     updateSelectInput(session, "wunits", choices = weightvec())
     updateSelectInput(session, "FlowrateUnits", choices = flowvec())
