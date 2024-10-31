@@ -93,7 +93,7 @@ flowratevector<-c("cm^3/s", "m^3/s", "ft^3/s", "mL/s", "L/min", "mL/min", "gpm",
 diametervector<-c("cm", "m", "mm", "in", "ft")
 
 weightvector<-c("kg", "g", "lb")
-concentrationvector<-c("ug, ng, mg")
+concentrationvector<-c("ug", "ng", "mg")
 wfoulingvector <- c("Organic Free", "Rhine", "Portage", "Karlsruhe", "Wausau", "Houghton") # Used to store accepted water types
 cfoulingvector <- c("halogenated alkenes", "halogenated alkanes", "halogenated alkanes QSPR", "trihalo-methanes", "aromatics", "nitro compounds", "chlorinated hydrocarbon", "phenols", "PNAs", "pesticides", "PFAS") # Used to store accepted chemical types
 
@@ -1180,12 +1180,12 @@ server <- function(input, output, session) {
   
   #Putting Data into correct shapes
   effdat_plot <- reactive({
-    effluent_data_processor(effdat())
+    output_conv(effluent_data_processor(effdat()), input)
   })
   
   influent_plot <- reactive({
     dat <- influent_chemical_renamer(infdat())
-    influent_organizer(dat)
+    output_conv(influent_organizer(dat), input)
   })
   
   #------------------------------------------------------------------------------#
