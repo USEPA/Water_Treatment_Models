@@ -31,25 +31,23 @@ os.chdir(srt_dir)
 
 
 
+dpi = 150 ## plotting option
 
-
-
-##
-print('\nTesting\n')
-print('x'*30,'\n')
-
-
-test_gac_gac = False #True #False#True #False
-test_ix_ix = False #True #False
-test_gac_ix = False #True #True #False
+test_gac_gac = True 
+test_ix_ix = True 
+test_gac_ix = True 
 test_ix_gac = True
+
+
+swap_days = 130
 
 ### Generic Testing
 ####   TEST GAC
 if test_gac_gac:
+    print('################# Testing GAC-GAC ##############################')
     
     
-    fn = srt_dir + '/Example_TCE.xlsx'
+    fn = 'test_LL/test_gac.xlsx'
 
     # =============================================================================
     # READ IN Chemical Property Information
@@ -84,39 +82,36 @@ if test_gac_gac:
         print(LL.avail_ions)
         print(LL.ions)
 
-    raw_data /= 10 # reduce overall concentration
-        
-        
-    swap_days = 133
-     
-    plt.figure()
-    
-    # =============================================================================
-    # run single column - to compare
-    # =============================================================================
-    for comp in compounds:
-        # SETTING UP PSDM simulation column
-        column = PSDM.PSDM(column_info[carbons[0]], 
-                        chem_data, 
-                        raw_data,
-                        nr=8,
-                        nz=12, 
-                        k_data=k_data,\
-                        optimize=False
-                        )
-        
-        column.test_range = np.array([k_data[comp]['K']])
-        column.xn_range = np.array([k_data[comp]['1/n']])
-        
-        # RUNNING the simulation
-        #only results is used in this example
-        _compound, _k, _xn, _ssqs, results = column.run_psdm_kfit(comp)
-        
-        
-        plt.plot(results.index, 
-                 results.values/1e3,
-                 ls=':',
-                 label=f"{comp} - Single")
+   
+    # swap_days = 300
+    plt.figure(dpi=dpi)
+    if False:
+        # =============================================================================
+        # run single column - to compare
+        # =============================================================================
+        for comp in compounds:
+            # SETTING UP PSDM simulation column
+            column = PSDM.PSDM(column_info[carbons[0]], 
+                            chem_data, 
+                            raw_data,
+                            nr=8,
+                            nz=12, 
+                            k_data=k_data,\
+                            optimize=False
+                            )
+            
+            column.test_range = np.array([k_data[comp]['K']])
+            column.xn_range = np.array([k_data[comp]['1/n']])
+            
+            # RUNNING the simulation
+            #only results is used in this example
+            _compound, _k, _xn, _ssqs, results = column.run_psdm_kfit(comp)
+            
+            
+            plt.plot(results.index, 
+                    results.values,
+                    ls=':',
+                    label=f"{comp} - Single")
         
         
     # =============================================================================
@@ -126,66 +121,83 @@ if test_gac_gac:
                    properties=chem_data,
                    column_info=column_info[carbons[0]],
                    k_data=k_data,
+                   water_type='Rhine',
+                   chem_type='PFAS',
                    )
     
     results_dict = LL_gac.run_LL(swap_days, LL_type='gac')
     for comp in compounds:
-        
-        mid = results_dict['mid results'][comp]
-        plt.plot(mid.index, mid.values/1e3, label=f"{comp} - Mid")
-        
         effl = results_dict['effluent results'][comp]
-        plt.plot(effl.index, effl.values/1e3, label=f"{comp} - Effl")
+        p = plt.plot(effl.index, effl.values, ls='-', label=f"{comp}")
+        
+        if True:
+            mid = results_dict['mid results'][comp]
+            plt.plot(mid.index, mid.values, ls='--', alpha=0.5, color=p[0].get_color()) ## shows mid-point as dashed line
+        
+        
         
     
-    plt.legend()
-    plt.title(f"Swap Days: {swap_days}")
-    plt.ylabel('Concentration (mg/L)')
-    plt.xlabel('Time (days)')
+    plt.legend(loc='upper left', ncols=2, )
+    plt.title(f"GAC-GAC (Swap Day: {swap_days})", fontsize=20)
+    plt.ylabel('Concentration (ng/L)', fontsize=20)
+    plt.xlabel('Time (days)', fontsize=20)
     plt.xlim((0, swap_days))
 
 ### Test IX
 if test_ix_ix: 
+    print('################# Testing IX-IX ##############################')
+    plt.figure(dpi=dpi)
+
     ix_fn = 'test_LL/lag_iex.xlsx'
     
-    LL_ix = LLobj(ix_filename=ix_fn, ix_nr=10, ix_nz=15)
+    LL_ix = LLobj(ix_filename=ix_fn, ix_nr=7, ix_nz=13)
     
-    swap_days = 500
-    results = LL_ix.run_LL(swap_days, LL_type='ix')
-    print(results)
+    # swap_days = 300
+    results = LL_ix.run_LL(2*swap_days, LL_type='ix')
+    # print(results)
     
     for comp in results['effluent'].keys():
         temp_res = results['effluent results'][comp]
         if comp not in ['CHLORIDE','SULFATE','BICARBONATE','NITRATE']:
-            plt.plot(temp_res.index,
-                     temp_res.values, ## file had mg/L specified for PFAS
-                     label=comp)
-    plt.legend()
-    plt.title(f"Swap Days: {swap_days}")
-    plt.ylabel('Concentration (ng/L)')
-    plt.xlabel('Time (days)')
-    
-    plt.figure()
-    
-    for comp in results['effluent'].keys():
-        temp_res = results['effluent results'][comp]
-        if comp in ['CHLORIDE','SULFATE','BICARBONATE','NITRATE']:
-            mw = LL_ix.ix_data['ions'][LL_ix.ix_data['ions']['name'] == comp]['mw'].values[0]
-            val = LL_ix.ix_data['ions'][LL_ix.ix_data['ions']['name'] == comp]['valence'].values[0]
+            p = plt.plot(temp_res.index,
+                        temp_res.values, ## file had mg/L specified for PFAS
+                        label=comp)
             
-            plt.plot(temp_res.index,
-                     temp_res.values * mw / val,
-                     label=comp)
+            plt.plot(results['mid results'][comp].index,
+                     results['mid results'][comp].values,
+                     alpha=0.5,
+                     #f"GAC-Lead: {comp}",
+                     ls=':', 
+                     color = p[0].get_color())
+            
+    plt.legend(loc='upper left', ncols=2, title='Lag: Solid, Lead: Dotted')
+    plt.title(f"IX-IX (Swap Day: {2*swap_days})", fontsize=20)
+    plt.ylabel('Concentration (ng/L)', fontsize=20)
+    plt.xlabel('Time (days)', fontsize=20)
     
-    plt.legend()
-    plt.xlim((0,4))
-    plt.title(f"Swap Days: {swap_days}")
-    plt.ylabel('Concentration (mg/L)')
-    plt.xlabel('Time (days)')
+    if False: ## turn on if you want to see major anions
+        plt.figure()
+        for comp in results['effluent'].keys():
+            temp_res = results['effluent results'][comp]
+            if comp in ['CHLORIDE','SULFATE','BICARBONATE','NITRATE']:
+                mw = LL_ix.ix_data['ions'][LL_ix.ix_data['ions']['name'] == comp]['mw'].values[0]
+                val = LL_ix.ix_data['ions'][LL_ix.ix_data['ions']['name'] == comp]['valence'].values[0]
+                
+                plt.plot(temp_res.index,
+                        temp_res.values * mw / val,
+                        label=comp)
+        
+        plt.legend(loc='upper left',)
+        plt.xlim((0, 4))
+        plt.title(f"IX-IX (Swap Days: {2*swap_days})", fontsize=20)
+        plt.ylabel('Concentration (mg/L)', fontsize=20)
+        plt.xlabel('Time (days)', fontsize=20)
     
     
 #### TEST heterogeneous 
 if test_gac_ix or test_ix_gac:
+    
+
     ix_fn = 'test_LL/lag_iex.xlsx'
     gac_fn = 'test_LL/test_gac.xlsx'
     
@@ -202,23 +214,55 @@ if test_gac_ix or test_ix_gac:
                                                    data_sheet='data',\
                                                    column_sheet='columnSpecs'
                                                   )
+    
+    # swap_days = 300
+
     if test_gac_ix:
+        print('################# Testing GAC-IX ##############################')
+
         LL_gac_ix = LLobj(raw_data=raw_data,
                             properties=chem_data,
                             column_info=column_info[carbons[0]],
                             k_data=k_data,
-                            ix_filename=ix_fn
+                            ix_filename=ix_fn,
+                            water_type='Rhine',
+                            chem_type='PFAS',
                         )
         
-        results = LL_gac_ix.run_LL(500, LL_type='gac-ix')
+        results = LL_gac_ix.run_LL(2*swap_days, LL_type='gac-ix')
     
-        print(results)
-        results['effluent results'].plot.line()
+        plt.figure(dpi=dpi)
+        for comp in results['effluent results'].columns:
+            try:
+                p = plt.plot(results['mid results'].index,
+                        results['mid results'][comp].values,
+                        alpha=0.5,
+                        #f"GAC-Lead: {comp}",
+                        ls=':')
+                color = p[0].get_color()
+                plt.plot(results['effluent results'].index,
+                        results['effluent results'][comp].values,
+                        label=comp, # label=f"IX-Lag: {comp}",
+                        color=color)
+            except:
+
+                pass
+        
+        plt.legend(loc='upper left', ncols=2, title="Solid: IX-Lag, Dotted: GAC-Lead")
+
+        plt.title(f'GAC Lead-IX Lag (Swap Day: {2*swap_days})',  fontsize=20)
+        plt.ylabel('Concentration (ng/L)', fontsize=20)
+        plt.xlabel('Time (days)', fontsize=20)
+        plt.tight_layout() 
+
+
     
     
     
     ### IX-GAC 
     if test_ix_gac:
+        print('################# Testing IX-GAC ##############################')
+
         LL_ix_gac = LLobj(raw_data=raw_data,
                             properties=chem_data,
                             column_info=column_info[carbons[0]],
@@ -227,27 +271,31 @@ if test_gac_ix or test_ix_gac:
                             water_type='Rhine',
                             chem_type='PFAS',
                         )
-        results2 = LL_ix_gac.run_LL(1500, LL_type='ix-gac')
+        results2 = LL_ix_gac.run_LL(2*swap_days, LL_type='ix-gac')
         
+        plt.figure(dpi=dpi)
+        for comp in results2['effluent results'].columns:
+            try: 
+                p = plt.plot(results2['effluent results'].index,
+                        results2['effluent results'][comp].values,
+                        label=comp, #f"GAC-Lag: {comp}",
+                        )
+                
+                plt.plot(results2['mid results'].index,
+                        results2['mid results'][comp].values,
+                        # label=f"IX-Lead: {comp}",
+                        ls=':',
+                        alpha=0.5,
+                        color=p[0].get_color())
+   
+            except:
+                pass
         
-        plt.figure()
-        for comp in results2['effluent results'].columns:#['PFHxA']:#'PFHpA', 'PFHxS', 'PFBA']:
+        plt.legend(loc='upper left', ncols=2, title="Solid: GAC-Lag, Dotted: IX-Lead")
 
-            p = plt.plot(results2['mid results'].index,
-                     results2['mid results'][comp].values,
-                     label=f"IX-Lead: {comp}",
-                     ls=':')
-            color = p[0].get_color()
-            plt.plot(results2['effluent results'].index,
-                     results2['effluent results'][comp].values,
-                     label=f"GAC-Lag: {comp}",
-                     color=color)
-        
-        plt.legend()
-
-        plt.title('IX Lead-GAC Lag')
-        plt.ylabel('Concentration (ng/L)')
-        plt.xlabel('Time (days)')
+        plt.title(f'IX Lead-GAC Lag (Swap Day: {2*swap_days})', fontsize=20)
+        plt.ylabel('Concentration (ng/L)', fontsize=20)
+        plt.xlabel('Time (days)', fontsize=20)
         plt.tight_layout()    
         
     
