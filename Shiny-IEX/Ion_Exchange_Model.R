@@ -454,7 +454,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   }
   
   # Integration ----
-  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "lsodes")  ## replace bdf ## JBB
+  out <- ode(y = x0, times = times, func = diffun, parms = NULL, method = "lsode")  ## replace bdf ## JBB
   # XXX: is there something we can do with diagnose(out) ?
   
   t_out = out[ , 1]/60/60 # hours
