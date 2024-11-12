@@ -29,7 +29,8 @@ plt.close('all') # can be commented out, this just closes any previously generat
 import PSDM
 os.chdir(srt_dir)
 
-
+## predefine compounds included with the input files
+included_compounds = ['PFBA', 'PFPeA', 'PFHxA', 'PFHpA', 'PFOA', 'PFBS', 'PFHxS', 'PFOS']
 
 dpi = 150 ## plotting option
 
@@ -126,7 +127,7 @@ if test_gac_gac:
                    )
     
     results_dict = LL_gac.run_LL(swap_days, LL_type='gac')
-    for comp in compounds:
+    for comp in included_compounds:
         effl = results_dict['effluent results'][comp]
         p = plt.plot(effl.index, effl.values, ls='-', label=f"{comp}")
         
@@ -156,7 +157,7 @@ if test_ix_ix:
     results = LL_ix.run_LL(2*swap_days, LL_type='ix')
     # print(results)
     
-    for comp in results['effluent'].keys():
+    for comp in included_compounds:
         temp_res = results['effluent results'][comp]
         if comp not in ['CHLORIDE','SULFATE','BICARBONATE','NITRATE']:
             p = plt.plot(temp_res.index,
@@ -232,7 +233,7 @@ if test_gac_ix or test_ix_gac:
         results = LL_gac_ix.run_LL(2*swap_days, LL_type='gac-ix')
     
         plt.figure(dpi=dpi)
-        for comp in results['effluent results'].columns:
+        for comp in included_compounds:
             try:
                 p = plt.plot(results['mid results'].index,
                         results['mid results'][comp].values,
@@ -274,7 +275,7 @@ if test_gac_ix or test_ix_gac:
         results2 = LL_ix_gac.run_LL(2*swap_days, LL_type='ix-gac')
         
         plt.figure(dpi=dpi)
-        for comp in results2['effluent results'].columns:
+        for comp in included_compounds:
             try: 
                 p = plt.plot(results2['effluent results'].index,
                         results2['effluent results'][comp].values,
