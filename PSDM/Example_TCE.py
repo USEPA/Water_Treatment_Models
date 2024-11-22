@@ -60,7 +60,7 @@ compounds, carbons, = PSDM.process_input_file(fn,\
 print('Output files are saved to folder with example files')
 print('Running Example 1\n','-'*50)
 # File to write out results    
-xlsx_fn1 = 'Example_TCE_' + carbons[0] + '_example1.xlsx'
+xlsx_fn1 = f'Example_TCE_{carbons[0]}_example1.xlsx'
 
 for comp in compounds:
     print(comp)
@@ -75,7 +75,7 @@ for comp in compounds:
                    optimize=False
                    )
     
-    print('EBCT: ', np.round(column.ebct, 2), ' min') 
+    print(f'EBCT: {column.ebct:.2f} min')  
     column.test_range = np.array([k_data[comp]['K']])
     column.xn_range = np.array([k_data[comp]['1/n']])
     
@@ -90,11 +90,11 @@ for comp in compounds:
              label='PSDM')
     (raw_data[column.influent][comp]/1000.).plot.line(label='influent',linestyle=':')
     plt.legend()
-    plt.title(comp+'\nK: '+repr(round(_k,2))+' ($\mu$g/g)(L/$\mu$g)$^{1/n}$ - 1/n: '+repr(round(_xn,3)))
+    plt.title(f'{comp}\nK: {_k:,.2f} ($\mu$g/g)(L/$\mu$g)$^1$$^/$$^n$ - 1/n: {_xn:.3f}')
     plt.xlabel(column_info[carbons[0]]['time'])
     plt.ylabel('Concentration - mg/L (ppm)')
     plt.savefig(comp+'_'+carbons[0]+'_example1.png', dpi=300)
-    plt.close()
+    # plt.close()
     
     tab2 = 'model-'+comp
     with pd.ExcelWriter(xlsx_fn1, engine='openpyxl') as writer:
@@ -111,7 +111,7 @@ raw_data2[column.influent] = 5000 # 5ppm, rather than 50 ppm in original file
 
 xlsx_fn1a = 'Example_TCE_' + carbons[0] + '_example1a.xlsx'
 
-
+plt.figure()
 for comp in compounds:
     print(comp)
     
@@ -125,7 +125,7 @@ for comp in compounds:
                    optimize=False
                    )
     
-    print('EBCT: ', np.round(column.ebct, 2), ' min') 
+    print(f'EBCT: {column.ebct:.2f} min')  
     column.test_range = np.array([k_data[comp]['K']])
     column.xn_range = np.array([k_data[comp]['1/n']])
     
@@ -145,7 +145,7 @@ for comp in compounds:
                    optimize=False
                    )
     
-    print('EBCT: ', np.round(column2.ebct, 2), ' min') 
+    print(f'EBCT: {column2.ebct:.2f} min')  
     column2.test_range = np.array([k_data[comp]['K']])
     column2.xn_range = np.array([k_data[comp]['1/n']])
     _compound, _k, _xn, _ssqs, results2 = column2.run_psdm_kfit(comp)
@@ -154,17 +154,17 @@ for comp in compounds:
     ### plotting results 
     plt.plot(results.index, 
              results.values/1000., 
-             label='EBCT: '+repr(np.round(column.ebct,2)))
+             label=f'EBCT: {column.ebct:.2f}')
     plt.plot(results2.index, 
              results2.values/1000., 
-             label='EBCT: '+repr(np.round(column2.ebct,2)))
+             label=f'EBCT: {column2.ebct:.2f}')
     (raw_data2[column.influent][comp]/1000.).plot.line(label='influent',linestyle=':')
     plt.legend()
-    plt.title(comp+'\nK: '+repr(round(_k,2))+' ($\mu$g/g)(L/$\mu$g)$^{1/n}$ - 1/n: '+repr(round(_xn,3)))
+    plt.title(f'{comp}\nK: {_k:,.2f} ($\mu$g/g)(L/$\mu$g)$^1$$^/$$^n$ - 1/n: {_xn:.3f}')
     plt.xlabel(column_info[carbons[0]]['time'])
     plt.ylabel('Concentration - mg/L (ppm)')
     plt.savefig(comp+'_'+carbons[0]+'_example1a.png', dpi=300)
-    plt.close()
+    # plt.close()
     
     tab2 = 'model-'+comp
     
@@ -206,7 +206,7 @@ for comp in compounds:
                    optimize=False
                    )
     
-    print('EBCT: ', round(column.ebct, 2), ' min') 
+    print(f'EBCT: {column.ebct:.2f} min')  
     column.test_range = np.array([k_data[comp]['K']])
     column.xn_range = np.array([k_data[comp]['1/n']])
     
@@ -234,6 +234,7 @@ for comp in compounds:
     
     ### plotting results 
     #units are converted from ug/L to mg/L 
+    plt.figure()
     plt.plot(results.index, 
              results.values/1000., 
              label='PSDM-no fouling')
@@ -242,11 +243,11 @@ for comp in compounds:
              label='PSDM-with fouling')
     (raw_data[column.influent][comp]/1000.).plot.line(label='influent',linestyle=':')
     plt.legend()
-    plt.title(comp+'\nK: '+repr(round(_k,2))+' ($\mu$g/g)(L/$\mu$g)$^{1/n}$ - 1/n: '+repr(round(_xn,3)))
+    plt.title(f'{comp}\nK: {_k:,.2f} ($\mu$g/g)(L/$\mu$g)$^1$$^/$$^n$ - 1/n: {_xn:.3f}')
     plt.xlabel(column_info[carbons[0]]['time'])
     plt.ylabel('Concentration - mg/L (ppm)')
     plt.savefig(comp+'_'+carbons[0]+'_example2.png', dpi=300)
-    plt.close()
+    # plt.close()
     
     tab2 = 'model-'+comp
     with pd.ExcelWriter(xlsx_fn2, engine='openpyxl') as writer:
@@ -296,11 +297,11 @@ for comp in compounds:
     _compound, _k, _xn, _ssqs, results = column.run_psdm_kfit(comp)
     
     # print(results['data'][np.linspace(0,175,36)])
-    
+    plt.figure()
     plt.plot(results.index, 
              results.values/1000,':',
-             label='True Case: K: %i, 1/n: %.2f' % (k_data[comp]['K'],k_data[comp]['1/n'])
-             )
+             label=f'True Case: K: {k_data[comp]["K"]:.2f}, 1/n: {k_data[comp]["1/n"]}')
+             
     (raw_data[column_info[carbons[0]]['influentID']][comp]/1000).plot.line(label='influent',linestyle=':')
     (raw_data[carbons[0]][comp]/1000.).plot.line(label='effluent', marker='o',linestyle='--')
     
@@ -321,11 +322,11 @@ for comp in compounds:
              results2.values/1000.,
              label='Best Fit')
     plt.legend()
-    plt.title(comp+'\nK: '+repr(round(_k,2))+' ($\mu$g/g)(L/$\mu$g)$^{1/n}$ - 1/n: '+repr(round(_xn,3)))
+    plt.title(f'{comp}\nK: {column.k_data[comp]["K"]:,.2f} ($\mu$g/g)(L/$\mu$g)$^1$$^/$$^n$ - 1/n: {column.k_data[comp]["1/n"]:.3f}')
     plt.xlabel(column_info[carbons[0]]['time'])
     plt.ylabel('Concentration - mg/L (ppm)')
-    plt.savefig(comp+'_'+carbons[0]+'_example3.png', dpi=300)
-    plt.close()
+    plt.savefig(f'{comp}_{carbons[0]}_example3.png', dpi=300)
+    # plt.close()
     
     '''
 # =============================================================================

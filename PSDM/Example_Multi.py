@@ -113,7 +113,7 @@ for i in all_results.keys():
     idx = all_results[i].x
     try:
         plt.plot(idx, all_results[i](idx), color=color[count], 
-             label=(i+' -No Fouling'),
+             label=(f'{i}-No Fouling'),
              )
     except:
         pass
@@ -121,7 +121,7 @@ for i in all_results.keys():
     
     try:
         plt.plot(idx, all_results2[i](idx), color=color[count], 
-                 label=(i+' -'+water_type), linestyle='dashed')
+                 label=(f'{i}-{water_type}'), linestyle='dashed')
     except:
         pass
         
