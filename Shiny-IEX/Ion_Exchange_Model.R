@@ -1544,7 +1544,7 @@ tags$style(HTML("
                             fluidRow(
                               column(4,
                                     numericInput("alkvalue", "Alkalinity Value", 100),
-                                    numericInput("pH", "pH", 7)),
+                                    sliderInput("pH", "pH", 6, 11, 7, 0.1)),
                               column(4,
                                     selectInput("alkunits", "Concentration Units", "mg/L CaCO3")),
                             ),
