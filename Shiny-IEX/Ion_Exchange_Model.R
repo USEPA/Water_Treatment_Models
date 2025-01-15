@@ -1939,6 +1939,8 @@ server <- function(input, output, session) {
   KW<-10^-14
   
   bicarbconverted <- reactiveVal()
+  bicarbconverted_mg_C_L <- reactiveVal()
+  bicarbconverted_mg_HCO3_L <- reactiveVal()
   # bicarbmeq2mgl <- 50.045001
   
   h_plus <- reactiveVal() # M
@@ -1963,14 +1965,23 @@ server <- function(input, output, session) {
     #   bicarbconverted(HCO3_mM_L()) # mg/L CaCO3
     # }
 
-    bicarbconverted(HCO3_mM_L()) # mg/L CaCO3
+    if(sign(HCO3_mM_L()) != -1) {
+      bicarbconverted(HCO3_mM_L()) # mg/L CaCO3
+      bicarbconverted_mg_C_L(bicarbconverted() * 12)
+      bicarbconverted_mg_HCO3_L(bicarbconverted() * 61)
+    } else {
+      showNotification("Error: Alkalinity value is too low.", duration = notificationDuration, closeButton = TRUE, type = "error")
+      bicarbconverted("INVALID")
+      bicarbconverted_mg_C_L("INVALID")
+      bicarbconverted_mg_HCO3_L("INVALID")
+    }
+
+    # bicarbconverted(HCO3_mM_L()) # mg/L CaCO3
   })
-  
 
   output$bicarbcin<-renderText(bicarbconverted()) # mM
-  output$bicarbcin_mg_C_L<-renderText(bicarbconverted() * 12) # mM to mg C/L
-  output$bicarbcin_mg_HCO3_L<-renderText(bicarbconverted() * 61) # mM to mg HCO3-/L
-  
+  output$bicarbcin_mg_C_L<-renderText(bicarbconverted_mg_C_L()) # mM to mg C/L
+  output$bicarbcin_mg_HCO3_L<-renderText(bicarbconverted_mg_HCO3_L()) # mM to mg HCO3-/L  
 
   
   #------------------------------------------------------------------------------#
