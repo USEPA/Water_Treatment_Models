@@ -7,6 +7,7 @@ library(DataEditR)
 library(tidyr)
 library(colorBlindness)
 library(writexl)
+library(shinyalert)
 
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -115,7 +116,7 @@ read_in_files <- function(input, file) {
   },
   error=function(err){
     print(err)
-    showNotification("Error: Properties sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    showNotification("Warning: Properties sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "warning")
   })
   tryCatch({
     Kdata <- read_excel(file, sheet = 'Kdata')
@@ -124,7 +125,7 @@ read_in_files <- function(input, file) {
   },
   error=function(err){
     print(err)
-    showNotification("Error: Kdata sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    showNotification("Warning: Kdata sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "warning")
   })
   tryCatch({
     columnSpecs <- read_excel(file, sheet= 'columnSpecs')
@@ -132,7 +133,7 @@ read_in_files <- function(input, file) {
   },
   error=function(err){
     print(err)
-    showNotification("Error: Properties sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    showNotification("Warning: Properties sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "warning")
   })
   tryCatch({
     dat <- read_excel(file, sheet = 'data')
@@ -143,7 +144,7 @@ read_in_files <- function(input, file) {
   },
   error=function(err){
     print(err)
-    showNotification("Error: data sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    showNotification("Warning: data sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "warning")
   })
   
   # Attempts to read-in name from Excel file, if it doesn't exist it sets it to the name of the Excel file
@@ -1099,15 +1100,15 @@ server <- function(input, output, session) {
 
     if (coldensity > appdensity) {
       errorflag <- 1
-      showNotification("Error: Apparent Density value is too low.", duration = notificationDuration, closeButton = TRUE, type = "error")
+      shinyalert("Error", "Apparent Density value is too low.", type = "error")
     } 
     if (!(input$WFouling %in% wfoulingvector)) {
       errorflag <- 1
-      showNotification("Error: Water type is not accepted. Please select one from the list.", duration = notificationDuration, closeButton = TRUE, type = "error")
+      shinyalert("Error", "Water type is not accepted. Please select one from the list.", type = "error")
     } 
     if (!(input$CFouling %in% cfoulingvector)) {
       errorflag <- 1
-      showNotification("Error: Chemical type is not accepted. Please select one from the list.", duration = notificationDuration, closeButton = TRUE, type = "error")
+      shinyalert("Error", "Chemical type is not accepted. Please select one from the list.", type = "error")
     }
 
     return(errorflag)
@@ -1115,9 +1116,14 @@ server <- function(input, output, session) {
   
   observeEvent(input$run_button, {
     if (error_handling() != 1) {
-      showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
-      out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
-      updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
+      tryCatch({
+        showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
+        out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+        updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
+      },
+      error=function(err){
+        shinyalert("Error", "An unexpected error has occured.", type = "error")
+      })
     }
   })
   
@@ -1139,7 +1145,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$fitting, {
     if (nrow(out()) > 2) {
-      showNotification("This might take several minutes.", duration = notificationDuration, closeButton = TRUE, type = "warning")
+      showNotification("This might take several minutes.", duration = notificationDuration, closeButton = TRUE, type = "message")
       showNotification("Fitting data.", duration = notificationDuration, closeButton = TRUE, type = "message")
       out_fit(run_PSDM_fitter(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling, input$pm, input$xn))
       output_fit(out_fit()[[1]])
@@ -1169,7 +1175,7 @@ server <- function(input, output, session) {
     kdat<- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep = ''))
     dataOutputServer("output-2", data = kdat)
     if ((read.csv("temp_file/Kdata.csv")[1, 2]) == 0) {
-      showNotification("Error: K Data is empty.", duration = notificationDuration, closeButton = TRUE, type = "error")
+      shinyalert("Error", "K Data is empty.", type = "error")
     } else {
       showNotification("Updating K Data.", duration = notificationDuration, closeButton = TRUE, type = "message")
       out(out_fit()[[1]])

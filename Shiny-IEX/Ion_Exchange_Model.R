@@ -10,6 +10,7 @@ library(DataEditR)
 library(colorBlindness)
 library(writexl)
 library(ggplot2)
+library(shinyalert)
 
 #------------------------------------------------------------------------------#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -467,7 +468,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
     return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
   } else {
-    showNotification("Error: There was a problem running this model.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    shinyalert("Error", "An unexpected error has occured.", type = "error")
     return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
   }
 }
@@ -681,7 +682,7 @@ PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
     if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
         return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
     } else {
-        showNotification("Error: There was a problem running this model.", duration = notificationDuration, closeButton = TRUE, type = "error")
+        shinyalert("Error", "An unexpected error has occured.", type = "error")
         return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
     }
 }
@@ -724,7 +725,7 @@ process_files <- function (input, file) {
   },
   error=function(err){
     print(err)
-    showNotification("Error: params sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    showNotification("Warning: params sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "warning")
   })
   tryCatch({
     ions<-read_xlsx(file, sheet="ions")
@@ -732,7 +733,7 @@ process_files <- function (input, file) {
   },
   error=function(err){
     print(err)
-    showNotification("Error: ions sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    showNotification("Warning: ions sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "warning")
   })
   tryCatch({
     cin<-read_xlsx(file, sheet="Cin")
@@ -740,7 +741,7 @@ process_files <- function (input, file) {
   },
   error=function(err){
     print(err)
-    showNotification("Error: cin sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    showNotification("Warning: cin sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "warning")
   })
 
   
@@ -1970,7 +1971,6 @@ server <- function(input, output, session) {
       bicarbconverted_mg_C_L(bicarbconverted() * 12)
       bicarbconverted_mg_HCO3_L(bicarbconverted() * 61)
     } else {
-      showNotification("Error: Alkalinity value is too low.", duration = notificationDuration, closeButton = TRUE, type = "error")
       bicarbconverted("INVALID")
       bicarbconverted_mg_C_L("INVALID")
       bicarbconverted_mg_HCO3_L("INVALID")
@@ -2093,24 +2093,20 @@ server <- function(input, output, session) {
     for (item in 1:nrow(iondat())) {
       if (!(iondat()[item, 'name'] %in% colnames(cindat()))) {
         errorflag <- 1
-        showNotification(paste0("Error: ", paste0(iondat()[item, 'name'], " not found in Influent Concentration Points.")), duration = notificationDuration, closeButton = TRUE, type = "error")
       }
     }
     for (item in colnames(cindat())) {
       if (item != "time") {
         if (!(item %in% iondat()[, 'name'])) {
           errorflag <- 1
-          showNotification(paste0("Error: ", paste0(item, " not found in Ion List.")), duration = notificationDuration, closeButton = TRUE, type = "error")
         }
       }
     }
-    if (any(is.na(iondat()))) {
+    if (any(is.na(iondat())) | any(is.na(cindat()))) {
       errorflag <- 1
-      showNotification("Error: Ion List is missing data.", duration = notificationDuration, closeButton = TRUE, type = "error")
     }
-    if (any(is.na(cindat()))) {
-      errorflag <- 1
-      showNotification("Error: Influent Concentration Points is missing data.", duration = notificationDuration, closeButton = TRUE, type = "error")
+    if (errorflag == 1 ) {
+      shinyalert("Error", "Ions tab is missing data.", type = "error")
     }
 
     errorflag
@@ -2118,12 +2114,17 @@ server <- function(input, output, session) {
   
   observeEvent(input$run_button, {
     if (error_handling() != 1) {
-      if (input$model == "Macroporous (PSDM)") {
-        showNotification("This might take several minutes.", duration = notificationDuration, closeButton = TRUE, type = "warning")
-      }
-      showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
-      out(model_prep(input, iondat(), cindat(), nt_report))
-      updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
+      tryCatch({
+        if (input$model == "Macroporous (PSDM)") {
+          showNotification("This might take several minutes.", duration = notificationDuration, closeButton = TRUE, type = "message")
+        }
+        showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
+        out(model_prep(input, iondat(), cindat(), nt_report))
+        updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
+      },
+      error=function(err){
+        shinyalert("Error", "An unexpected error has occured.", type = "error")
+      })
     }
   })
   
@@ -2154,14 +2155,18 @@ server <- function(input, output, session) {
   })
   
   allchemicals_hours_mgl<-reactive({
-    if (error_handling() != 1) {
+    tryCatch({
       HSDMIX_in_hours_mgl(allchemicals_hours_meq(), iondat(), timeframe())
-    }
+    },
+    error=function(err){
+    })
   })
   allchemicals_hours_meq_ng<-reactive({
-    if (error_handling() != 1) {
+    tryCatch({
       HSDMIX_in_hours_meq_ng(allchemicals_hours_meq(), iondat(), timeframe())
-    }
+    },
+    error=function(err){
+    })
   })
   
   
@@ -2218,9 +2223,11 @@ server <- function(input, output, session) {
   
   counteriondata<-reactive({allchemicals_hours_mgl()[0:counterIon_loc(),]})
   iondata<-reactive({
-    if (error_handling() != 1) {
+    tryCatch({
       allchemicals_hours_mgl()[addIon_loc():nrow(allchemicals_hours_mgl()),]
-    }
+    },
+    error=function(err){
+    })
   })
   
   counteriondatacc0<-reactive({computedcc0()[0:counterIon_loc(),]})
@@ -2234,7 +2241,7 @@ server <- function(input, output, session) {
   
   
   observe({
-    if (error_handling() != 1) {
+    tryCatch({
       ## convert time units for graphing
       # calculating kBV
       if (input$timeunits == "Bed Volumes (x1000)") {
@@ -2252,7 +2259,9 @@ server <- function(input, output, session) {
         outputeffluent$time<- effdat_hours()$time/ (time_conv[input$timeunits] / hour2sec)
         outputinfluent$hours<-cin_mgl_hours_prep()$hours/ (time_conv[input$timeunits] / hour2sec) ## should this be $time?
       }
-    }
+    },
+    error=function(err){
+    })
   })
   
   
@@ -2261,7 +2270,7 @@ server <- function(input, output, session) {
   
   
   observe({
-    if (error_handling() != 1) {
+    tryCatch({
       ### convert y-axis/mass units for graphing
       if(input$OCunits=="c/c0"){
         ## just replicates the returned data
@@ -2277,7 +2286,9 @@ server <- function(input, output, session) {
         outputeffluent$conc <- effdat_hours()$conc/mass_conv[input$OCunits]
         outputinfluent$conc <- cin_mgl_hours_prep()$conc/mass_conv[input$OCunits]
       }
-    }
+    },
+    error=function(err){
+    })
   })
   
   
@@ -2365,29 +2376,35 @@ server <- function(input, output, session) {
   
   
   fig<-reactive({
-    if (error_handling() != 1) {
+    tryCatch({
       create_plotly(counterion_data_processed(), effluent_processed(), cindat_converter_counter())
-    }
+    },
+    error=function(err){
     })
+  })
   counterionfigure<-reactive({
-    if (error_handling() != 1) {
+    tryCatch({
       fig()%>%layout(title="Concentration over Time", showlegend=TRUE,
-                     legend=list(orientation='h', y=1), hovermode='x unified',
-                     xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
-                     yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
-                                exponentformat='e', gridcolor = 'ffff'))
-    }
+              legend=list(orientation='h', y=1), hovermode='x unified',
+              xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
+              yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
+                        exponentformat='e', gridcolor = 'ffff'))
+    },
+    error=function(err){
+    })
   })
   
   bonusfig<-reactive({create_plotly2(ion_data_processed(), effluent_processed(), cindat_converter_ion())})
   ionfigure<-reactive({
-    if (error_handling() != 1) {
+    tryCatch({
       bonusfig()%>%layout(title="Concentration over Time", showlegend=TRUE,
-                          legend=list(orientation='h', y=1), hovermode='x unified',
-                          xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
-                          yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
-                                     exponentformat='e', gridcolor = 'ffff'))
-    }
+                  legend=list(orientation='h', y=1), hovermode='x unified',
+                  xaxis=list(title=input$timeunits, gridcolor = 'ffff'),
+                  yaxis=list(title=paste0("Concentration (",input$OCunits,")"), showexponent='all',
+                              exponentformat='e', gridcolor = 'ffff'))
+    },
+    error=function(err){
+    })
   })
   
   
