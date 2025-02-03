@@ -12,16 +12,16 @@ TODO: Use further inheritance or composition (or something) to reduce code
 """
 
 import timeit
-
+import pandas as pd
 import numpy as np
-
+import copy
 from scipy.interpolate import interp1d
 from scipy.integrate import solve_ivp
 
 from .colloc import build_collocation, advect_operator
 
 from .hsdmix import HSDMIX
-
+from .converter import conv_iex_u
 
 def approx_Jac_struc(nr, NION, nz):
     """
@@ -265,7 +265,7 @@ class PSDMIX(HSDMIX):
             Calculate time derivatives at grid points
             """
             u = u.reshape([(nr + 1), NION, nz])
-        
+            
             C = u[LIQUID, :, :]
             Y = u[RESIN:, :, :]
             Y_s = u[SURF, :, :]
@@ -377,4 +377,91 @@ class PSDMIX(HSDMIX):
         
         return (t, u)
 
+    def model_uncertainty_PSDM(self, resin_capacity=10, Ds='None', kL='None', flrt='None', c0='None', Kxc='None', L='None', Dp='None', ebed='None', epor='None'):
+        obj_copy = copy.deepcopy(self)
 
+        duration = self.Cin_t.index[-1]
+        
+        ## adjust tvals for evaluations based on the time multiplier. Reset things to hours.
+        if self.time_mult == 3600:
+            tvals = np.arange(0, duration+1, 12) ## currently set at every hour
+        else: ## assumes days
+            self.Cin_t.index *= 24
+            tvals = np.arange(0, duration*24 + 1, 12)
+            self.time_mult = 3600.
+            self.params.loc['time'] = 3600.
+        
+        ## set up output dataframe that stores results
+        m_idx = [(i, j) for i in ['base', 'upper', 'lower'] for j in self.ions.index ]
+        midx = pd.MultiIndex.from_tuples(m_idx)
+        output_df = pd.DataFrame(columns=midx, index=np.round(tvals/24, 2))
+        
+        ## run base case
+        t, u = self.solve(t_eval=tvals, const_Cin=False, OCFE=False)
+        converted_df = conv_iex_u(u, t, self.ions)
+
+        output_df['base'] = converted_df
+        
+        upper_df = converted_df.values
+        lower_df = converted_df.values
+
+        inputs = {'capacity': resin_capacity, 'Kxc': Kxc, 'ds': Ds, 'kL': kL, 'dp': Dp,
+                  'flrt': flrt, 'c0': c0, 'L': L, 'ebed': ebed, 'epor': epor} ## TODO: add porosity/EBED or similar for PSDM? Dp for PSDM
+
+        test_uncertainty = []
+        for key, value in inputs.items():
+            if value != 'None':
+                test_uncertainty.append({key: 1 + value/100})
+                test_uncertainty.append({key: 1 - value/100})
+
+        ## TODO: add a simulation where all uncertainties are calculated together???
+
+        for test in test_uncertainty:
+            self = copy.deepcopy(obj_copy)  ## reset column
+
+            for key, value in test.items(): ## should be a dictionary
+                if key == 'capacity': #Resin Capacity
+                    # print(self.params)
+                    self.params.loc['Qf'] *= value
+                    self.params.loc['Q'] *= value ## not sure if we need to update just Q or just Qf, or both... TODO: Check with Levi
+                if key == 'ebed': #Bed Porosity
+                    self.params.loc['EBED'] *= value    
+                if key == 'epor': ## BEAD Porosity
+                    self.params.loc['EBED'] *= value
+                if key == 'ds': #Surface Diffusion Coefficient
+                    self.params.loc['Ds'] *= value
+                if key == 'dp': #Pore Diffusion Coefficient
+                    self.params.loc['Dp'] *= value
+                if key == 'kL': #Film Transfer Coeffient
+                    self.params.loc['kL'] *= value
+                if key == 'flrt': # Flow rate
+                    ## since velocity is calculated, it can be used directly
+                    ## TODO: Check if flrt and or diam need to be recalculated. Don't think these are used in the actual function.
+                    self.params.loc['v'] *= value
+                if key == 'L': # Bed length
+                    self.params.loc['L'] *= value
+                if key == 'c0': # Influent Concentrations
+                    self.Cin_t *= value 
+                if key == 'Kxc': # Selectivity coefficients
+                    self.ions['Kxc'] *= value
+                    self.ions.loc['CHLORIDE', 'Kxc'] = 1.0 ## reset Chloride KxA to 1, as reference ion
+
+
+            ### run new simulation with updated parameters
+            t, u = self.solve(t_eval=tvals, const_Cin=False, OCFE=False)
+            intermediate_df = conv_iex_u(u, t, self.ions)
+
+            ## find values that increase or decrease uncertainty ranges
+            upper_df[np.where(upper_df < intermediate_df.values)] = intermediate_df.values[np.where(upper_df < intermediate_df.values)]
+            lower_df[np.where(lower_df > intermediate_df.values)] = intermediate_df.values[np.where(lower_df > intermediate_df.values)]
+
+        output_df['upper'] = upper_df.copy()
+        output_df['lower'] = lower_df.copy()
+
+
+
+
+        self = copy.deepcopy(obj_copy) ## reset class object to original state
+
+
+        return output_df
