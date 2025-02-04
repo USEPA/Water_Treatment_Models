@@ -200,6 +200,11 @@ Environ. Sci. Technol. 2021, 55, 8, 5001–5011
 Publication Date:March 22, 2021
 https://doi.org/10.1021/acs.est.1c00769
 
+## Troubleshooting
+
+#### Ions
+You may encounter an error after modifying Ds values in the Ion List. This can be resolved by decreasing variation in Ds values or increasing the amount of radial collocation points.
+
 ## Development Team
 David Colantonio
 
