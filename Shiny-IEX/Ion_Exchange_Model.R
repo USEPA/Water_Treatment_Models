@@ -680,10 +680,10 @@ PSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
     
     # Check charge balances at outlet at end of simulation XXX: Maybe move inside of HSDMIX?
     if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
-        return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
+      return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
     } else {
-        shinyalert("Error", "An unexpected error has occured.", type = "error")
-        return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
+      shinyalert("Error", "An error is preventing the model from running, please consult the README for more information.", type = "error")
+      return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
     }
 }
 
@@ -2123,7 +2123,7 @@ server <- function(input, output, session) {
         updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
       },
       error=function(err){
-        shinyalert("Error", "An unexpected error has occured.", type = "error")
+        shinyalert("Error", "An error is preventing the model from running, please consult the README for more information.", type = "error")
       })
     }
   })
