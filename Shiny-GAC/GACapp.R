@@ -1122,7 +1122,7 @@ server <- function(input, output, session) {
         updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
       },
       error=function(err){
-        shinyalert("Error", "An unexpected error has occured.", type = "error")
+        shinyalert("Error", "An error is preventing the model from running, please consult the README for more information.", type = "error")
       })
     }
   })

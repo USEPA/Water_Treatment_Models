@@ -468,7 +468,7 @@ HSDMIX_solve <- function (params, ions, Cin, inputtime, nt_report){
   if (isTRUE(all.equal(sum(x_out[nt_report, NR, , NZ]), Q)) & isTRUE(all.equal(sum(x_out[nt_report, (NR-1), , NZ]), Q))) {
     return(list(t_out, x_out)) # TODO: Name these and also provide success/fail info
   } else {
-    shinyalert("Error", "An unexpected error has occured.", type = "error")
+    shinyalert("Error", "An error is preventing the model from running, please consult the README for more information.", type = "error")
     return(list(t_out, x_out_empty)) # Return empty data frame if there is an error
   }
 }
