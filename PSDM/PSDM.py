@@ -275,7 +275,7 @@ class PSDM():
         max_time = np.max([self.max_days, self.duration]) #doesn't do anything at the moment for k_fit
         
         self.time_vals = np.linspace(0, max_time*self.t_mult, 500)
-        self.fouling_dict= self.__fouled_k_new(self.time_vals) ## removed self.k_data.loc['K'], 
+        self.fouling_dict = self.__fouled_k_new(self.time_vals) ## removed self.k_data.loc['K'], 
         
         # calculate initial values 
         # might need to add more here
