@@ -287,7 +287,13 @@ class PSDMIX(HSDMIX):
                 Cpore[ii, :, :] = calc_Ceq(q[ii, :, :], CT)
             
             # Calculate flux terms
-            J = - kL * (C - Ceq) # mass flux 
+            J = np.zeros((NION, nz))
+            for iii in range(NION):
+                
+                J[iii, :] = - self.ions['kL'][iii] * (C[iii,:] - Ceq[iii,:]) # mass flux 
+                
+            # explicitly doing implicit chloride
+            J[0, :] = -J[1:, :].sum(axis=0)
             Jas = J * 3/rb  # mass flux * specific surface area of bead
 
             # Initialize arrays for derivatives
@@ -312,8 +318,14 @@ class PSDMIX(HSDMIX):
             Br_Cpore =  np.swapaxes(np.matmul(Br, Cpore_swap), 0, 1)
 
             
-            dY_dT = t_half * (EPOR * (Dp - Ds) * Br_Cpore + Ds * Br_Y) / rb**2  
-#            dY_dT = t_half * (EPOR * Dp * Br_Cpore) / rb**2  # Hokanson PDM
+            for iii in range(NION):
+                Dp_iii = self.ions['Dp'][iii]
+                Ds_iii = self.ions['Ds'][iii]
+                dY_dT[:, iii, :] =  t_half * (EPOR * (Dp_iii - Ds_iii) * Br_Cpore[:, iii, :] + Ds_iii * Br_Y[:, iii, :]) / rb**2
+
+            # # explicitly doing implicit chloride
+            dq_dT[:, 0, :] = -dq_dT[:, 1:, :].sum(axis=1) # XXX: Why doesn't work?
+            # print(dq_dT[-2, :, -1].sum()) # Why isn't that zero?
 
             # intermediate term for dq_dT at bead surface        
             dY_dT_swap = np.swapaxes(dY_dT[:SURF, :, :], 0, 1)
