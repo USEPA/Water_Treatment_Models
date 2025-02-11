@@ -592,8 +592,6 @@ class PSDM():
                 k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate') ## need to update
 
 
-            
-                
         elif self.brk_type == 'force':# and self.brk_df != None:
             brk_df = self.brk_df
             maxx = self.duration
@@ -670,6 +668,13 @@ class PSDM():
                 if ~np.isinf(idx_val_test):
                     last_good_value = idx_val_test * 1
             breakthrough_time = last_good_value * 1
+        elif breakthrough_time < 0:
+            last_good_value = 0
+            for idx_val_test in effl.index:
+                if ~np.isinf(idx_val_test) and idx_val_test > 0:
+                    last_good_value = idx_val_test * 1
+            breakthrough_time = last_good_value * 1
+            # print(k, q_meas, breakthrough_time, breakthrough_code)
 
         foul_mult_est = 1/np.mean(self.fouling_dict[compound](np.arange(breakthrough_time)*self.t_mult))
         
