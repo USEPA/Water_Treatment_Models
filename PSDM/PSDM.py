@@ -444,7 +444,13 @@ class PSDM():
                 
             elif np.count_nonzero(effl.values) == 1:
                 ## if only one data point exceeds 0, may be able to estimate 
-                if effl.iloc[-1].values[0] > 0 and effl.iloc[-1].values[0]/aveC >= 0.25:
+                
+                if type(effl.iloc[-1]) == np.float64:
+                    brk_found = True
+                    print(f'Insufficient data to estimate breakthrough for {compound}. Returning minimum K estimate.')
+                    breakthrough_code = 'minimum'
+
+                elif effl.iloc[-1].values[0] > 0 and effl.iloc[-1].values[0]/aveC >= 0.25:
                     ### if last value exceeds 25% of aveC, estimate line from last and second to last points???
                     ### hope logistic function finds solution?
                     pass
@@ -656,6 +662,13 @@ class PSDM():
         
         
         ## should return the averaged impact related to K reduction caused by fouling
+        if np.isinf(breakthrough_time): ## Safety if breakthrough time is set to infinity
+            last_good_value = 0
+            for idx_val_test in effl.index:
+                if ~np.isinf(idx_val_test):
+                    last_good_value = idx_val_test * 1
+            breakthrough_time = last_good_value * 1
+
         foul_mult_est = 1/np.mean(self.fouling_dict[compound](np.arange(breakthrough_time)*self.t_mult))
         
         # returns capacity in (ug/g)(L/ug)**(1/n)
