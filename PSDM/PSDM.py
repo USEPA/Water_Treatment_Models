@@ -502,7 +502,7 @@ class PSDM():
                     if breakthrough_time >= self.duration: ## rejects solution if breakthrough time doesn't exceed data duration (should have been caught)
                         brk_found = True
                         
-                        breakthrough_code = 'logisitc'
+                        breakthrough_code = 'logistic'
                         
                         ## add fictitous point at end for integration step
                         infl.loc[breakthrough_time] = aveC
@@ -516,7 +516,10 @@ class PSDM():
                         brk_found = True
                         breakthrough_code = 'logistic'
 
-                        
+                    if breakthrough_code == 'logistic' and breakthrough_time > 2000:
+                            ## prevents an extremely large breakthrough time, caps at data available duration
+                            breakthrough_time = self.duration * 1
+                            
                 except Exception as e:
                     print('Logistic search failed: ', e)
                     
@@ -683,7 +686,7 @@ class PSDM():
 
         foul_mult_est = 1/np.mean(self.fouling_dict[compound](np.arange(breakthrough_time)*self.t_mult))
         
-        # returns capacity in (ug/g)(L/ug)**(1/n)
+        # returns capacity k in (ug/g)(L/ug)**(1/n), q (ug/g), text, days, ng/L, 
         return k, q_meas, breakthrough_code, breakthrough_time, aveC, k_function, foul_mult_est
 
     def __set_backups(self):
