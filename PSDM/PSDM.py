@@ -662,7 +662,7 @@ class PSDM():
         
         
         ## should return the averaged impact related to K reduction caused by fouling
-        if np.isinf(breakthrough_time): ## Safety if breakthrough time is set to infinity
+        if np.isinf(breakthrough_time): ## Safety if breakthrough time is set to infinity, or prevents negative or very large breakthrough days
             last_good_value = 0
             for idx_val_test in effl.index:
                 if ~np.isinf(idx_val_test):
@@ -674,7 +674,12 @@ class PSDM():
                 if ~np.isinf(idx_val_test) and idx_val_test > 0:
                     last_good_value = idx_val_test * 1
             breakthrough_time = last_good_value * 1
-            # print(k, q_meas, breakthrough_time, breakthrough_code)
+        elif breakthrough_time > 2000:
+            last_good_value = 0
+            for idx_val_test in effl.index:
+                if ~np.isinf(idx_val_test) and idx_val_test < 2000:
+                    last_good_value = idx_val_test * 1
+            breakthrough_time = last_good_value * 1
 
         foul_mult_est = 1/np.mean(self.fouling_dict[compound](np.arange(breakthrough_time)*self.t_mult))
         
