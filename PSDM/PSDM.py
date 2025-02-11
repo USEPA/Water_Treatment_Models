@@ -291,6 +291,8 @@ class PSDM():
                                         columns=self.compounds)
             for comp in self.compounds:
                 k, q, classifier, brk, aveC, k_func, foul_mult_est = self.__calculate_capacity(comp)
+                if np.isnan(foul_mult_est):
+                    foul_mult_est = 1.25 ## reasonable estimate for fouling if .__calculate_capacity returns nan
                 self.k_data[comp] = np.array([k, self.xn, q, brk, aveC])
                 
                 self.k_by_xn_factor[comp] = k_func
@@ -1071,7 +1073,7 @@ class PSDM():
             #starter variables
             xn = best_xn * 1
             k_factor = get_fouling_factor(compound)
-            
+
             ssq_storage = pd.DataFrame(index=np.round(np.arange(min_k, max_k+scale_k/2, scale_k),6),
                                        columns=np.round(np.arange(0.2, 1+des_xn/2, des_xn),3))
                         
