@@ -552,6 +552,13 @@ class PSDM():
                             
                         breakthrough_time = np.round((aveC - intercept)/slope,0)
                         
+                        if breakthrough_time <= 0: ### catches error that causes negative breakthrough time here
+                            last_good_value = 0
+                            for idx_val_test in effl.index:
+                                if ~np.isinf(idx_val_test) and idx_val_test > 0:
+                                    last_good_value = idx_val_test * 1
+                            breakthrough_time = last_good_value * 1
+
                         ## add fictitous point at end for integration step
                         infl.loc[breakthrough_time] = aveC
                         effl.loc[breakthrough_time] = aveC
@@ -686,6 +693,8 @@ class PSDM():
 
         foul_mult_est = 1/np.mean(self.fouling_dict[compound](np.arange(breakthrough_time)*self.t_mult))
         
+        # print(k, q_meas, breakthrough_code, breakthrough_time, aveC)
+
         # returns capacity k in (ug/g)(L/ug)**(1/n), q (ug/g), text, days, ng/L, 
         return k, q_meas, breakthrough_code, breakthrough_time, aveC, k_function, foul_mult_est
 
