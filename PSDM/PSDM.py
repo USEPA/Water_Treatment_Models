@@ -598,8 +598,8 @@ class PSDM():
         
                 ## calculate q, ug/g
                 q_meas = (infl_load - effl_rem) * flow_per_day * self.mass_mul / carbon_mass
-                if q_meas <= 1e-5:
-                    q_meas = 1e-5 ## sets minimum qs
+                if q_meas <= 1e-6:
+                    q_meas = 1e-6 ## sets minimum qs
                 
                 aveC = np.mean(f_inf(times_to_test[times_to_test <= breakthrough_time]))
                 
