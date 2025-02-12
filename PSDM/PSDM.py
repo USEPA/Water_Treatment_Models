@@ -571,12 +571,35 @@ class PSDM():
                         print('Linearization failed: ', e)
                         
             
+            if np.isinf(breakthrough_time): ## Safety if breakthrough time is set to infinity, or prevents negative or very large breakthrough days
+                last_good_value = 0
+                for idx_val_test in effl.index:
+                    if ~np.isinf(idx_val_test):
+                        last_good_value = idx_val_test * 1
+                breakthrough_time = last_good_value * 1
+            elif breakthrough_time < 0:
+                last_good_value = 0
+                for idx_val_test in effl.index:
+                    if ~np.isinf(idx_val_test) and idx_val_test > 0:
+                        last_good_value = idx_val_test * 1
+                breakthrough_time = last_good_value * 1
+            elif breakthrough_time > 2000:
+                last_good_value = 0
+                for idx_val_test in effl.index:
+                    if ~np.isinf(idx_val_test) and idx_val_test < 2000:
+                        last_good_value = idx_val_test * 1
+                breakthrough_time = last_good_value * 1
+            elif breakthrough_time == 0:
+                breakthrough_time = 1 ## does not allow immediate breakthrough at time 0, sets to at least 1 day
+
             if brk_found:  ## process breakthrough estimate
                 infl_load, _ = quad(f_inf, 0, breakthrough_time) ## influent loading, ignores error
                 effl_rem, _ = quad(f_eff, 0, breakthrough_time) ## effluent removal, ignores error
         
                 ## calculate q, ug/g
                 q_meas = (infl_load - effl_rem) * flow_per_day * self.mass_mul / carbon_mass
+                if q_meas <= 1e-5:
+                    q_meas = 1e-5 ## sets minimum qs
                 
                 aveC = np.mean(f_inf(times_to_test[times_to_test <= breakthrough_time]))
                 
@@ -602,7 +625,7 @@ class PSDM():
                 k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate') ## need to update
 
 
-        elif self.brk_type == 'force':# and self.brk_df != None:
+        elif self.brk_type == 'force':# deprecate?
             brk_df = self.brk_df
             maxx = self.duration
             brkdy = brk_df[(brk_df['carbon']==self.carbon) & \
@@ -672,28 +695,9 @@ class PSDM():
         
         
         ## should return the averaged impact related to K reduction caused by fouling
-        if np.isinf(breakthrough_time): ## Safety if breakthrough time is set to infinity, or prevents negative or very large breakthrough days
-            last_good_value = 0
-            for idx_val_test in effl.index:
-                if ~np.isinf(idx_val_test):
-                    last_good_value = idx_val_test * 1
-            breakthrough_time = last_good_value * 1
-        elif breakthrough_time < 0:
-            last_good_value = 0
-            for idx_val_test in effl.index:
-                if ~np.isinf(idx_val_test) and idx_val_test > 0:
-                    last_good_value = idx_val_test * 1
-            breakthrough_time = last_good_value * 1
-        elif breakthrough_time > 2000:
-            last_good_value = 0
-            for idx_val_test in effl.index:
-                if ~np.isinf(idx_val_test) and idx_val_test < 2000:
-                    last_good_value = idx_val_test * 1
-            breakthrough_time = last_good_value * 1
-
         foul_mult_est = 1/np.mean(self.fouling_dict[compound](np.arange(breakthrough_time)*self.t_mult))
         
-        # print(k, q_meas, breakthrough_code, breakthrough_time, aveC)
+        # print(compound, k, q_meas, breakthrough_code, breakthrough_time, aveC)
 
         # returns capacity k in (ug/g)(L/ug)**(1/n), q (ug/g), text, days, ng/L, 
         return k, q_meas, breakthrough_code, breakthrough_time, aveC, k_function, foul_mult_est
@@ -1240,6 +1244,10 @@ class PSDM():
                     
                     # print('Best', best_xn, best_k)
                     self.k_data.loc['1/n', compound] = best_xn * 1
+                    if best_k <= 0:
+                        best_k = 1e-6 ## sets K to a small positive number, prevents K's == 0
+                        if self.k_data.loc['q', compound] <= 1e-6:
+                            self.k_data.loc['q', compound] = 1e-6 ## Assumes problem witih q is also present and makes sure it is small but positive
                     self.k_data.loc['K', compound] = best_k * 1
 
                     self.k_data_bup = self.k_data.copy() ### reset backup as well
