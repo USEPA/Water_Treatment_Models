@@ -1862,6 +1862,7 @@ server <- function(input, output, session) {
   #Take the data from the file that the user uploaded and overwrite the default frame
   capacity<-reactive({filter(paramsheet(), name=="Q")$value})
   eebed<-reactive({filter(paramsheet(), name=="EBED")$value})
+  eepor<-reactive({filter(paramsheet(), name=="EPOR")$value})
   length2<-reactive({filter(paramsheet(), name=="L")$value})
   beadradius<-reactive({filter(paramsheet(), name=="rb")$value})
   film<-reactive({filter(paramsheet(), name=="kL")$value})
@@ -1873,6 +1874,7 @@ server <- function(input, output, session) {
   observe({
     updateNumericInput(session, "Qv", value=format(capacity(), digits=4, scientific=FALSE))
     updateNumericInput(session, "EBEDv", value=format(eebed(), digit=4, scientific=FALSE))
+    updateNumericInput(session, "EPORv", value=format(eepor(), digit=4, scientific=FALSE))
     updateNumericInput(session, "Lv", value=length2())
     updateNumericInput(session, "rbv", value=prettyNum(beadradius(), digits=4, scientific=FALSE))
     updateNumericInput(session, "kLv", value=film())
