@@ -985,10 +985,9 @@ class PSDM():
         self.optimize_flag = opt_flg #resets to original value
 # end run_all()
 
-    def run_all_smart(self, plot=False, 
-                      save_file=True, file_name='PSDM_', 
-                      pm=10, num=11, des_xn=0.025, 
-                      search_limit=50):
+    def run_all_smart(self, save_file=False, file_name='PSDM_', 
+                      pm=10, num=11, des_xn=0.025,
+                      search_limit=50): 
         '''
         Smart Optimizer for K & 1/n fitting.
         Starts with estimates for effective fouling, and attemps to find path 
@@ -1134,7 +1133,9 @@ class PSDM():
             ### search from best starting location
             shift_xn = 0
             shift_k = 0
+            loops_tried = 0
             while cases_tried <= 5: 
+                loops_tried += 1
                 ### tries to seach in 4 directions. Uses this information to search again
 
                 ## move central test location
@@ -1237,7 +1238,7 @@ class PSDM():
                 
 
                 ### if ready to end loop, save results
-                if base_ssq == best_ssq:
+                if np.abs(base_ssq - best_ssq) <= 1e-7 or loops_tried >= search_limit:
                     ### if the central location is the best, break the loop
                     
                     self.ssq_storage = ssq_storage 
@@ -1251,6 +1252,7 @@ class PSDM():
                     self.k_data.loc['K', compound] = best_k * 1
 
                     self.k_data_bup = self.k_data.copy() ### reset backup as well
+                    
                     cases_tried = 10
 
                 elif shift_k == 0 and shift_xn == 0:
