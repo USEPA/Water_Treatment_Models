@@ -25,3 +25,4 @@ Shiny-GAC/.RData
 /Shiny-GAC/temp_file/*.csv
 /Shiny-IEX/temp_file/*.csv
 *.dcf
+PSDM/output.xlsx

@@ -135,5 +135,33 @@ plt.xlabel('Time (days)')
 file_name = '-'.join(compounds)+'_multi.png'
 plt.savefig(file_name, dpi=300)
 
-    
-    
+if False:
+    ## Can toggle for including Excel output if desired.    
+    with pd.ExcelWriter('output.xlsx') as writer:
+        duration = np.max(raw_data.index)
+        time_idx = np.arange(0, duration+0.5, 0.5)
+
+        try:
+            ## try to save No Fouling case
+            all_data_df = pd.DataFrame(index=time_idx, columns=all_results.keys())  
+            for comp in all_results.keys():
+                all_data_df[comp] = all_results[comp](time_idx)
+            
+            all_data_df.to_excel(writer, sheet_name='No_Fouling')
+        except:
+            pass
+
+        try:
+            ## try to save Fouling case
+            all_data2_df = pd.DataFrame(index=time_idx, columns=all_results2.keys())  
+            for comp in all_results2.keys():
+                all_data2_df[comp] = all_results2[comp](time_idx)
+            
+            all_data2_df.to_excel(writer, sheet_name='Fouling')
+        except:
+            pass
+
+
+
+
+          
