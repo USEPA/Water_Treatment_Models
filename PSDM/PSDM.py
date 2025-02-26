@@ -1554,7 +1554,8 @@ class PSDM():
                 ww2 = np.matmul(wr_A[:,:nd].reshape((self.num_comps,1,nd)),
                                 bb2)
                 
-                ydot2[:,:nd,1:] = bb2[:,:,1:]
+                # ydot2[:,:nd,1:] = bb2[:,:,1:]
+                ydot2[:,:nd,:] = bb2[:,:,:]
                 
                 num = (cinfl - cpore2[:,nc-1,0]).reshape(TwoDSize)
                 num = np.multiply(num, stdv_dgI)
