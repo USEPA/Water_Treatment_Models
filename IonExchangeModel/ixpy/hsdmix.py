@@ -123,6 +123,16 @@ class HSDMIX:
        
         self.time_mult = self.params['time']
 
+        # Backward compatability for input files
+        if('kL' in self.params.index and 'kL' not in self.ions.columns):
+            self.ions['kL'] = self.params.loc['kL']
+
+        if('Ds' in self.params.index and 'Ds' not in self.ions.columns):
+            self.ions['Ds'] = self.params.loc['Ds']
+
+        if('Dp' in self.params.index and 'Dp' not in self.ions.columns):
+            self.ions['Dp'] = self.params.loc['Dp']
+
         if 'BICARBONATE' not in self.Cin_temp.columns:
             
             if 'ALKALINITY' in self.Cin_temp.columns and 'PH' in self.Cin_temp.columns:
