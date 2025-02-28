@@ -289,7 +289,6 @@ class PSDMIX(HSDMIX):
             # Calculate flux terms
             J = np.zeros((NION, nz))
             for iii in range(NION):
-                
                 J[iii, :] = - self.ions['kL'][iii] * (C[iii,:] - Ceq[iii,:]) # mass flux 
                 
             # explicitly doing implicit chloride
