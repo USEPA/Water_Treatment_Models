@@ -1356,7 +1356,7 @@ class PSDM():
         psdfr = self.psdfr                             # pore to surface diffusion ratio
         nd = nc - 1
         
-        difl = 13.26e-5/(((vw * 100.)**1.14)*(mol_vol**0.589)) #vb
+        difl = 13.26e-5/(((vw * 100.)**1.14)*(mol_vol**0.589)) #vb=molar_vol should it be 1.14 or 1.4
         sc = vw / (dw * difl)       #schmidt number
         
         #set film and pore diffusion
