@@ -100,28 +100,17 @@ class HSDMIX:
                                     sheet_name='params',\
                                     header = [0],\
                                     index_col = [0])
-      
-        self.params = conv_params_data(self.params)
 
-        self.params = self.params.drop('units', axis=1)['value'] #drops unused column
-        
         self.ions = pd.read_excel(xls, \
                                   sheet_name='ions',\
                                   header=[0],\
                                   index_col=[0])
-        
-        self.valences = self.ions['valence'].values
-        
+
         self.Cin_t = pd.read_excel(xls, \
                                    sheet_name='Cin',\
                                    header=[0], \
                                    index_col = [0],
                                    dtype=np.float64)
-        
-        
-        self.Cin_temp = self.Cin_t.copy(deep=False)
-       
-        self.time_mult = self.params['time']
 
         # Backward compatability for input files
         if('kL' in self.params.index and 'kL' not in self.ions.columns):
@@ -139,6 +128,16 @@ class HSDMIX:
 
         if('conc_units' in self.ions.columns):
             self.ions.rename(columns={'conc_units': 'units'}, inplace=True)
+
+        self.params = conv_params_data(self.params)
+        
+        self.params = self.params.drop('units', axis=1)['value'] #drops unused column
+        
+        self.valences = self.ions['valence'].values
+
+        self.Cin_temp = self.Cin_t.copy(deep=False)
+       
+        self.time_mult = self.params['time']
 
         if 'BICARBONATE' not in self.Cin_temp.columns:
             
