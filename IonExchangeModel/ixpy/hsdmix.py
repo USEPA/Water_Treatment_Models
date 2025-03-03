@@ -133,6 +133,13 @@ class HSDMIX:
         if('Dp' in self.params.index and 'Dp' not in self.ions.columns):
             self.ions['Dp'] = self.params.loc['Dp']
 
+        # Compatability for Shiny model input files
+        if('KxA' in self.ions.columns):
+            self.ions.rename(columns={'KxA': 'Kxc'}, inplace=True)
+
+        if('conc_units' in self.ions.columns):
+            self.ions.rename(columns={'conc_units': 'units'}, inplace=True)
+
         if 'BICARBONATE' not in self.Cin_temp.columns:
             
             if 'ALKALINITY' in self.Cin_temp.columns and 'PH' in self.Cin_temp.columns:
@@ -469,12 +476,12 @@ class HSDMIX:
             # update Ceq
             Ceq = calc_Ceq(q_s, CT)
             
-            # Calculate flux terms
+            # Calculate flux terms LMH
             J = np.zeros((NION, nz))
             for iii in range(NION):
                 J[iii, :] = - self.ions['kL'][iii] * (C[iii,:] - Ceq[iii,:]) # mass flux
 
-            # explicitly doing implicit chloride
+            # explicitly doing implicit chloride LMH
             J[0, :] = -J[1:, :].sum(axis=0)
             Jas = J * 3/rb  # mass flux * specific surface area of bead
 
@@ -498,7 +505,7 @@ class HSDMIX:
                 Ds_iii = self.ions['Ds'][iii]
                 dq_dT[:, iii, :] =  Ds_iii * t_half / rb**2 * Br_q[:, iii, :]   
 
-            # # explicitly doing implicit chloride
+            # # explicitly doing implicit chloride LMH
             dq_dT[:, 0, :] = -dq_dT[:, 1:, :].sum(axis=1) # XXX: Why doesn't work?
             # print(dq_dT[-2, :, -1].sum()) # Why isn't that zero?
 
