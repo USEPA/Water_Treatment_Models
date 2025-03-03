@@ -354,7 +354,7 @@ class PSDM():
 # =============================================================================
     def __get_fouling_params(self):
         '''
-        water= [Rhine, Portage, Karlsruhe, Wausau, Haughton]
+        water= [Rhine, Portage, Karlsruhe, Wausau, Houghton]
         chemical=  [halogenated alkanes, halogenated alkenes, trihalo-methanes
                     aromatics, nitro compounds, chlorinated compounds, phenols
                     PNAs, pesticides]
@@ -1759,7 +1759,7 @@ class PSDM():
 
         cb0 = self.data_df[self.influent, compound][0] * self.mass_mul / mw
 
-        difl = 13.26e-5/(((self.vw * 100.)**1.14)*(mol_vol**0.589)) #vb
+        difl = 13.26e-5/(((self.vw * 100.)**1.14)*(mol_vol**0.589)) #vb=mol_vol ### should vw exponent be 1.4 or 1.14? 
         ds_base = self.epor * difl * cb0 * self.psdfr / (1e3 * self.rhop * cb0**self.k_data[compound]['1/n'])
 
         # tests = self.test_range
