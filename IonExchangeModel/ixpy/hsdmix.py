@@ -129,6 +129,11 @@ class HSDMIX:
         if('conc_units' in self.ions.columns):
             self.ions.rename(columns={'conc_units': 'units'}, inplace=True)
 
+        # Convert resin capacity to filter capacity
+        if('Q' in self.params.index):
+            self.params.loc['Q', 'value'] = self.params.loc['Q', 'value'] * (1 - self.params.loc['EBED', 'value'])
+            self.params.rename(index={'Q': 'Qf'}, inplace=True)
+
         self.params = conv_params_data(self.params)
         
         self.params = self.params.drop('units', axis=1)['value'] #drops unused column
