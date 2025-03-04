@@ -1595,7 +1595,7 @@ class PSDM():
                             y0, \
                             method=self.solver,\
                             jac_sparsity=self.jac_sparse,\
-                            # max_step=tstep/3.,\
+                            max_step=tstep/3.,\  ### This seems to prevent some instability in certain simulations
                             )
             
             # defines interpolating function of predicted effluent
