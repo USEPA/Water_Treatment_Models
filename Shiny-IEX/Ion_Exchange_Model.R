@@ -1849,7 +1849,7 @@ server <- function(input, output, session) {
       diameter3(unique(diameter2()))
       
       updateSelectInput(session, "FlowrateUnits", choices=flowrate3(), selected = c(filter(paramsheet(), name=='flrt')$units))
-      updateSelectInput(session, "DiameterUnits", choices=diameter3, selected = c(filter(paramsheet(), name=='diam')$units)())                                     
+      updateSelectInput(session, "DiameterUnits", choices=diameter3(), selected = c(filter(paramsheet(), name=='diam')$units))                                     
       
       updateRadioButtons(session, "veloselect", selected="Volumetric")
     }
