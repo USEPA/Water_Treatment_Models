@@ -739,6 +739,7 @@ process_files <- function (input, file) {
   })
   tryCatch({
     cin<-read_xlsx(file, sheet="Cin")
+    names(cin)[1] <- "time" # Fix case sensitivity of time column name
     write.csv(cin, "temp_file/cinsheet.csv", row.names=FALSE)
   },
   error=function(err){
