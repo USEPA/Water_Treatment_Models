@@ -1590,12 +1590,12 @@ class PSDM():
                                 for i in range(self.num_comps)]
             
             tstart = 0 #consider moving this to self.tstart? also consider tstep
-            y = solve_ivp(diffun,\
-                            (tstart*tconv*t_mult, ttol),\
-                            y0, \
-                            method=self.solver,\
-                            jac_sparsity=self.jac_sparse,\
-                            max_step=tstep/3.,\  ### This seems to prevent some instability in certain simulations
+            y = solve_ivp(diffun,
+                            (tstart*tconv*t_mult, ttol),
+                            y0, 
+                            method=self.solver,
+                            jac_sparsity=self.jac_sparse,
+                            max_step=tstep/3., ### This seems to prevent some instability in certain simulations
                             )
             
             # defines interpolating function of predicted effluent
