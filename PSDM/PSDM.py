@@ -1765,6 +1765,9 @@ class PSDM():
         # tests = self.test_range
         tests = np.linspace(1e-10, 1, num=30)
 
+
+        ssq_xs = np.arange(self.k_data[compound]['brk']) ## only consider through breakthrough, old: np.max(self.data_df.index))
+
         ssqs = pd.Series(index=tests) ## only consider test range in ds direction
         best_ssq = 1e20 ## big initial value
         best_factor = 1
@@ -1781,6 +1784,7 @@ class PSDM():
             if ssq < best_ssq:
                 best_ssq = ssq * 1
                 best_factor = factor * 1
+                best_val_ds = ds_base * best_factor
                 results_out = pd.DataFrame(results[compound].y, index=results[compound].x,
                                        columns=[compound])
 
