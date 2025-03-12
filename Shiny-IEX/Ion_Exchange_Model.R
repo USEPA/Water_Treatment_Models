@@ -2005,7 +2005,7 @@ server <- function(input, output, session) {
   #To break it up
   #------------------------------------------------------------------------------#   
   
-  cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="temp_file/cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
+  cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric"), check.names=FALSE),data="temp_file/cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
   dataOutputServer("output-2", data = cindat)
   
   #Convert the cin data time to hours if it is not already
