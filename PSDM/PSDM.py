@@ -1595,7 +1595,7 @@ class PSDM():
                             y0, 
                             method=self.solver,
                             jac_sparsity=self.jac_sparse,
-                            max_step=tstep/3., ### This seems to prevent some instability in certain simulations
+                            #max_step=tstep/3., ### This seems to prevent some instability in certain simulations
                             )
             
             # defines interpolating function of predicted effluent
@@ -1764,7 +1764,6 @@ class PSDM():
 
         # tests = self.test_range
         tests = np.linspace(1e-10, 1, num=30)
-
 
         ssq_xs = np.arange(self.k_data[compound]['brk']) ## only consider through breakthrough, old: np.max(self.data_df.index))
 

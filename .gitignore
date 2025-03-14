@@ -26,4 +26,5 @@ Shiny-GAC/.RData
 /Shiny-IEX/temp_file/*.csv
 *.dcf
 PSDM/output.xlsx
-PAC/*
+PAC/test_code.py
+PAC/__pycache__/*
