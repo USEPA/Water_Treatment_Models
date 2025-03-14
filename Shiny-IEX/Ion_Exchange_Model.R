@@ -85,6 +85,8 @@ ds_conv <- c("ft^2/s"=ft2ps2cm2ps, "m^2/s"=m2ps2cm2ps, "cm^2/s"=cm2cm,
 
 mass_conv <- c("meq"=1, "meq/L"=1, "mg"=1, "ug"=1e-3, "ng"=1e-6, "mg/L"=1, "ug/L"=1e-3, "ng/L"=1e-6) ### changed
 
+MV_dict <- c("PFBS"=162.3, "PFOS"=272.1, "PFBA"=127.5, "PFHxS"=217, "PFHxA"=182.4, "PFHpA"=210, "GenX"=188.7, "PFOA"=237.3, "PFNA"=264.7, "PFDA"=292.2)
+
 lengthvector<-c("cm", "m", "mm", "in", "ft")
 velocityvector<-c("cm/s", "m/s", "m/min", "m/h", "in/s","ft/s","ft/min", "gpm/ft^2")
 timevector <- c("hr","day")
@@ -1565,7 +1567,29 @@ tags$style(HTML("
                               br()
                               
                             )#fluid row
-                          )#tabPanel
+                          ),#tabPanel
+                  tabPanel("kL Guesser",
+                            br(),
+                            fluidRow(
+                              column(4,
+                                selectInput("PFAS", "Compound", c("PFBS", "PFOS", "PFBA", "PFHxS", "PFHxA", "PFHpA", "GenX", "PFOA", "PFNA", "PFDA")),
+                              ),
+                            ),
+                            fluidRow(
+                              column(4,
+                                numericInput("temp", "Temperature", 23),
+                              ),
+                              column(4,
+                                selectInput("tempunits", "Temperature Units", "deg C"),
+                              ),
+                            ),
+                            hr(),
+                            fluidRow(
+                              column(4,
+                                h5("Film Transfer Estimate (cm/s)"),
+                                textOutput("filmtransfer"))
+                            )
+                  )
                           )#MainPanel
                         )#Sidebarlayout
                         )
@@ -1985,6 +2009,43 @@ server <- function(input, output, session) {
   output$bicarbcin_mg_C_L<-renderText(bicarbconverted_mg_C_L()) # mM to mg C/L
   output$bicarbcin_mg_HCO3_L<-renderText(bicarbconverted_mg_HCO3_L()) # mM to mg HCO3-/L  
 
+  #------------------------------------------------------------------------------#
+  #KL GUESSER#
+  #------------------------------------------------------------------------------#
+  film_transfer_coeff <- reactiveVal()
+
+  # Viscosity
+  t1 <- reactive(input$temp + 273.15)
+  viscosity <- reactive(exp(-24.71 + (4209/t1()) + 0.04527 * t1() - (3.376e-5 * t1()**2))/100)
+
+  # Density
+  t2 <- reactive((input$temp + 273.15)/324.65)
+  density <- reactive(0.98396*(-1.41768 + 8.97665*t2() - 12.2755 * t2()**2 + 7.45844 * t2()**3 - 1.73849 * t2()**4))
+
+  # Hayduk Laudie
+  mu1 <- reactive(viscosity() * 100)
+  diffusion_coeff <- reactive(13.26e-5 * (mu1() ** -1.14) * (MV_dict[input$PFAS] ** -0.589))
+
+  # Simple Gnielinski
+  rho_L <- reactive(density())
+  mu2 <- reactive(viscosity())
+  dP <- reactive(2* input$rbv) # bead diameter (cm)
+  u <- reactive(input$Vv / input$EBEDv)  # interstitial linear flow velocity (cm/s)
+  Re <-  reactive(u() * dP() * (rho_L() / mu2()))  # Reynolds number
+  Sc <- reactive(mu2() / rho_L() / diffusion_coeff()) # Schmidt number
+  Sh <- reactive((2 + 0.644 * Re()**(1/2) * Sc()**(1/3)) * (1 + 1.5 * (1- input$EBEDv))) # Sherwood number
+
+  observe({
+    if(!(Re() > 1 & Re() < 100)) {
+      film_transfer_coeff("WARNING: Reynolds number is outside the valid range for this correlation!")
+    } else if(!(Sc() > 0.6 & Sc() < 1e4)) {
+      film_transfer_coeff("WARNING: Schmidt number is outside the valid range for this correlation!")
+    } else {
+      film_transfer_coeff(Sh() * diffusion_coeff() / dP())
+    }
+  })
+
+  output$filmtransfer<-renderText(film_transfer_coeff())
   
   #------------------------------------------------------------------------------#
   #IONS TAB DATA HANDLING#
