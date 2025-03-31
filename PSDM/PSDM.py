@@ -275,7 +275,7 @@ class PSDM():
         max_time = np.max([self.max_days, self.duration]) #doesn't do anything at the moment for k_fit
         
         self.time_vals = np.linspace(0, max_time*self.t_mult, 500)
-        self.fouling_dict= self.__fouled_k_new(self.time_vals) ## removed self.k_data.loc['K'], 
+        self.fouling_dict = self.__fouled_k_new(self.time_vals) ## removed self.k_data.loc['K'], 
         
         # calculate initial values 
         # might need to add more here
@@ -291,6 +291,8 @@ class PSDM():
                                         columns=self.compounds)
             for comp in self.compounds:
                 k, q, classifier, brk, aveC, k_func, foul_mult_est = self.__calculate_capacity(comp)
+                if np.isnan(foul_mult_est):
+                    foul_mult_est = 1.25 ## reasonable estimate for fouling if .__calculate_capacity returns nan
                 self.k_data[comp] = np.array([k, self.xn, q, brk, aveC])
                 
                 self.k_by_xn_factor[comp] = k_func
@@ -352,7 +354,7 @@ class PSDM():
 # =============================================================================
     def __get_fouling_params(self):
         '''
-        water= [Rhine, Portage, Karlsruhe, Wausau, Haughton]
+        water= [Rhine, Portage, Karlsruhe, Wausau, Houghton]
         chemical=  [halogenated alkanes, halogenated alkenes, trihalo-methanes
                     aromatics, nitro compounds, chlorinated compounds, phenols
                     PNAs, pesticides]
@@ -444,7 +446,13 @@ class PSDM():
                 
             elif np.count_nonzero(effl.values) == 1:
                 ## if only one data point exceeds 0, may be able to estimate 
-                if effl.iloc[-1].values[0] > 0 and effl.iloc[-1].values[0]/aveC >= 0.25:
+                
+                if type(effl.iloc[-1]) == np.float64:
+                    brk_found = True
+                    print(f'Insufficient data to estimate breakthrough for {compound}. Returning minimum K estimate.')
+                    breakthrough_code = 'minimum'
+
+                elif effl.iloc[-1].values[0] > 0 and effl.iloc[-1].values[0]/aveC >= 0.25:
                     ### if last value exceeds 25% of aveC, estimate line from last and second to last points???
                     ### hope logistic function finds solution?
                     pass
@@ -494,7 +502,7 @@ class PSDM():
                     if breakthrough_time >= self.duration: ## rejects solution if breakthrough time doesn't exceed data duration (should have been caught)
                         brk_found = True
                         
-                        breakthrough_code = 'logisitc'
+                        breakthrough_code = 'logistic'
                         
                         ## add fictitous point at end for integration step
                         infl.loc[breakthrough_time] = aveC
@@ -508,7 +516,10 @@ class PSDM():
                         brk_found = True
                         breakthrough_code = 'logistic'
 
-                        
+                    if breakthrough_code == 'logistic' and breakthrough_time > 2000:
+                            ## prevents an extremely large breakthrough time, caps at data available duration
+                            breakthrough_time = self.duration * 1
+                            
                 except Exception as e:
                     print('Logistic search failed: ', e)
                     
@@ -541,6 +552,13 @@ class PSDM():
                             
                         breakthrough_time = np.round((aveC - intercept)/slope,0)
                         
+                        if breakthrough_time <= 0: ### catches error that causes negative breakthrough time here
+                            last_good_value = 0
+                            for idx_val_test in effl.index:
+                                if ~np.isinf(idx_val_test) and idx_val_test > 0:
+                                    last_good_value = idx_val_test * 1
+                            breakthrough_time = last_good_value * 1
+
                         ## add fictitous point at end for integration step
                         infl.loc[breakthrough_time] = aveC
                         effl.loc[breakthrough_time] = aveC
@@ -553,12 +571,35 @@ class PSDM():
                         print('Linearization failed: ', e)
                         
             
+            if np.isinf(breakthrough_time): ## Safety if breakthrough time is set to infinity, or prevents negative or very large breakthrough days
+                last_good_value = 0
+                for idx_val_test in effl.index:
+                    if ~np.isinf(idx_val_test):
+                        last_good_value = idx_val_test * 1
+                breakthrough_time = last_good_value * 1
+            elif breakthrough_time < 0:
+                last_good_value = 0
+                for idx_val_test in effl.index:
+                    if ~np.isinf(idx_val_test) and idx_val_test > 0:
+                        last_good_value = idx_val_test * 1
+                breakthrough_time = last_good_value * 1
+            elif breakthrough_time > 2000:
+                last_good_value = 0
+                for idx_val_test in effl.index:
+                    if ~np.isinf(idx_val_test) and idx_val_test < 2000:
+                        last_good_value = idx_val_test * 1
+                breakthrough_time = last_good_value * 1
+            elif breakthrough_time == 0:
+                breakthrough_time = 1 ## does not allow immediate breakthrough at time 0, sets to at least 1 day
+
             if brk_found:  ## process breakthrough estimate
                 infl_load, _ = quad(f_inf, 0, breakthrough_time) ## influent loading, ignores error
                 effl_rem, _ = quad(f_eff, 0, breakthrough_time) ## effluent removal, ignores error
         
                 ## calculate q, ug/g
                 q_meas = (infl_load - effl_rem) * flow_per_day * self.mass_mul / carbon_mass
+                if q_meas <= 1e-6:
+                    q_meas = 1e-6 ## sets minimum qs
                 
                 aveC = np.mean(f_inf(times_to_test[times_to_test <= breakthrough_time]))
                 
@@ -584,9 +625,7 @@ class PSDM():
                 k_function = interp1d(xn_f_range, k_s, fill_value='extrapolate') ## need to update
 
 
-            
-                
-        elif self.brk_type == 'force':# and self.brk_df != None:
+        elif self.brk_type == 'force':# deprecate?
             brk_df = self.brk_df
             maxx = self.duration
             brkdy = brk_df[(brk_df['carbon']==self.carbon) & \
@@ -658,7 +697,9 @@ class PSDM():
         ## should return the averaged impact related to K reduction caused by fouling
         foul_mult_est = 1/np.mean(self.fouling_dict[compound](np.arange(breakthrough_time)*self.t_mult))
         
-        # returns capacity in (ug/g)(L/ug)**(1/n)
+        # print(compound, k, q_meas, breakthrough_code, breakthrough_time, aveC)
+
+        # returns capacity k in (ug/g)(L/ug)**(1/n), q (ug/g), text, days, ng/L, 
         return k, q_meas, breakthrough_code, breakthrough_time, aveC, k_function, foul_mult_est
 
     def __set_backups(self):
@@ -944,10 +985,9 @@ class PSDM():
         self.optimize_flag = opt_flg #resets to original value
 # end run_all()
 
-    def run_all_smart(self, plot=False, 
-                      save_file=True, file_name='PSDM_', 
-                      pm=10, num=11, des_xn=0.025, 
-                      search_limit=50):
+    def run_all_smart(self, save_file=False, file_name='PSDM_', 
+                      pm=10, num=11, des_xn=0.025,
+                      search_limit=50): 
         '''
         Smart Optimizer for K & 1/n fitting.
         Starts with estimates for effective fouling, and attemps to find path 
@@ -1058,7 +1098,7 @@ class PSDM():
             #starter variables
             xn = best_xn * 1
             k_factor = get_fouling_factor(compound)
-            
+
             ssq_storage = pd.DataFrame(index=np.round(np.arange(min_k, max_k+scale_k/2, scale_k),6),
                                        columns=np.round(np.arange(0.2, 1+des_xn/2, des_xn),3))
                         
@@ -1093,7 +1133,9 @@ class PSDM():
             ### search from best starting location
             shift_xn = 0
             shift_k = 0
+            loops_tried = 0
             while cases_tried <= 5: 
+                loops_tried += 1
                 ### tries to seach in 4 directions. Uses this information to search again
 
                 ## move central test location
@@ -1196,16 +1238,21 @@ class PSDM():
                 
 
                 ### if ready to end loop, save results
-                if base_ssq == best_ssq:
+                if np.abs(base_ssq - best_ssq) <= 1e-7 or loops_tried >= search_limit:
                     ### if the central location is the best, break the loop
                     
                     self.ssq_storage = ssq_storage 
                     
                     # print('Best', best_xn, best_k)
                     self.k_data.loc['1/n', compound] = best_xn * 1
+                    if best_k <= 0:
+                        best_k = 1e-6 ## sets K to a small positive number, prevents K's == 0
+                        if self.k_data.loc['q', compound] <= 1e-6:
+                            self.k_data.loc['q', compound] = 1e-6 ## Assumes problem witih q is also present and makes sure it is small but positive
                     self.k_data.loc['K', compound] = best_k * 1
 
                     self.k_data_bup = self.k_data.copy() ### reset backup as well
+                    
                     cases_tried = 10
 
                 elif shift_k == 0 and shift_xn == 0:
@@ -1309,7 +1356,7 @@ class PSDM():
         psdfr = self.psdfr                             # pore to surface diffusion ratio
         nd = nc - 1
         
-        difl = 13.26e-5/(((vw * 100.)**1.14)*(mol_vol**0.589)) #vb
+        difl = 13.26e-5/(((vw * 100.)**1.14)*(mol_vol**0.589)) #vb=molar_vol should it be 1.14 or 1.4
         sc = vw / (dw * difl)       #schmidt number
         
         #set film and pore diffusion
@@ -1507,7 +1554,8 @@ class PSDM():
                 ww2 = np.matmul(wr_A[:,:nd].reshape((self.num_comps,1,nd)),
                                 bb2)
                 
-                ydot2[:,:nd,1:] = bb2[:,:,1:]
+                # ydot2[:,:nd,1:] = bb2[:,:,1:]
+                ydot2[:,:nd,:] = bb2[:,:,:]
                 
                 num = (cinfl - cpore2[:,nc-1,0]).reshape(TwoDSize)
                 num = np.multiply(num, stdv_dgI)
@@ -1542,12 +1590,12 @@ class PSDM():
                                 for i in range(self.num_comps)]
             
             tstart = 0 #consider moving this to self.tstart? also consider tstep
-            y = solve_ivp(diffun,\
-                            (tstart*tconv*t_mult, ttol),\
-                            y0, \
-                            method=self.solver,\
-                            jac_sparsity=self.jac_sparse,\
-                            # max_step=tstep/3.,\
+            y = solve_ivp(diffun,
+                            (tstart*tconv*t_mult, ttol),
+                            y0, 
+                            method=self.solver,
+                            jac_sparsity=self.jac_sparse,
+                            #max_step=tstep/3., ### This seems to prevent some instability in certain simulations
                             )
             
             # defines interpolating function of predicted effluent
@@ -1711,11 +1759,13 @@ class PSDM():
 
         cb0 = self.data_df[self.influent, compound][0] * self.mass_mul / mw
 
-        difl = 13.26e-5/(((self.vw * 100.)**1.14)*(mol_vol**0.589)) #vb
+        difl = 13.26e-5/(((self.vw * 100.)**1.14)*(mol_vol**0.589)) #vb=mol_vol ### should vw exponent be 1.4 or 1.14? 
         ds_base = self.epor * difl * cb0 * self.psdfr / (1e3 * self.rhop * cb0**self.k_data[compound]['1/n'])
 
         # tests = self.test_range
         tests = np.linspace(1e-10, 1, num=30)
+
+        ssq_xs = np.arange(self.k_data[compound]['brk']) ## only consider through breakthrough, old: np.max(self.data_df.index))
 
         ssqs = pd.Series(index=tests) ## only consider test range in ds direction
         best_ssq = 1e20 ## big initial value
@@ -1733,6 +1783,7 @@ class PSDM():
             if ssq < best_ssq:
                 best_ssq = ssq * 1
                 best_factor = factor * 1
+                best_val_ds = ds_base * best_factor
                 results_out = pd.DataFrame(results[compound].y, index=results[compound].x,
                                        columns=[compound])
 

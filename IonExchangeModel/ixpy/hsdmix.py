@@ -561,8 +561,8 @@ class HSDMIX:
 
         output_df['base'] = converted_df
         
-        upper_df = converted_df.values
-        lower_df = converted_df.values
+        upper_df = converted_df.values * 1.0
+        lower_df = converted_df.values * 1.0
 
         inputs = {'capacity': resin_capacity, 'Kxc': Kxc, 'ds': Ds, 'kL': kL, 'flrt': flrt, 'c0': c0, 'L': L, 'ebed': ebed} ## TODO: add porosity/EBED or similar for PSDM? Dp for PSDM
 
@@ -609,9 +609,10 @@ class HSDMIX:
             ## find values that increase or decrease uncertainty ranges
             upper_df[np.where(upper_df < intermediate_df.values)] = intermediate_df.values[np.where(upper_df < intermediate_df.values)]
             lower_df[np.where(lower_df > intermediate_df.values)] = intermediate_df.values[np.where(lower_df > intermediate_df.values)]
-
-        output_df['upper'] = upper_df.copy()
-        output_df['lower'] = lower_df.copy()
+        
+        if len(test_uncertainty) > 0:
+            output_df['upper'] = upper_df.copy()
+            output_df['lower'] = lower_df.copy()
 
 
 
