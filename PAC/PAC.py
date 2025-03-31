@@ -681,6 +681,63 @@ class PAC_CFPSDM():
         return(out_dict)
         
 
+    def _R_HRT_calculator_for_dosage(self, target_conc: float, dosage_trials=np.arange(5, 150 + 1, 20), conc_units='same') -> pd.DataFrame:
+        '''
+        returns dataframe with results of HRT for a given dosage
+        '''
+        ## save original data
+        original_data = self.compounds_df.copy()
+        original_duration = self.duration * 1
+        original_conv_array = self.convert_array * 1
 
+        self.duration = 3000 * 60
+
+        if conc_units.lower() == 'same':
+            conc_multiplier = self.convert_array
+            conc_units_update = self.compounds_df.loc['C0_units'].values ## This might not be great if the units aren't the same, might cause issues
+        else:
+            ### assumes units
+            # 'ng', 'ug', 'mg'
+            conc_multiplier = np.ones(self.ncomp) * conc_convert[conc_units.lower()]
+            conc_units_update = [conc_units.lower()] * self.ncomp ## make it the same size as the compounds_df shape
+            self.convert_array = np.array([conc_convert[i] for i in conc_units_update])
+
+        target_conc_update = target_conc * conc_multiplier ### adjust target conc into appropriate unit
+
+        ### calculates 
+        out_df = pd.DataFrame(columns=self.compounds_df.columns, index=dosage_trials)
+
+        self.compounds_df.loc['C0_units'] = conc_units_update
+
+        # for c0 in influent_c0: ### needs this to be an iterable
+        for dosage in dosage_trials:
+
+            ## change the inputs
+            # self.compounds_df.loc['C0'] = c0 * 1.
+            self.dosage = dosage
+            self._update_values()
+
+            data = self.run_PAC_PSDM()
+
+            for i in range(self.ncomp):
+                comp = data.columns[i]
+                sub_data = data[comp].values * self.convert_array[i]
+                sub_data_filtered = sub_data[np.where(sub_data <= target_conc_update[i])]
+                
+                # plt.plot(data.index, data[comp].values * conc_multiplier[i], label=f'{c0} - {dosage}')
+
+                if len(sub_data_filtered) > 0:
+                    sol = np.interp(target_conc_update[i], sub_data.flatten()[::-1], data.index[::-1])
+
+                    out_df.loc[dosage, comp] = sol * 1.
+                
+        # plt.plot([0, self.duration/60], np.ones(2) * target_conc_update[0], lw=4, ls='--')
+
+        ## reset compounds_df
+        self.compounds_df = original_data.copy()
+        self.duration = original_duration * 1
+        self.convert_array = original_conv_array * 1
+
+        return out_df
     
         
