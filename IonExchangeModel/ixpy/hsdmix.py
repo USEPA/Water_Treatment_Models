@@ -113,14 +113,14 @@ class HSDMIX:
                                    dtype=np.float64)
 
         # Backward compatability for input files
-        if('kL' in self.params.index and 'kL' not in self.ions.columns):
-            self.ions['kL'] = self.params.loc['kL']
-
-        if('Ds' in self.params.index and 'Ds' not in self.ions.columns):
-            self.ions['Ds'] = self.params.loc['Ds']
-
-        if('Dp' in self.params.index and 'Dp' not in self.ions.columns):
-            self.ions['Dp'] = self.params.loc['Dp']
+        if ('kL' in self.params.index) and ('kL' not in self.ions.columns):
+            self.ions['kL'] = self.params.loc['kL', 'value'] ### ignores units
+ 
+        if ('Ds' in self.params.index) and ('Ds' not in self.ions.columns):
+            self.ions['Ds'] = self.params.loc['Ds', 'value'] ### ignores units
+ 
+        if ('Dp' in self.params.index) and ('Dp' not in self.ions.columns):
+            self.ions['Dp'] = self.params.loc['Dp', 'value'] ### ignores units
 
         # Compatability for Shiny model input files
         if('KxA' in self.ions.columns):
