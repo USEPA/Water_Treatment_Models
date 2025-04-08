@@ -619,6 +619,57 @@ class PAC_CFPSDM():
 
         return out_dict
     
+    def _run_multi_doseR(self, dosages, target_HRT):
+        if type(target_HRT) == int or type(target_HRT) == float:
+            target_HRT_array = np.array([target_HRT])
+        else:
+            target_HRT_array = np.array(target_HRT) ## makes this an array, assumes array already or list
+
+        ## assumes dosages is an iterable
+        data_dict = {i: [] for i in dosages}
+
+        ## create stored values
+        self.orig_dosage = self.dosage * 1
+        self.orig_duration = self.duration * 1
+
+        self.duration = 1000 * 60 ## duration in seconds
+
+        for dose in dosages:
+            self.dosage = dose * 1
+            self._update_values()
+
+            data_dict[dose] = self.run_PAC_PSDM()
+
+        # print(data_dict)
+
+        out_dict = {self.compounds_df.columns[i]: pd.DataFrame(index=data_dict.keys(), columns=target_HRT_array) for i in range(self.ncomp)}
+
+        for key in data_dict.keys():
+            y_df = data_dict[key]
+            
+            conv_t = y_df.index ## in minutes by default
+            
+            for i in range(self.ncomp):
+                compound = y_df.columns[i]
+                ## calculate the concentration at a given HRT for each compound
+                concs_calced = np.interp(target_HRT_array, conv_t, y_df[compound]) * self.convert_array[i]
+
+                out_dict[compound].loc[key] = concs_calced * 1
+
+        
+        out_df = pd.DataFrame(index=pd.MultiIndex.from_tuples((i, j) for i in y_df.columns for j in dosages), columns=target_HRT_array)
+        for i in y_df.columns:
+            for j in dosages:
+                for k in target_HRT_array:
+                    out_df.loc[(i, j), k] = out_dict[i].loc[j, k] * 1
+       
+        ### reset values
+        self.dosage = self.orig_dosage * 1 ## reset to original information
+        self.duration = self.orig_duration * 1
+
+
+        return out_df
+
 
     def HRT_calculator_for_dosage(self, target_conc: float, dosage_trials=np.arange(5, 151, 20), influent_c0=np.arange(5, 26, 5), conc_units='same') -> dict:
         '''
