@@ -1,5 +1,6 @@
 ## Commented out for running locally
-# renv::install("bioconductor-source/BiocVersion")## needed for colorBlindness on remote
+
+library(BiocVersion) ## needed for colorBlindness on remote
 library(readxl)
 library(shiny)
 library(shinythemes)
@@ -13,6 +14,7 @@ library(colorBlindness)
 library(writexl)
 library(ggplot2)
 library(shinyalert)
+
 
 #------------------------------------------------------------------------------#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
