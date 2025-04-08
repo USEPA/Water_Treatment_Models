@@ -94,11 +94,12 @@ modelvector<-c("Gel-Type (HSDM)", "Macroporous (PSDM)")
 
 notificationDuration <- 10 # Number of seconds to display the notification
 
-PFAS_properties <- read_xlsx("PFAS_properties.xlsx")
+PFAS_properties <- read_xlsx("../PSDM/PFAS_properties.xlsx")
 PFAS_properties <- as.data.frame(t(PFAS_properties))
 names(PFAS_properties) <- lapply(PFAS_properties[1, ], as.character)
 PFAS_properties <- PFAS_properties[-1,] 
 PFAS_properties <- PFAS_properties[c("MolarVol")]
+colnames(PFAS_properties)[colnames(PFAS_properties) == 'MolarVol'] <- 'MolarVol (cm^3/mol)'
 
 #------------------------------------------------------------------------------#
 #HSDMIX Function
@@ -1585,15 +1586,16 @@ tags$style(HTML("
                               ),
                             ),
                             br(),
-                            h5("Molar Volume (cm^3/mol)"),
-                            dataEditUI("edit-4"),
-                            br(),
                             actionButton('Estimate', 'Estimate Values'),
-                            br(), br(),
-                            textOutput("note"),
                             hr(),
-                            h5("Film Transfer Coefficient (cm/s)"),
-                            uiOutput("edit5")
+                            fluidRow(
+                              column(6,
+                                dataEditUI("edit-4"),
+                              ),
+                              column(6,
+                                uiOutput("edit5")
+                              )
+                            ),
                   )
                           )#MainPanel
                         )#Sidebarlayout
@@ -1739,8 +1741,7 @@ server <- function(input, output, session) {
   output$AlkConv<-renderText("Bicarbonate is the common chemical used to measure alkalinity in this model, however, the user may have the pH of their water without the Bicarbonate specifications. If this is the case then the user can use this calculator to take their pH measurement and find the corresponding Bicarbonate concentrations.  ")
   output$bicarbion<-renderTable(bicarbion)
 
-  output$kLGuess<-renderText("The user can use this calculator to estimate kL values for common PFAS compounds or input their own. It uses the Gnielinski equation to calculate an estimate for the film transfer coefficient.")
-  output$note<-renderText("Note: You may have to scroll down to view the results.")
+  output$kLGuess<-renderText("The user can use this calculator to estimate kL values for common PFAS compounds or input their own. It uses the Gnielinski equation to calculate an estimate for the film transfer coefficient. Pre-populated molar volume values are stored in the PFAS properties Excel file in the PSDM folder. Users can add new compounds to the table below.")
   
   
   
@@ -2034,7 +2035,7 @@ server <- function(input, output, session) {
     df <- PFASdat()
 
     for (i in 1:nrow(df)) {
-      MolarVol <- df[i, "MolarVol"]
+      MolarVol <- df[i, "MolarVol (cm^3/mol)"]
       
       # Hayduk Laudie
       mu1 <- viscosity() * 100
@@ -2054,7 +2055,8 @@ server <- function(input, output, session) {
       df$kL[i] <- film_transfer_coeff
     }
 
-    df$MolarVol <- NULL
+    df$`MolarVol (cm^3/mol)` <- NULL
+    colnames(df)[colnames(df) == 'kL'] <- 'kL Estimate (cm/s)'
     output$edit5 <- renderTable(df, rownames = TRUE, digits = 5)
   })
   
