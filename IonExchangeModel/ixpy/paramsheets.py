@@ -346,10 +346,13 @@ def conv_params(data_in, u_in, u_out, conv_fn):
             ***the keys must be the same for all dictionaries***
     '''        
     for u in u_in.keys():
-
         tmp_conv_fn = conv_fn[u]
         cf, u_in[u], u_out[u] = tmp_conv_fn(u_in[u], u_out[u], u, u)
-        data_in.loc[u, 'value'] *= cf
+        try:
+            data_in.loc[u, 'value'] *= cf
+        except:
+            # Compatability for Shiny model input files
+            data_in.loc[u, 'value'] = cf # Calculate cf correctly and replace old value
         data_in.loc[u, 'units'] = u_out[u]        
         
     return data_in
