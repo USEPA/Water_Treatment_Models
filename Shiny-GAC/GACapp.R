@@ -5,7 +5,7 @@ library(readxl)
 library(shinyjs)
 library(DataEditR)
 library(tidyr)
-## Commented out for running locally
+library(BiocVersion) ### needed for colorblindness
 # renv::install("bioconductor-source/BiocVersion")## needed for colorBlindness on remote
 library(colorBlindness)
 library(writexl)
