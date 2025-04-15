@@ -175,16 +175,6 @@ ui <- fluidPage(
                     tableOutput("selectedfile"),
 
                     br(),
-
-                    # selectInput("format", "Format", list('Square')),
-
-                    br(),
-                    
-                    # sliderInput("hrt", "HRT", 0, 300, 0),
-                    # sliderInput("crt", "CRT", 0, 300, 0),
-                    # sliderInput("dosage", "PAC Dosage", 0, 20, 0),
-                    
-                    br(),
                     
                     actionButton("run_button", "Run Analysis", icon=icon("play")),
                     
@@ -338,77 +328,68 @@ ui <- fluidPage(
             )                
         ),
 
-        tabPanel("Concentration Calculator",
-                br(), br(),
-                shinycssloaders::withSpinner(plotlyOutput("plot1"))
+        tabPanel("Concentration Output",
+            sidebarLayout(
+                sidebarPanel(
+                    selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
+                    selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
+
+                    br(), br(), br(),
+          
+                    downloadButton("save_button", "Save Data")
+                ),
+                mainPanel(
+                    br(), br(),
+                    
+                    shinycssloaders::withSpinner(plotlyOutput("plot1"))
+                )
+            ),
         ),
 
         tabPanel(HTML("Dosage Calculator</a></li><li><a href='https://github.com/USEPA/Water_Treatment_Models/tree/master/PAC' target='_blank'>Help"),
             sidebarLayout(
                 sidebarPanel(
-                    actionButton("calculate_by_target", "Calculate By Target", icon=icon("play")),
+                    sliderInput("dosagerange", label = "Dosage Range", min = dosage_range[1], max = dosage_range[2], value = dosage_range, step = 5),
+                    sliderInput("dosageinterval", "Dosage Intervals", 3, 7, 5),
+
+                    br(),
+
+                    shinyWidgets::autonumericInput(inputId = "target", label="Target Concentration", value = 4.0, currencySymbolPlacement = "p", decimalPlaces = 1, digitGroupSeparator = ",", decimalCharacter = "."),
+                    selectInput("targetunits", "Target Units", c("ng")),
+
+                    actionButton("calculate_by_target", "Calculate", icon=icon("play")),
                     
-                    br(), br(),
-                    
-                    actionButton("Stop", "Stop App", icon=icon("square"), style="color: #000000; background-color: #ff0000; border-color: #e60000")
+                    br(), br(), br(),
+
+                    downloadButton("save_button", "Save Data"),
                 ),                     
 
                 mainPanel(
-                    br(), br(),
+                    tabsetPanel(
+                        tabPanel("By Dosage",
+                            br(), br(),
 
-                    fluidRow(
-                        column(3, HTML(paste0("<h4>","<strong>", "Dosage", "</strong>", "</h4>"))),
-                        column(3, shinyWidgets::autonumericInput(
-                            inputId = "target",
-                            label="Target Concentration",
-                            value = 4.0,
-                            currencySymbolPlacement = "p",
-                            decimalPlaces = 1,
-                            digitGroupSeparator = ",",
-                            decimalCharacter = "."
-                        )),
-                        column(3, selectInput("targetunits", "Target Units", c("ng")))
-                    ),
+                            fluidRow(
+                                column(3, selectInput("compound", "Compound", c("MIB"))),
+                                column(3,),
+                                column(3,)
+                            ),
+                            
+                            # Suppress Shiny errors
+                            tags$style(type="text/css",
+                            ".shiny-output-error { visibility: hidden; }",
+                            ".shiny-output-error:before { visibility: hidden; }"
+                            ),
 
-                    fluidRow(
-                        column(3,),
-                        column(3,
-                            sliderInput(
-                                "dosagerange",
-                                label = "Dosage Range", 
-                                min = dosage_range[1], 
-                                max = dosage_range[2], 
-                                value = dosage_range,
-                                step = 5
-                            )
+                            hr(),
+                            shinycssloaders::withSpinner(plotlyOutput("plot2")),
                         ),
-                        column(3, shinyWidgets::autonumericInput(
-                            inputId = "dosageinterval",
-                            label="Dosage Interval",
-                            value = 5,
-                            currencySymbolPlacement = "p",
-                            decimalPlaces = 0,
-                            digitGroupSeparator = ",",
-                            decimalCharacter = "."
-                        )),
-                    ),
+                        tabPanel("For Target",
+                            br(), br(),
 
-                    fluidRow(
-                        column(3,),
-                        column(3, selectInput("compound", "Compound", c("MIB"))),
-                        column(3,),
-                    ),
-                    
-                    # Suppress Shiny errors
-                    tags$style(type="text/css",
-                     ".shiny-output-error { visibility: hidden; }",
-                     ".shiny-output-error:before { visibility: hidden; }"
-                    ),
-
-                    hr(),
-                    shinycssloaders::withSpinner(plotlyOutput("plot2")),
-                    br(), br(),                    
-                    shinycssloaders::withSpinner(plotlyOutput("plot3"))
+                            shinycssloaders::withSpinner(plotlyOutput("plot3"))
+                        )
+                    )
                 )
             )
         )
