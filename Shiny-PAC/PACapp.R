@@ -625,7 +625,23 @@ server <- function(input, output, session) {
     output$plot1 <- renderPlotly(p1())
     output$plot2 <- renderPlotly(p2())
     output$plot3 <- renderPlotly(p3())
+
+    output$save_button <- downloadHandler(
+        filename = function() {
+        paste("data-", Sys.Date(), ".xlsx", sep="")
+        },
+        content=function(file) {
+        sheets <- list("Contactor" = contactor(),
+                       "PAC" = pac(),
+                       "Compounds" = compounddat(),
+                       "Concentration Output" = out_df(),
+                       "By Dosage" = sub_data(),
+                       "For Target" = out_df2()
+        )
+
+        write_xlsx(sheets, file)
+        }
+    )
 }
 
-# Run the app ----
 shinyApp(ui = ui, server = server)
