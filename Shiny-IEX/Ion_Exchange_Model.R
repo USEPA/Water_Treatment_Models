@@ -1,5 +1,6 @@
 ## Commented out for running locally
-# renv::install("bioconductor-source/BiocVersion")## needed for colorBlindness on remote
+
+library(BiocVersion) ## needed for colorBlindness on remote
 library(readxl)
 library(shiny)
 library(shinythemes)
@@ -13,6 +14,7 @@ library(colorBlindness)
 library(writexl)
 library(ggplot2)
 library(shinyalert)
+
 
 #------------------------------------------------------------------------------#
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
@@ -94,6 +96,12 @@ modelvector<-c("Gel-Type (HSDM)", "Macroporous (PSDM)")
 
 notificationDuration <- 10 # Number of seconds to display the notification
 
+PFAS_properties <- read_xlsx("../PSDM/PFAS_properties.xlsx")
+PFAS_properties <- as.data.frame(t(PFAS_properties))
+names(PFAS_properties) <- lapply(PFAS_properties[1, ], as.character)
+PFAS_properties <- PFAS_properties[-1,] 
+PFAS_properties <- PFAS_properties[c("MolarVol")]
+colnames(PFAS_properties)[colnames(PFAS_properties) == 'MolarVol'] <- 'MolarVol (cm^3/mol)'
 
 #------------------------------------------------------------------------------#
 #HSDMIX Function
@@ -1566,7 +1574,32 @@ tags$style(HTML("
                               br()
                               
                             )#fluid row
-                          )#tabPanel
+                          ),#tabPanel
+                  tabPanel("kL Guesser",
+                            br(),
+                            h4("Film Transfer Coefficient"),
+                            textOutput("kLGuess"),
+                            br(),
+                            fluidRow(
+                              column(4,
+                                numericInput("temp", "Temperature", 23),
+                              ),
+                              column(4,
+                                selectInput("tempunits", "Temperature Units", "deg C"),
+                              ),
+                            ),
+                            br(),
+                            actionButton('Estimate', 'Estimate Values'),
+                            hr(),
+                            fluidRow(
+                              column(6,
+                                dataEditUI("edit-4"),
+                              ),
+                              column(6,
+                                uiOutput("edit5")
+                              )
+                            ),
+                  )
                           )#MainPanel
                         )#Sidebarlayout
                         )
@@ -1710,6 +1743,8 @@ server <- function(input, output, session) {
   
   output$AlkConv<-renderText("Bicarbonate is the common chemical used to measure alkalinity in this model, however, the user may have the pH of their water without the Bicarbonate specifications. If this is the case then the user can use this calculator to take their pH measurement and find the corresponding Bicarbonate concentrations.  ")
   output$bicarbion<-renderTable(bicarbion)
+
+  output$kLGuess<-renderText("The user can use this calculator to estimate kL values for common PFAS compounds or input their own. It uses the Gnielinski equation to calculate an estimate for the film transfer coefficient. Pre-populated molar volume values are stored in the PFAS properties Excel file in the PSDM folder. Users can add new compounds to the table below.")
   
   
   
@@ -1988,6 +2023,47 @@ server <- function(input, output, session) {
   output$bicarbcin_mg_C_L<-renderText(bicarbconverted_mg_C_L()) # mM to mg C/L
   output$bicarbcin_mg_HCO3_L<-renderText(bicarbconverted_mg_HCO3_L()) # mM to mg HCO3-/L  
 
+  #------------------------------------------------------------------------------#
+  #KL GUESSER#
+  #------------------------------------------------------------------------------#
+  # Viscosity
+  t1 <- reactive(input$temp + 273.15)
+  viscosity <- reactive(exp(-24.71 + (4209/t1()) + 0.04527 * t1() - (3.376e-5 * t1()**2))/100)
+
+  # Density
+  t2 <- reactive((input$temp + 273.15)/324.65)
+  density <- reactive(0.98396*(-1.41768 + 8.97665*t2() - 12.2755 * t2()**2 + 7.45844 * t2()**3 - 1.73849 * t2()**4))
+
+  PFASdat <- dataEditServer("edit-4", data = PFAS_properties)
+
+  observeEvent(input$Estimate, {
+    df <- PFASdat()
+
+    for (i in 1:nrow(df)) {
+      MolarVol <- df[i, "MolarVol (cm^3/mol)"]
+      
+      # Hayduk Laudie
+      mu1 <- viscosity() * 100
+      diffusion_coeff <- 13.26e-5 * (mu1 ** -1.14) * (as.numeric(MolarVol) ** -0.589)
+
+      # Simple Gnielinski
+      rho_L <- density()
+      mu2 <- viscosity()
+      dP <- 2* input$rbv # bead diameter (cm)
+      u <- input$Vv / input$EBEDv  # interstitial linear flow velocity (cm/s)
+      Re <-  u * dP * (rho_L / mu2)  # Reynolds number
+      Sc <- mu2 / rho_L / diffusion_coeff # Schmidt number
+      Sh <- (2 + 0.644 * Re**(1/2) * Sc**(1/3)) * (1 + 1.5 * (1- input$EBEDv)) # Sherwood number
+
+      film_transfer_coeff <- Sh * diffusion_coeff / dP
+
+      df$kL[i] <- film_transfer_coeff
+    }
+
+    df$`MolarVol (cm^3/mol)` <- NULL
+    colnames(df)[colnames(df) == 'kL'] <- 'kL Estimate (cm/s)'
+    output$edit5 <- renderTable(df, rownames = TRUE, digits = 5)
+  })
   
   #------------------------------------------------------------------------------#
   #IONS TAB DATA HANDLING#

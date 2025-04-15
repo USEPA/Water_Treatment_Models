@@ -5,7 +5,7 @@ library(readxl)
 library(shinyjs)
 library(DataEditR)
 library(tidyr)
-## Commented out for running locally
+library(BiocVersion) ### needed for colorblindness
 # renv::install("bioconductor-source/BiocVersion")## needed for colorBlindness on remote
 library(colorBlindness)
 library(writexl)
@@ -84,7 +84,7 @@ mass_conv <- c("meq"=1000, "meq/L"=1000, "mg"=1000, "ug"=1, "ng"=1e-3, "mg/L"=10
 
 density_conv<-c("g/ml"=1)
 
-weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.204)
+weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.20462)
 
 prvector<-c("cm", "m", "mm", "in", "ft")
 pdvector<-c("g/ml")

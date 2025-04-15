@@ -100,25 +100,46 @@ class HSDMIX:
                                     sheet_name='params',\
                                     header = [0],\
                                     index_col = [0])
-      
-        self.params = conv_params_data(self.params)
 
-        self.params = self.params.drop('units', axis=1)['value'] #drops unused column
-        
         self.ions = pd.read_excel(xls, \
                                   sheet_name='ions',\
                                   header=[0],\
                                   index_col=[0])
-        
-        self.valences = self.ions['valence'].values
-        
+
         self.Cin_t = pd.read_excel(xls, \
                                    sheet_name='Cin',\
                                    header=[0], \
                                    index_col = [0],
                                    dtype=np.float64)
+
+        # Backward compatability for input files
+        if ('kL' in self.params.index) and ('kL' not in self.ions.columns):
+            self.ions['kL'] = self.params.loc['kL', 'value'] ### ignores units
+ 
+        if ('Ds' in self.params.index) and ('Ds' not in self.ions.columns):
+            self.ions['Ds'] = self.params.loc['Ds', 'value'] ### ignores units
+ 
+        if ('Dp' in self.params.index) and ('Dp' not in self.ions.columns):
+            self.ions['Dp'] = self.params.loc['Dp', 'value'] ### ignores units
+
+        # Compatability for Shiny model input files
+        if('KxA' in self.ions.columns):
+            self.ions.rename(columns={'KxA': 'Kxc'}, inplace=True)
+
+        if('conc_units' in self.ions.columns):
+            self.ions.rename(columns={'conc_units': 'units'}, inplace=True)
+
+        # Convert resin capacity to filter capacity
+        if('Q' in self.params.index):
+            self.params.loc['Q', 'value'] = self.params.loc['Q', 'value'] * (1 - self.params.loc['EBED', 'value'])
+            self.params.rename(index={'Q': 'Qf'}, inplace=True)
+
+        self.params = conv_params_data(self.params)
         
+        self.params = self.params.drop('units', axis=1)['value'] #drops unused column
         
+        self.valences = self.ions['valence'].values
+
         self.Cin_temp = self.Cin_t.copy(deep=False)
        
         self.time_mult = self.params['time']
@@ -459,8 +480,13 @@ class HSDMIX:
             # update Ceq
             Ceq = calc_Ceq(q_s, CT)
             
-            # Calculate flux terms
-            J = - kL * (C - Ceq) # mass flux 
+            # Calculate flux terms LMH
+            J = np.zeros((NION, nz))
+            for iii in range(NION):
+                J[iii, :] = - self.ions['kL'][iii] * (C[iii,:] - Ceq[iii,:]) # mass flux
+
+            # explicitly doing implicit chloride LMH
+            J[0, :] = -J[1:, :].sum(axis=0)
             Jas = J * 3/rb  # mass flux * specific surface area of bead
 
             # Initialize arrays for derivatives
@@ -477,7 +503,15 @@ class HSDMIX:
             # diffusion in bead  HSDMIX
             q_swap = np.swapaxes(q, 0, 1)
             Br_q = np.swapaxes(np.matmul(Br, q_swap), 0, 1)
-            dq_dT =  Ds * t_half / rb**2 * Br_q   
+            # dq_dT =  Ds * t_half / rb**2 * Br_q   
+
+            for iii in range(NION):
+                Ds_iii = self.ions['Ds'][iii]
+                dq_dT[:, iii, :] =  Ds_iii * t_half / rb**2 * Br_q[:, iii, :]   
+
+            # # explicitly doing implicit chloride LMH
+            # dq_dT[:, 0, :] = -dq_dT[:, 1:, :].sum(axis=1) # XXX: Why doesn't work?
+            # print(dq_dT[-2, :, -1].sum()) # Why isn't that zero?
 
             # intermediate term for dq_dT at bead surface      HSDMIX   
             dq_dT_swap = np.swapaxes(dq_dT[:SURF, :, :],0,1)

@@ -1751,7 +1751,8 @@ class PSDM():
         ## get influent/effluent data for single species
         self.data_df = self.data_bup.transpose().loc[idx[:, compound], :].transpose()
         
-        f_eff = interp1d(self.data_df.index, self.data_df[self.carbon, compound], fill_value='extrapolate')
+        ssqs_xs = self.data_df.index 
+        f_eff = interp1d(ssqs_xs, self.data_df[self.carbon, compound], fill_value='extrapolate')
 
         mol_vol = self.k_data[compound]['MolarVol']
         mw = self.k_data[compound]['MW']
