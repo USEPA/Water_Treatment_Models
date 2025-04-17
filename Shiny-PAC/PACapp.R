@@ -9,6 +9,92 @@ library(colorBlindness)
 library(writexl)
 library(shinyalert)
 
+#~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
+#------------------------------------------------------------------------------#
+#unit conversions
+#------------------------------------------------------------------------------#
+## length
+m2cm<-100                               #meters to centimeters
+mm2cm<-0.1                              #millimeters to centimeters
+cm2cm<-1                                #centimeters to centimeters (for consistency)
+in2cm<-2.54                             #inches to centimeters
+ft2cm<-12 * in2cm                       #centimeters to feet
+## time
+sec2sec<-1
+min2sec<-60
+S_PER_HR <- 60 * 60                     # 
+hour2sec<-60 * min2sec
+day2sec<-24 * hour2sec
+month2sec<-30 * day2sec                 #assumes 30 day month
+year2sec<-365.25 * day2sec
+month2day<-1/30
+day2day<-1
+hour2day<-24
+second2day<- 60 * 60 * hour2day
+year2day<-month2day/12
+## velocity
+mpmin2cmps<-m2cm/min2sec                #meters per minute to centimeters per second
+ftpmin2cmps<-ft2cm/min2sec              #feet per minute to centimeters per second
+mph2cmps<-m2cm/hour2sec                 #meters per hour to centimeters per second
+mmin2cms<-m2cm/min2sec
+ftmin2cms<-ft2cm/min2sec
+gal2ft3<-0.133680555556
+gpmpft2cmps<-gal2ft3 * ft2cm / min2sec  #gallons per minute per foot squared
+ft2ps2cm2ps<-(ft2cm)^2                  #feet squared per second to centimeters squared per second
+m2ps2cm2ps<-(m2cm)^2                    #meters per second squared to centimeters per second squared
+in2ps2cm2ps<-(in2cm)^2                  #inches per second squared to centimeters per second squared
+ft2pm2cm2ps<-(ft2cm)^2 / (min2sec)      #feet per minute squared to centimeters per second squared
+m2min2cm2s<-(m2cm^2) / (min2sec) 
+## volume
+gal2ml<-3785.411784
+mgd2mlps<-1e6 * gal2ml/day2sec          #mgd to ml/sec
+l2ml <- 1000.
+
+#~~~~~~~~~~~~~~~~~~~ end unit conversions
+
+#------------------------------------------------------------------------------#
+#conversion dictionaries
+#------------------------------------------------------------------------------#
+##set up dictionaries   ### IF new values are added to drop-downs, must also be added here
+length_conv <- c("m"=m2cm, "cm"=cm2cm, "mm"=mm2cm, "in"=in2cm, "ft"=ft2cm)
+
+velocity_conv <- c("cm/s"=cm2cm, "m/s"=m2cm, "m/min"=mpmin2cmps, "m/h"=mph2cmps,
+                   "m/hr"=mph2cmps, "in/s"=in2cm, "ft/s"=ft2cm, "ft/min"=ftpmin2cmps,
+                   "gpm/ft^2"=gpmpft2cmps)
+
+volumetric_conv <- c("cm^3/s"=cm2cm*min2sec, "m^3/s"=min2sec*m2cm^3, "ft^3/s"=min2sec*ft2cm^3,
+                     "mL/s"=min2sec*cm2cm, "L/min"=l2ml, "mL/min"=1,
+                     "gpm"=gal2ml, "mgd"=1e6 * gal2ml)
+
+
+time_conv <- c("Hours"=hour2day, "Days"=day2day, "Months"=month2day, "Years"=year2day,
+               "hr"=hour2day, "day"=day2day, "month"=month2day, "year"=year2day,
+               "hours"=hour2day, "days"=day2day, "hrs"=hour2day)
+
+kL_conv <- c("ft/s"=ft2cm, "m/s"=m2cm, "cm/s"=cm2cm, "in/s"=in2cm, 
+             "m/min"=mpmin2cmps, "ft/min"=ftpmin2cmps, "m/h"=mph2cmps,
+             "m/hr"=mph2cmps)
+ds_conv <- c("ft^2/s"=ft2ps2cm2ps, "m^2/s"=m2ps2cm2ps, "cm^2/s"=cm2cm,
+             "in^2/s"=in2ps2cm2ps)
+
+mass_conv <- c("meq"=1000, "meq/L"=1000, "mg"=1000, "ug"=1, "ng"=1e-3, "mg/L"=1000, "ug/L"=1, "ng/L"=1e-3) ### changed
+
+density_conv<-c("g/ml"=1)
+
+weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.204)
+
+formatvector <-("square")
+ldvector <-("m")
+tempvector <-("C")
+heightvector <-("m")
+volvector <-("L")
+flowvector <-("m3/s")
+denvector <-("gm/ml")
+radvector <-("cm")
+HRTvector <-("min")
+CRTvector <-("min")
+dosagevector <-("mg/L")
+
 dosage_range <- range(c(5, 150))
 
 reticulate::source_python("PAC.py")
@@ -253,6 +339,20 @@ ui <- fluidPage(
 
                             fluidRow(
                                 column(3,),
+                                column(3, shinyWidgets::autonumericInput(
+                                    inputId = "flow",
+                                    label="Flow",
+                                    value = 5,
+                                    currencySymbolPlacement = "p",
+                                    decimalPlaces = 3,
+                                    digitGroupSeparator = ",",
+                                    decimalCharacter = "."
+                                )),
+                                column(3, selectInput("flowunits", "Flow Units", c("m3/s")))
+                            ),
+
+                            fluidRow(
+                                column(3,),
                                 column(3,
                                     sliderInput("hrt", "HRT", 0, 300, 0)
                                 ),
@@ -432,67 +532,67 @@ server <- function(input, output, session) {
     radius <- reactive({filter(pac(), name == 'radius')$value})
     
     formatvec <- reactive({
-        formatv <- c(filter(contactor(), name == 'format')$value)
+        formatv <- c(filter(contactor(), name == 'format')$value, formatvector)
 
         return(unique(formatv))
     })
 
     ldvec <- reactive({
-        ldv <- c(filter(contactor(), name == 'length/diameter')$units)
+        ldv <- c(filter(contactor(), name == 'length/diameter')$units, ldvector)
 
         return(unique(ldv))
     })
     
     tempvec <- reactive({
-        tempv <- c(filter(contactor(), name == 'temperature')$units)
+        tempv <- c(filter(contactor(), name == 'temperature')$units, tempvector)
 
         return(unique(tempv))
     })
     
     heightvec <- reactive({
-        heightv <- c(filter(contactor(), name == 'height')$units)
+        heightv <- c(filter(contactor(), name == 'height')$units, heightvector)
 
         return(unique(heightv))
     })
 
     volvec <- reactive({
-        volv <- c(filter(contactor(), name == 'volume')$units)
+        volv <- c(filter(contactor(), name == 'volume')$units, volvector)
 
         return(unique(volv))
     })
     
     flowvec <- reactive({
-        flowv <- c(filter(contactor(), name == 'flow')$units)
+        flowv <- c(filter(contactor(), name == 'flow')$units, flowvector)
 
         return(unique(flowv))
     })
     
     denvec <- reactive({
-        denv <- c(filter(pac(), name == 'density')$units)
+        denv <- c(filter(pac(), name == 'density')$units, denvector)
 
         return(unique(denv))
     })
     
     radvec <- reactive({
-        radv <- c(filter(pac(), name == 'radius')$units)
+        radv <- c(filter(pac(), name == 'radius')$units, radvector)
 
         return(unique(radv))
     })
 
     HRTvec <- reactive({
-        HRTv <- c(filter(contactor(), name == 'HRT')$units)
+        HRTv <- c(filter(contactor(), name == 'HRT')$units, HRTvector)
 
         return(unique(HRTv))
     })
 
     CRTvec <- reactive({
-        CRTv <- c(filter(contactor(), name == 'CRT')$units)
+        CRTv <- c(filter(contactor(), name == 'CRT')$units, CRTvector)
 
         return(unique(CRTv))
     })
 
     dosagevec <- reactive({
-        dosagev <- c(filter(contactor(), name == 'PAC Dosage')$units)
+        dosagev <- c(filter(contactor(), name == 'PAC Dosage')$units, dosagevector)
 
         return(unique(dosagev))
     })
@@ -556,7 +656,7 @@ server <- function(input, output, session) {
         df <- as.data.frame(PAC_instance$run_PAC_PSDM())
         df$minutes <- as.numeric(rownames(df))
         df <- pivot_longer(df, cols = !minutes, names_to = "name", values_to = "conc")
-        df$conc <- as.numeric(unlist(df$conc)) / 1000
+        df$conc <- as.numeric(unlist(df$conc)) / mass_conv[input$OCunits]
         df <- df[order(factor(df$name, levels = colnames(compounddat()))), ]
         out_df(df)
     })
@@ -616,8 +716,8 @@ server <- function(input, output, session) {
 
     p1 <- reactive({plot_ly(out_df(), x = ~minutes, y = ~conc, color = ~name, type = 'scatter', mode = 'lines') %>% layout(title = "Concentration over Time", showlegend = TRUE,
                                                  legend = list(orientation = 'h', x=0.5, y=1), hovermode = 'x unified',
-                                                 xaxis = list(title="Time (min)", gridcolor = 'ffff'),
-                                                 yaxis = list(title="Concentration (ug/L)", rangemode = "tozero"))
+                                                 xaxis = list(title=paste0("Time (", input$timeunits, ")"), gridcolor = 'ffff'),
+                                                 yaxis = list(title=paste0("Concentration (", input$OCunits, ")"), rangemode = "tozero"))
     })
 
     p2 <- reactive({plot_ly(HRT_obj(), x = ~x, y = ~HRT30, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 30 min ", input$compound)) %>% layout(title = input$compound, showlegend = TRUE,
