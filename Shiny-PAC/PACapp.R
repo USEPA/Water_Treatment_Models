@@ -554,9 +554,10 @@ server <- function(input, output, session) {
         PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df)
 
         df <- as.data.frame(PAC_instance$run_PAC_PSDM())
-        df$x <- as.numeric(rownames(df))
-        df <- pivot_longer(df, cols = !x, names_to = "compound", values_to = "y")
-        df$y <- as.numeric(unlist(df$y)) / 1000
+        df$minutes <- as.numeric(rownames(df))
+        df <- pivot_longer(df, cols = !minutes, names_to = "name", values_to = "conc")
+        df$conc <- as.numeric(unlist(df$conc)) / 1000
+        df <- df[order(factor(df$name, levels = colnames(compounddat()))), ]
         out_df(df)
     })
 
@@ -583,24 +584,37 @@ server <- function(input, output, session) {
 
         target_HRT <- c(30, 60, 90, 120)
         processed_dict <- PAC_instance$multi_dosage_analyzer(data_dict, target_HRT)
-        sub_data(data.frame(processed_dict))
+        # sub_data(as.data.frame(processed_dict))
+        # # sub_data$dosage <- rownames(sub_data)
+        df <- as.data.frame(processed_dict)
+        df$dosage <- as.numeric(rownames(df))
+        df <- data.frame(lapply(df, unlist))
+        # print(df)
+        sub_data(df)
+        # str(df)
+        # df$dosage <- as.numeric(rownames(sub_data))
+        # print(unlist(sub_data()))
+        # str(sub_data())
+        # print(class(sub_data()))
 
         df2 <- as.data.frame(PAC_instance$`_R_HRT_calculator_for_dosage`(input$target, conc_units=input$targetunits))
-        df2$x <- as.numeric(rownames(df2))
-        df2 <- pivot_longer(df2, cols = !x, names_to = "compound", values_to = "y")
-        df2$y <- as.numeric(unlist(df2$y))
+        df2$dosage <- as.numeric(rownames(df2))
+        df2 <- pivot_longer(df2, cols = !dosage, names_to = "name", values_to = "HRT")
+        df2$HRT <- as.numeric(unlist(df2$HRT))
+        df2 <- df2[order(factor(df2$name, levels = colnames(compounddat()))), ]
         out_df2(df2)
     })
     
     HRT_obj <- reactive(data.frame(
-        x = as.numeric(rownames(sub_data())),
+        # x = as.numeric(rownames(sub_data())),
+        x = sub_data()$dosage,
         HRT30 = unlist(sub_data()[paste0(input$compound, ".30.0")]),
         HRT60 = unlist(sub_data()[paste0(input$compound, ".60.0")]),
         HRT90 = unlist(sub_data()[paste0(input$compound, ".90.0")]),
         HRT120 = unlist(sub_data()[paste0(input$compound, ".120.0")])
     ))
 
-    p1 <- reactive({plot_ly(out_df(), x = ~x, y = ~y, color = ~compound, type = 'scatter', mode = 'lines') %>% layout(title = "Concentration over Time", showlegend = TRUE,
+    p1 <- reactive({plot_ly(out_df(), x = ~minutes, y = ~conc, color = ~name, type = 'scatter', mode = 'lines') %>% layout(title = "Concentration over Time", showlegend = TRUE,
                                                  legend = list(orientation = 'h', x=0.5, y=1), hovermode = 'x unified',
                                                  xaxis = list(title="Time (min)", gridcolor = 'ffff'),
                                                  yaxis = list(title="Concentration (ug/L)", rangemode = "tozero"))
@@ -615,7 +629,7 @@ server <- function(input, output, session) {
                                                  add_trace(data = HRT_obj(), x = ~x, y = ~HRT120, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 120 min ", input$compound))
     })
 
-    p3 <- reactive({plot_ly(out_df2(), x = ~x, y = ~y, color = ~compound, type = 'scatter', mode = 'lines+markers') %>% layout(title = "10.0 ng/L Target - Geosmin", showlegend = TRUE,
+    p3 <- reactive({plot_ly(out_df2(), x = ~dosage, y = ~HRT, color = ~name, type = 'scatter', mode = 'lines+markers') %>% layout(title = "10.0 ng/L Target - Geosmin", showlegend = TRUE,
                                                  legend = list(orientation = 'h', y=1), hovermode = 'x unified',
                                                  xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
                                                  yaxis = list(title="HRT to below Target (min)", rangemode = "tozero"))
