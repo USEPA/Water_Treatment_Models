@@ -5,6 +5,7 @@ library(readxl)
 library(shinyjs)
 library(DataEditR)
 library(tidyr)
+library(dplyr)
 library(colorBlindness)
 library(writexl)
 library(shinyalert)
@@ -32,6 +33,9 @@ day2day<-1
 hour2day<-24
 second2day<- 60 * 60 * hour2day
 year2day<-month2day/12
+
+min2min <- 1
+min2hour <- 1/60
 ## velocity
 mpmin2cmps<-m2cm/min2sec                #meters per minute to centimeters per second
 ftpmin2cmps<-ft2cm/min2sec              #feet per minute to centimeters per second
@@ -67,9 +71,11 @@ volumetric_conv <- c("cm^3/s"=cm2cm*min2sec, "m^3/s"=min2sec*m2cm^3, "ft^3/s"=mi
                      "gpm"=gal2ml, "mgd"=1e6 * gal2ml)
 
 
-time_conv <- c("Hours"=hour2day, "Days"=day2day, "Months"=month2day, "Years"=year2day,
-               "hr"=hour2day, "day"=day2day, "month"=month2day, "year"=year2day,
-               "hours"=hour2day, "days"=day2day, "hrs"=hour2day)
+# time_conv <- c("Hours"=hour2day, "Days"=day2day, "Months"=month2day, "Years"=year2day,
+#                "hr"=hour2day, "day"=day2day, "month"=month2day, "year"=year2day,
+#                "hours"=hour2day, "days"=day2day, "hrs"=hour2day)
+
+time_conv <- c("Minutes"=min2min, "Hours"=min2hour)
 
 kL_conv <- c("ft/s"=ft2cm, "m/s"=m2cm, "cm/s"=cm2cm, "in/s"=in2cm, 
              "m/min"=mpmin2cmps, "ft/min"=ftpmin2cmps, "m/h"=mph2cmps,
@@ -431,12 +437,12 @@ ui <- fluidPage(
         tabPanel("Concentration Output",
             sidebarLayout(
                 sidebarPanel(
-                    selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "c/c0")),
-                    selectInput("timeunits","Output Time Units",c("Days", "Bed Volumes (x1000)", "Hours", "Months", "Years")),
+                    selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L")),
+                    selectInput("timeunits","Output Time Units",c("Minutes", "Hours")),
 
                     br(), br(), br(),
           
-                    downloadButton("save_button", "Save Data")
+                    downloadButton("save_button1", "Save Data")
                 ),
                 mainPanel(
                     br(), br(),
@@ -451,6 +457,7 @@ ui <- fluidPage(
                 sidebarPanel(
                     sliderInput("dosagerange", label = "Dosage Range", min = dosage_range[1], max = dosage_range[2], value = dosage_range, step = 5),
                     sliderInput("dosageinterval", "Dosage Intervals", 3, 7, 5),
+                    selectInput("OCunits2", "Output Concentration Units", c("mg/L", "ug/L")),
 
                     br(),
 
@@ -461,12 +468,12 @@ ui <- fluidPage(
                     
                     br(), br(), br(),
 
-                    downloadButton("save_button", "Save Data"),
+                    downloadButton("save_button2", "Save Data")
                 ),                     
 
                 mainPanel(
                     tabsetPanel(
-                        tabPanel("By Dosage",
+                        tabPanel("Concentration by Dosage",
                             br(), br(),
 
                             fluidRow(
@@ -484,7 +491,7 @@ ui <- fluidPage(
                             hr(),
                             shinycssloaders::withSpinner(plotlyOutput("plot2")),
                         ),
-                        tabPanel("For Target",
+                        tabPanel("Time for Target",
                             br(), br(),
 
                             shinycssloaders::withSpinner(plotlyOutput("plot3"))
@@ -630,47 +637,40 @@ server <- function(input, output, session) {
         updateSelectInput(session, "HRTunits", choices = HRTvec())
         updateSelectInput(session, "CRTunits", choices = CRTvec())
         updateSelectInput(session, "dosageunits", choices = dosagevec())
-
         updateSelectInput(session, "compound", choices = compoundvec())
     })
 
     compounddat <- dataEditServer("edit-1",  data = paste(file_direc, 'Compounds.csv', sep = ''))
     dataOutputServer("output-1", data = compounddat)
 
-    out_df <- reactiveVal(data.frame())
+    pac_obj <- reactiveVal(data.frame())
     sub_data <- reactiveVal(data.frame())
-    out_df2 <- reactiveVal(data.frame())
+    sub_data2 <- reactiveVal(data.frame())
 
     observeEvent(input$run_button, {
         contactor_df <- contactor()[,-1]
         rownames(contactor_df) <- contactor()[,1]
-
         pac_df <- pac()[,-1]
         rownames(pac_df) <- pac()[,1]
-
         compounds_df <- compounddat()[,-1]
         rownames(compounds_df) <- compounddat()[,1]
-
         PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df)
 
         df <- as.data.frame(PAC_instance$run_PAC_PSDM())
-        df$minutes <- as.numeric(rownames(df))
-        df <- pivot_longer(df, cols = !minutes, names_to = "name", values_to = "conc")
-        df$conc <- as.numeric(unlist(df$conc)) / mass_conv[input$OCunits]
+        df$time <- as.numeric(rownames(df))
+        df <- pivot_longer(df, cols = !time, names_to = "name", values_to = "conc")
+        df$conc <- as.numeric(unlist(df$conc))
         df <- df[order(factor(df$name, levels = colnames(compounddat()))), ]
-        out_df(df)
+        pac_obj(df)
     })
 
     observeEvent(input$calculate_by_target, {
         contactor_df <- contactor()[,-1]
         rownames(contactor_df) <- contactor()[,1]
-
         pac_df <- pac()[,-1]
         rownames(pac_df) <- pac()[,1]
-
         compounds_df <- compounddat()[,-1]
         rownames(compounds_df) <- compounddat()[,1]
-
         PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df)
 
         vector <- numeric()
@@ -681,81 +681,94 @@ server <- function(input, output, session) {
             index <- index + 1 
         }
         data_dict <- PAC_instance$run_multi_dosage(vector)
-
         target_HRT <- c(30, 60, 90, 120)
+
         processed_dict <- PAC_instance$multi_dosage_analyzer(data_dict, target_HRT)
-        # sub_data(as.data.frame(processed_dict))
-        # # sub_data$dosage <- rownames(sub_data)
         df <- as.data.frame(processed_dict)
-        df$dosage <- as.numeric(rownames(df))
+        df <- cbind(dosage = as.numeric(rownames(df)), df)
         df <- data.frame(lapply(df, unlist))
-        # print(df)
         sub_data(df)
-        # str(df)
-        # df$dosage <- as.numeric(rownames(sub_data))
-        # print(unlist(sub_data()))
-        # str(sub_data())
-        # print(class(sub_data()))
 
         df2 <- as.data.frame(PAC_instance$`_R_HRT_calculator_for_dosage`(input$target, conc_units=input$targetunits))
-        df2$dosage <- as.numeric(rownames(df2))
-        df2 <- pivot_longer(df2, cols = !dosage, names_to = "name", values_to = "HRT")
-        df2$HRT <- as.numeric(unlist(df2$HRT))
+        df2$`dosage (mg/L)` <- as.numeric(rownames(df2))
+        df2 <- pivot_longer(df2, cols = !`dosage (mg/L)`, names_to = "name", values_to = "HRT to below Target (Minutes)")
+        df2$`HRT to below Target (Minutes)` <- as.numeric(unlist(df2$`HRT to below Target (Minutes)`))
         df2 <- df2[order(factor(df2$name, levels = colnames(compounddat()))), ]
-        out_df2(df2)
+        sub_data2(df2)
     })
-    
+
+    pac_obj_converted <- reactive({
+        df <- data.frame(
+            time = pac_obj()$time * time_conv[input$timeunits],
+            conc = (pac_obj()$conc / 1000) / mass_conv[input$OCunits],
+            name = pac_obj()$name
+        )
+
+        colnames(df) <- c(paste0("time (", input$timeunits, ")"), paste0("conc (", input$OCunits, ")"), "name")
+        
+        df
+    })
+
+    sub_data_converted <- reactive(data.frame(
+        if (ncol(sub_data()) > 0) {
+            df <- sub_data() %>% mutate(across(!"dosage", ~ .x / mass_conv[input$OCunits2])) # Append units to end of every name
+        }
+    ))
+ 
     HRT_obj <- reactive(data.frame(
-        # x = as.numeric(rownames(sub_data())),
-        x = sub_data()$dosage,
-        HRT30 = unlist(sub_data()[paste0(input$compound, ".30.0")]),
-        HRT60 = unlist(sub_data()[paste0(input$compound, ".60.0")]),
-        HRT90 = unlist(sub_data()[paste0(input$compound, ".90.0")]),
-        HRT120 = unlist(sub_data()[paste0(input$compound, ".120.0")])
+        dosage = sub_data_converted()$dosage,
+        HRT30 = unlist(sub_data_converted()[paste0(input$compound, ".30.0")]),
+        HRT60 = unlist(sub_data_converted()[paste0(input$compound, ".60.0")]),
+        HRT90 = unlist(sub_data_converted()[paste0(input$compound, ".90.0")]),
+        HRT120 = unlist(sub_data_converted()[paste0(input$compound, ".120.0")])
     ))
 
-    p1 <- reactive({plot_ly(out_df(), x = ~minutes, y = ~conc, color = ~name, type = 'scatter', mode = 'lines') %>% layout(title = "Concentration over Time", showlegend = TRUE,
+    p1 <- reactive({plot_ly(pac_obj_converted(), x = ~get(colnames(pac_obj_converted())[1]), y = ~get(colnames(pac_obj_converted())[2]), color = ~name, type = 'scatter', mode = 'lines') %>% layout(title = "Concentration over Time", showlegend = TRUE,
                                                  legend = list(orientation = 'h', x=0.5, y=1), hovermode = 'x unified',
                                                  xaxis = list(title=paste0("Time (", input$timeunits, ")"), gridcolor = 'ffff'),
                                                  yaxis = list(title=paste0("Concentration (", input$OCunits, ")"), rangemode = "tozero"))
     })
 
-    p2 <- reactive({plot_ly(HRT_obj(), x = ~x, y = ~HRT30, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 30 min ", input$compound)) %>% layout(title = input$compound, showlegend = TRUE,
+    p2 <- reactive({plot_ly(HRT_obj(), x = ~dosage, y = ~HRT30, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 30 min ", input$compound)) %>% layout(title = input$compound, showlegend = TRUE,
                                                  legend = list(orientation = 'h', y=1), hovermode = 'x unified',
                                                  xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
-                                                 yaxis = list(title="Concentration (ug/L)", rangemode = "tozero")) %>%
-                                                 add_trace(data = HRT_obj(), x = ~x, y = ~HRT60, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 60 min ", input$compound)) %>%
-                                                 add_trace(data = HRT_obj(), x = ~x, y = ~HRT90, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 90 min ", input$compound)) %>%
-                                                 add_trace(data = HRT_obj(), x = ~x, y = ~HRT120, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 120 min ", input$compound))
+                                                 yaxis = list(title=paste0("Concentration (", input$OCunits2, ")"), rangemode = "tozero")) %>%
+                                                 add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT60, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 60 min ", input$compound)) %>%
+                                                 add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT90, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 90 min ", input$compound)) %>%
+                                                 add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT120, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 120 min ", input$compound))
     })
 
-    p3 <- reactive({plot_ly(out_df2(), x = ~dosage, y = ~HRT, color = ~name, type = 'scatter', mode = 'lines+markers') %>% layout(title = "10.0 ng/L Target - Geosmin", showlegend = TRUE,
+    p3 <- reactive({plot_ly(sub_data2(), x = ~`dosage (mg/L)`, y = ~`HRT to below Target (Minutes)`, color = ~name, type = 'scatter', mode = 'lines+markers') %>% layout(title = "10.0 ng/L Target - Geosmin", showlegend = TRUE,
                                                  legend = list(orientation = 'h', y=1), hovermode = 'x unified',
                                                  xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
-                                                 yaxis = list(title="HRT to below Target (min)", rangemode = "tozero"))
+                                                 yaxis = list(title="HRT to below Target (Minutes)", rangemode = "tozero"))
     })
-
 
     output$plot1 <- renderPlotly(p1())
     output$plot2 <- renderPlotly(p2())
     output$plot3 <- renderPlotly(p3())
 
-    output$save_button <- downloadHandler(
-        filename = function() {
-        paste("data-", Sys.Date(), ".xlsx", sep="")
-        },
-        content=function(file) {
-        sheets <- list("Contactor" = contactor(),
-                       "PAC" = pac(),
-                       "Compounds" = compounddat(),
-                       "Concentration Output" = out_df(),
-                       "By Dosage" = sub_data(),
-                       "For Target" = out_df2()
-        )
+    callDownloadHandler <- function() {
+        downloadHandler(
+            filename = function() {
+            paste("data-", Sys.Date(), ".xlsx", sep="")
+            },
+            content=function(file) {
+                sheets <- list("Contactor" = contactor(),
+                            "PAC" = pac(),
+                            "Compounds" = compounddat(),
+                            "Concentration Output" = pac_obj_converted(),
+                            "Concentration by Dosage" = sub_data_converted(),
+                            "Time for Target" = sub_data2()
+                )
 
-        write_xlsx(sheets, file)
-        }
-    )
+                write_xlsx(sheets, file)
+            }
+        )
+    }
+
+    output$save_button1 <- callDownloadHandler()
+    output$save_button2 <- callDownloadHandler()
 }
 
 shinyApp(ui = ui, server = server)
