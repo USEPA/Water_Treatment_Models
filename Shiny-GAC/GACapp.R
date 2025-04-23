@@ -189,7 +189,7 @@ read_in_files <- function(input, file) {
 #------------------------------------------------------------------------------#
 column_data <- function(input) {
   if (input$veloselect == 'Linear') {
-    Fv = pi/4 * ((input$Dv * length_conv[input$DiameterUnits])**2) * input$Vv*velocity_conv[input$VelocityUnits]
+    Fv = pi/4 * ((input$Dv * length_conv[input$DiameterUnits])^2) * input$Vv*velocity_conv[input$VelocityUnits] * min2sec ##
   } else {
     Fv = input$Fv * volumetric_conv[input$FlowrateUnits]
   }
@@ -235,7 +235,7 @@ column_data <- function(input) {
               input$adv*density_conv[input$adunits],
               input$Lv*length_conv[input$LengthUnits],
               input$wv*weight_conv[input$wunits],
-              input$Fv*volumetric_conv[input$FlowrateUnits],
+              Fv, ## conversion already handled
               input$Dv*length_conv[input$DiameterUnits],
               input$tortuv,
               'influent',
