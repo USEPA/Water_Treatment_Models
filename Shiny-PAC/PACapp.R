@@ -103,6 +103,8 @@ dosagevector <-("mg/L")
 
 dosage_range <- range(c(5, 150))
 
+notificationDuration <- 10 # Number of seconds to display the notification
+
 reticulate::source_python("PAC.py")
 
 read_in_files <- function(input, file) {
@@ -664,6 +666,9 @@ server <- function(input, output, session) {
         df$conc <- as.numeric(unlist(df$conc))
         df <- df[order(factor(df$name, levels = colnames(compounddat()))), ]
         pac_obj(df)
+
+        showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message")
+        updateTabsetPanel(session, "inTabset", selected = "Concentration Output")
     })
 
     observeEvent(input$calculate_by_target, {
