@@ -89,17 +89,20 @@ density_conv<-c("g/ml"=1)
 
 weight_conv<-c("kg"=1000, "g"=1, "lb"=1000/2.204)
 
-formatvector <-("square")
-ldvector <-("m")
-tempvector <-("C")
-heightvector <-("m")
-volvector <-("L")
-flowvector <-("m3/s")
-denvector <-("gm/ml")
-radvector <-("cm")
-HRTvector <-("min")
-CRTvector <-("min")
-dosagevector <-("mg/L")
+formatvector <- c("square")
+ldvector <- c("m")
+# ldvector <- c("cm", "m", "mm", "in", "ft")
+tempvector <- c("C")
+heightvector <- c("m")
+volvector <- c("L")
+# volvector <- c("ml", "cm3", "l", "gal", "ft3", "m3")
+flowvector <- c("m3/s")
+# flowvector <- c("ml/min", "ml/s", "gpm", "gal/min", "lpm", "l/min", "mgd", "ft3/s", "cfs", "m3/s")
+denvector <- c("gm/ml")
+radvector <- c("cm")
+HRTvector <- c("min")
+CRTvector <- c("min")
+dosagevector <- c("mg/L")
 
 dosage_range <- range(c(5, 150))
 
@@ -491,9 +494,10 @@ ui <- fluidPage(
                             ),
 
                             hr(),
+                            
                             shinycssloaders::withSpinner(plotlyOutput("plot2")),
                         ),
-                        tabPanel("Time for Target",
+                        tabPanel("HRT for Target",
                             br(), br(),
 
                             shinycssloaders::withSpinner(plotlyOutput("plot3"))
@@ -705,7 +709,7 @@ server <- function(input, output, session) {
         )
         sub_data(df)
 
-        # Process time for target output
+        # Process HRT for target output
         df2 <- as.data.frame(PAC_instance$`_R_HRT_calculator_for_dosage`(input$target, conc_units=input$targetunits))
         df2$`dosage (mg/L)` <- as.numeric(rownames(df2))
         df2 <- pivot_longer(df2, cols = !`dosage (mg/L)`, names_to = "name", values_to = "HRT to below Target (Minutes)")
@@ -750,17 +754,17 @@ server <- function(input, output, session) {
                                                  yaxis = list(title=paste0("Concentration (", input$OCunits, ")"), rangemode = "tozero"))
     })
     p2 <- reactive({plot_ly(HRT_obj(), x = ~dosage, y = ~HRT30, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 30 min ", input$compound)) %>% layout(title = input$compound, showlegend = TRUE,
-                                                 legend = list(orientation = 'h', y=1), hovermode = 'x unified',
-                                                 xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
-                                                 yaxis = list(title=paste0("Concentration (", input$OCunits2, ")"), rangemode = "tozero")) %>%
-                                                 add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT60, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 60 min ", input$compound)) %>%
-                                                 add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT90, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 90 min ", input$compound)) %>%
-                                                 add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT120, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 120 min ", input$compound))
+                                       legend = list(orientation = 'h', y=1), hovermode = 'x unified',
+                                       xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
+                                       yaxis = list(title=paste0("Concentration (", input$OCunits2, ")"), rangemode = "tozero")) %>%
+                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT60, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 60 min ", input$compound)) %>%
+                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT90, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 90 min ", input$compound)) %>%
+                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT120, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 120 min ", input$compound))
     })
     p3 <- reactive({plot_ly(sub_data2(), x = ~`dosage (mg/L)`, y = ~`HRT to below Target (Minutes)`, color = ~name, type = 'scatter', mode = 'lines+markers') %>% layout(title = "10.0 ng/L Target - Geosmin", showlegend = TRUE,
-                                                 legend = list(orientation = 'h', y=1), hovermode = 'x unified',
-                                                 xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
-                                                 yaxis = list(title="HRT to below Target (Minutes)", rangemode = "tozero"))
+                                         legend = list(orientation = 'h', y=1), hovermode = 'x unified',
+                                         xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
+                                         yaxis = list(title="HRT to below Target (Minutes)", rangemode = "tozero"))
     })
 
     # Output plots
@@ -780,7 +784,7 @@ server <- function(input, output, session) {
                             "Compounds" = compounddat(),
                             "Concentration Output" = pac_obj_processed(),
                             "Concentration by Dosage" = sub_data_processed(),
-                            "Time for Target" = sub_data2()
+                            "HRT for Target" = sub_data2()
                 )
 
                 write_xlsx(sheets, file)
