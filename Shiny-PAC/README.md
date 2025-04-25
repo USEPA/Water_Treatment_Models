@@ -45,21 +45,21 @@ In order for the tool to work the user must point their R Studio to a Python Int
 1. Open RStudio
 
 <figure>
-    <img src="image4.png"
+    <img src="DocumentPics/image4.png"
          alt="Set Up">
 </figure>
 
 2. Select the "Tools" tab at the top of the page and then select "Global Options"
 
 <figure>
-    <img src="image5.png"
+    <img src="DocumentPics/image5.png"
          alt="Set Up">
 </figure>
 
 3. Go to the Python tab in Global Variables, then select 'Browse' and select the file where Python is installed locally.
 
 <figure>
-    <img src="image6.png"
+    <img src="DocumentPics/image6.png"
          alt="Set Up">
 </figure>
 
