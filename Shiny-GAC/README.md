@@ -72,6 +72,8 @@ In order for the tool to work the user must point their R Studio to a Python Int
 
 4. Click "Apply" then "OK"
 
+NOTE: The following packages must be installed in the Python version being used; numpy, scipy, pandas, and matplotlib. 
+
 
 ## Quick Start
 
