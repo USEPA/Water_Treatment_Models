@@ -157,8 +157,8 @@ The Compounds tab contains information about the compounds to be simulated. The 
 |  Input        	                |Column Name   | Description                                                                      |
 |---            				    |---        |---                                                                               |
 |Molecular Weight               |MW         |Molecular weight of ionic species. Gram per mol.                                          |           |
-|Molar Volume                   |MolarVol       |Volume occupied by one mole of ion substance. |                     
-|Boiling Point                  | BP          |Temperature in Celsius that the given chemical boils. |
+|Molar Volume                   |MolarVol       |(L/mol) Volume occupied by one mole of ion substance. |                     
+|Boiling Point                  | BP          |(degC) Temperature in Celsius that the given chemical boils. |
 |Density      					|Density    	| (g/mL) Mass per unit volume of ion.     |
 |Solubility						| Solubility  		| (g/L) Amount of substance that will disolve in water. |
 |Vapor Pressure  				| VaporPress       | (mmHg) Pressure of vapor form of substance. |      
