@@ -102,7 +102,7 @@ In order for the tool to work the user must point their R Studio to a Python Int
 
 ![](DocumentPics/image15.png)
 
-10. In the 'Concentration by Dosage' tab only one compound can be viewed at a time. It can be selected by using the Compound drop down menu. The Dosage range can be selected by selecting a range with the slider. The Dosage Interval value can be selected with a similar slider. The output concentration units can be changed by using the Output Concentration Untis drop down menu.
+10. In the 'Concentration by Dosage' tab only one compound can be viewed at a time. It can be selected by using the Compound drop down menu. The Dosage range can be selected by selecting a range with the slider. The Dosage Interval value can be selected with a similar slider. The output concentration units can be changed by using the Output Concentration Units drop down menu.
 
 ![](DocumentPics/image16.png)
 
@@ -117,18 +117,18 @@ In order for the tool to work the user must point their R Studio to a Python Int
 
 | Input | Description | Units
 |--- |--- |---
-|format | | 
-|length/diameter | | 
-|temperature | | 
-|height | | 
-|volume | | 
-|flow | | 
-|HRT | | 
-|CRT | | 
-|PAC Dosage | | 
-|density | | 
-|porosity | | 
-|radius | | 
+|format | |N/A
+|length/diameter | |m
+|temperature | |C
+|height | |m
+|volume | |L
+|flow | |m3/s
+|HRT | |min
+|CRT | |min
+|PAC Dosage | |mg/L
+|density | |gm/ml
+|porosity | |N/A
+|radius | |cm
 
 
 ### Compounds Tab
@@ -137,18 +137,18 @@ The Compounds tab contains information about the compounds to be simulated. The 
 
 
 ### Compound List
-| Input | Description | Units
-|--- |--- |---
-|K | | 
-|1/n | | 
-|MW | | 
-|MolarVolume | | 
-|C0 | | 
-|C0_units | | 
-|kf | | 
-|Dp | | 
-|Ds | | 
-|Solubility | | 
+| Input | Description
+|--- |---
+|K |
+|1/n |
+|MW |
+|MolarVolume |
+|C0 |
+|C0_units |
+|kf |
+|Dp |
+|Ds |
+|Solubility |
 
 
 ### Concentration Output
