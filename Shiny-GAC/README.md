@@ -72,6 +72,8 @@ In order for the tool to work the user must point their R Studio to a Python Int
 
 4. Click "Apply" then "OK"
 
+NOTE: The following packages must be installed in the Python version being used; numpy, scipy, pandas, and matplotlib. 
+
 
 ## Quick Start
 
@@ -155,22 +157,22 @@ The Compounds tab contains information about the compounds to be simulated. The 
 |  Input        	                |Column Name   | Description                                                                      |
 |---            				    |---        |---                                                                               |
 |Molecular Weight               |MW         |Molecular weight of ionic species. Gram per mol.                                          |           |
-|Molar Volume                   |MolarVol       |Volume occupied by one mole of ion substance. |                     
-|Boiling Point                           | BP          |Temperature in Celsius that the given chemical boils. |
-|Density      |        |Mass per unit volume of ion.     |
-|Solubility|    | Amount of substance that will disolve in water. |
-|Vapor Pressure  |         |Pressure of vapor form of substance. |      
+|Molar Volume                   |MolarVol       |(L/mol) Volume occupied by one mole of ion substance. |                     
+|Boiling Point                  | BP          |(degC) Temperature in Celsius that the given chemical boils. |
+|Density      					|Density    	| (g/mL) Mass per unit volume of ion.     |
+|Solubility						| Solubility  		| (g/L) Amount of substance that will disolve in water. |
+|Vapor Pressure  				| VaporPress       | (mmHg) Pressure of vapor form of substance. |      
 
 
 ### K Data
 
 |Name                   |Variable      | Description            |
 |---                    |---           |---                     |
-|K                      | K            |                        |
-|                       | 1/n          |                        |
-|                       | q            |                        |
-|                       | brk          |                        |
-|                       | AveC         |                        |
+|Freundlich K           | K            | (ug/g)(L/ug)^(1/n) Freundlich isotherm parameter: q = K * Ce^(1/n)                       |
+|Freundlich 1/n         | 1/n          | (unitless) Exponent in Freundlich isotherm                         |
+|Solid-phase capacity   | q            | (ug/g) Solid-phase capacity of media at equilibrium with liquid phase concentration                      |
+|Time to breakthrough    | brk          | Days to breakthrough, provided by fitting function                       |
+|Average influent concentration    | AveC         | Average influent provided by fitting function, can provide C0 if needed.                 |
 
 ### Concentration Points / Influent and Effluent Data
 
