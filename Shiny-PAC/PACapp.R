@@ -272,6 +272,10 @@ ui <- fluidPage(
                     tableOutput("selectedfile"),
 
                     br(),
+
+                    sliderInput("nrv", "Radial Collocation Points",3, 18, 7),
+
+                    br(),
                     
                     actionButton("run_button", "Run Analysis", icon=icon("play")),
                     
@@ -574,6 +578,8 @@ server <- function(input, output, session) {
     dens <- reactive({filter(pac(), name == 'density')$value})
     porosity <- reactive({filter(pac(), name == 'porosity')$value})
     radius <- reactive({filter(pac(), name == 'radius')$value})
+
+    nrv <- reactive(7)
     
     # formatvec <- reactive({
     #     formatv <- c(filter(contactor(), name == 'format')$value, formatvector)
@@ -658,6 +664,7 @@ server <- function(input, output, session) {
         updateNumericInput(session, "den", value = dens())
         updateNumericInput(session, "por", value = porosity())
         updateNumericInput(session, "rad", value = format(radius(), digits = 4, scientific = FALSE))
+        updateNumericInput(session, "nrv", value = nrv())
 
         updateSliderInput(session, "hrt", value = HRT())
         updateSliderInput(session, "crt", value = CRT())
