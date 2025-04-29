@@ -98,11 +98,11 @@ volvector <- c("L")
 # volvector <- c("ml", "cm3", "l", "gal", "ft3", "m3")
 flowvector <- c("m3/s")
 # flowvector <- c("ml/min", "ml/s", "gpm", "gal/min", "lpm", "l/min", "mgd", "ft3/s", "cfs", "m3/s")
-denvector <- c("gm/ml")
 radvector <- c("cm")
 HRTvector <- c("min")
 CRTvector <- c("min")
 dosagevector <- c("mg/L")
+denvector <- c("gm/ml")
 
 dosage_range <- range(c(5, 150))
 
@@ -120,7 +120,7 @@ read_in_files <- function(input, file) {
     showNotification("Warning: Contactor sheet doesn't exist. Reverting to default values.", duration = notificationDuration, closeButton = TRUE, type = "warning")
   })
   tryCatch({
-    Kdata <- read_excel(file, sheet = 'PAC')
+    Kdata <- read_excel(file, sheet = 'PAC Characteristics')
     write.csv(Kdata, 'temp_file/PAC.csv', row.names=FALSE)
   },
   error=function(err){
@@ -284,30 +284,10 @@ ui <- fluidPage(
                         tabPanel("Column Parameters",
                     
                             br(), br(),
-                        
+
                             fluidRow(
+                                # This radio button toggles volume
                                 column(3, HTML(paste0("<h4>","<strong>", "Contactor", "</strong>", "</h4>"))),
-                                column(3,
-                                    selectInput("format", "Format", list('Square'))
-                                ),
-                                column(3,)
-                            ),
-
-                            fluidRow(
-                                column(3,),
-                                column(3, shinyWidgets::autonumericInput(
-                                    inputId = "ld",
-                                    label="Length/diameter",
-                                    value = 10,
-                                    decimalPlaces = 4,
-                                    digitGroupSeparator = ",",
-                                    decimalCharacter = "."
-                                )),
-                                column(3, selectInput("ldunits", "Length/diameter Units", c("m")))
-                            ),
-
-                            fluidRow(
-                                column(3,),
                                 column(3, shinyWidgets::autonumericInput(
                                     inputId = "temp",
                                     label="Temperature",
@@ -318,6 +298,27 @@ ui <- fluidPage(
                                     decimalCharacter = "."
                                 )),
                                 column(3, selectInput("tempunits", "Temperature Units", c("C")))
+                            ),
+                        
+                            fluidRow(
+                                column(3, radioButtons("volselect", "", c("Dimensions", "Volume"))),                                        
+                                column(3,
+                                    selectInput("format", "Format", list('Square'))
+                                ),
+                                column(3,)
+                            ),
+
+                            fluidRow(
+                                column(3,),                                        
+                                column(3, shinyWidgets::autonumericInput(
+                                    inputId = "ld",
+                                    label="Length/diameter",
+                                    value = 10,
+                                    decimalPlaces = 4,
+                                    digitGroupSeparator = ",",
+                                    decimalCharacter = "."
+                                )),
+                                column(3, selectInput("ldunits", "Length/diameter Units", c("m")))
                             ),
                         
                             fluidRow(
@@ -389,7 +390,7 @@ ui <- fluidPage(
                             hr(),
 
                             fluidRow(
-                                column(3, HTML(paste0("<h4>","<strong>", "PAC", "</strong>", "</h4>"))),
+                                column(3, HTML(paste0("<h4>","<strong>", "PAC Characteristics", "</strong>", "</h4>"))),
                                 column(3, shinyWidgets::autonumericInput(
                                     inputId = "den",
                                     label="Density",
@@ -531,10 +532,40 @@ server <- function(input, output, session) {
     contactor<-reactiveVal(read.csv(paste(file_direc, "Contactor.csv", sep = '')))
     pac<-reactiveVal(read.csv(paste(file_direc, "PAC.csv", sep = '')))
 
-    lengthdiameter <- reactive({filter(contactor(), name == "length/diameter")$value})
+    test_df <- data.frame(C = c('format', 'length/diameter', 'height', 'volume'))
+    flags <- reactive({test_df$C %in% contactor()$name})
+
+    observe({
+        # if (flags()[1] & flags()[2] & flags()[3]) {
+        if (flags()[1]) {
+            updateSelectInput(session, "format", choices = unique(c(filter(contactor(), name == 'format')$value, formatvector)))
+            updateNumericInput(session, "ld", value = filter(contactor(), name == 'length/diameter')$value)
+            updateSelectInput(session, "ldunits", choices = unique(c(filter(contactor(), name == 'length/diameter')$units, ldvector)))
+            updateNumericInput(session, "height", value = filter(contactor(), name == 'height')$value)
+            updateSelectInput(session, "heightunits", choices = unique(c(filter(contactor(), name == 'height')$units, heightvector)))
+            updateRadioButtons(session, "volselect", selected = "Dimensions")
+        } else if (flags()[4]) {                         
+            updateNumericInput(session, "vol", value = filter(contactor(), name == 'volume')$value)
+            updateSelectInput(session, "vol", choices = unique(c(filter(contactor(), name == 'volume')$units, volvector)))
+            updateRadioButtons(session, "volselect", selected = "Volume")
+        }
+    })
+
+    observe({
+        toggleState("format", condition = input$volselect != "Volume")
+        toggleState("ld", condition = input$volselect != "Volume")
+        toggleState("ldunits", condition = input$volselect != "Volume")
+        toggleState("height", condition = input$volselect != "Volume")
+        toggleState("heightunits", condition = input$volselect != "Volume")
+        toggleState("vol", condition = input$volselect != "Dimensions")
+        toggleState("volunits", condition = input$volselect != "Dimensions")
+    })
+
+    # format <- reactive({filter(contactor(), name == "format")$value})
+    # lengthdiameter <- reactive({filter(contactor(), name == "length/diameter")$value})
     temperature <- reactive({filter(contactor(), name == "temperature")$value})
-    height <- reactive({filter(contactor(), name == 'height')$value})
-    volume <- reactive({filter(contactor(), name == 'volume')$value})
+    # height <- reactive({filter(contactor(), name == 'height')$value})
+    # volume <- reactive({filter(contactor(), name == 'volume')$value})
     flow <- reactive({filter(contactor(), name == 'flow')$value})
     HRT <- reactive({filter(contactor(), name == 'HRT')$value})
     CRT <- reactive({filter(contactor(), name == 'CRT')$value})
@@ -544,17 +575,17 @@ server <- function(input, output, session) {
     porosity <- reactive({filter(pac(), name == 'porosity')$value})
     radius <- reactive({filter(pac(), name == 'radius')$value})
     
-    formatvec <- reactive({
-        formatv <- c(filter(contactor(), name == 'format')$value, formatvector)
+    # formatvec <- reactive({
+    #     formatv <- c(filter(contactor(), name == 'format')$value, formatvector)
 
-        return(unique(formatv))
-    })
+    #     return(unique(formatv))
+    # })
 
-    ldvec <- reactive({
-        ldv <- c(filter(contactor(), name == 'length/diameter')$units, ldvector)
+    # ldvec <- reactive({
+    #     ldv <- c(filter(contactor(), name == 'length/diameter')$units, ldvector)
 
-        return(unique(ldv))
-    })
+    #     return(unique(ldv))
+    # })
     
     tempvec <- reactive({
         tempv <- c(filter(contactor(), name == 'temperature')$units, tempvector)
@@ -562,17 +593,17 @@ server <- function(input, output, session) {
         return(unique(tempv))
     })
     
-    heightvec <- reactive({
-        heightv <- c(filter(contactor(), name == 'height')$units, heightvector)
+    # heightvec <- reactive({
+    #     heightv <- c(filter(contactor(), name == 'height')$units, heightvector)
 
-        return(unique(heightv))
-    })
+    #     return(unique(heightv))
+    # })
 
-    volvec <- reactive({
-        volv <- c(filter(contactor(), name == 'volume')$units, volvector)
+    # volvec <- reactive({
+    #     volv <- c(filter(contactor(), name == 'volume')$units, volvector)
 
-        return(unique(volv))
-    })
+    #     return(unique(volv))
+    # })
     
     flowvec <- reactive({
         flowv <- c(filter(contactor(), name == 'flow')$units, flowvector)
@@ -619,10 +650,10 @@ server <- function(input, output, session) {
             #Updating default values with the values that were uploaded#
     #------------------------------------------------------------------------------#    
     observe({
-        updateNumericInput(session, "ld", value = format(lengthdiameter(), digits = 4, scientific = FALSE))
+        # updateNumericInput(session, "ld", value = format(lengthdiameter(), digits = 4, scientific = FALSE))
         updateNumericInput(session, "temp", value = temperature())
-        updateNumericInput(session, "height", value = format(height(), digits = 4, scientific = FALSE))
-        updateNumericInput(session, "vol", value = format(volume(), digits = 4, scientific = FALSE))
+        # updateNumericInput(session, "height", value = format(height(), digits = 4, scientific = FALSE))
+        # updateNumericInput(session, "vol", value = format(volume(), digits = 4, scientific = FALSE))
         updateNumericInput(session, "flow", value = format(flow(), digits = 4, scientific = FALSE))
         updateNumericInput(session, "den", value = dens())
         updateNumericInput(session, "por", value = porosity())
@@ -632,11 +663,11 @@ server <- function(input, output, session) {
         updateSliderInput(session, "crt", value = CRT())
         updateSliderInput(session, "dosage", value = dosage())
         
-        updateSelectInput(session, "format", choices = formatvec())
-        updateSelectInput(session, "ldunits", choices = ldvec())
+        # updateSelectInput(session, "format", choices = formatvec())
+        # updateSelectInput(session, "ldunits", choices = ldvec())
         updateSelectInput(session, "tempunits", choices = tempvec())
-        updateSelectInput(session, "heightunits", choices = heightvec())
-        updateSelectInput(session, "volunits", choices = volvec())
+        # updateSelectInput(session, "heightunits", choices = heightvec())
+        # updateSelectInput(session, "volunits", choices = volvec())
         updateSelectInput(session, "flowunits", choices = flowvec())
         updateSelectInput(session, "denunits", choices = denvec())
         updateSelectInput(session, "radunits", choices = radvec())
@@ -780,7 +811,7 @@ server <- function(input, output, session) {
             },
             content=function(file) {
                 sheets <- list("Contactor" = contactor(),
-                            "PAC" = pac(),
+                            "PAC Characteristics" = pac(),
                             "Compounds" = compounddat(),
                             "Concentration Output" = pac_obj_processed(),
                             "Concentration by Dosage" = sub_data_processed(),
