@@ -17,7 +17,7 @@ The Shiny-PAC Modeling Tool is used to model a powdered activated carbon (GAC) u
 5. Optional: Example_TCE.xlsx
 
 ## Excel-based Input File
-The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny-PAC App looks for sheetnames of "Contactor", "PAC", and "Compounds". If one or more of those sheets are not found then the app cannot be run using that input file. The App is loaded with default data (found in 'PAC_config.xlsx') if the user does not want to use an Excel-based file, which can be modified as needed within the GUI.
+The input for the Excel-based input file must be formatted like the one shown in the figure below if the user wants to import data. The Shiny-PAC App looks for sheetnames of "Contactor", "PAC Characteristics", and "Compounds". If one or more of those sheets are not found then the app cannot be run using that input file. The App is loaded with default data (found in 'PAC_config.xlsx') if the user does not want to use an Excel-based file, which can be modified as needed within the GUI.
 
 <figure>
      <img src="DocumentPics/image1.png"
@@ -64,6 +64,8 @@ In order for the tool to work the user must point their R Studio to a Python Int
 </figure>
 
 4. Click "Apply" then "OK"
+
+NOTE: The following packages must be installed in the Python version being used; numpy, scipy, pandas, and matplotlib.
 
 
 ## Quick Start
@@ -115,20 +117,20 @@ In order for the tool to work the user must point their R Studio to a Python Int
 
 ### Column Parameters
 
-| Input | Description | Units
+| Input | Description | Default Units
 |--- |--- |---
 |format | |N/A
 |length/diameter | |m
 |temperature | |C
 |height | |m
 |volume | |L
-|flow | |m3/s
-|HRT | |min
-|CRT | |min
+|flow |The average flow rate through the column. PSDM only considers and average or steady-state condition, not variable flow. |m3/s
+|HRT |Hydraulic retention time. |min
+|CRT |Cell residence time. |min
 |PAC Dosage | |mg/L
-|density | |gm/ml
-|porosity | |N/A
-|radius | |cm
+|density |Mass per unit volume of bead particle. |gm/ml
+|porosity | The bead porosity is the measure of the bead volume occupied by a solvent, usually water. The factor is between 0 and 1, where 0 represents a bead absent of a solvent and 1 is a bead where all the available space is filled with a solvent. A well packed bead will typically have and EPOR of 0.2. |N/A
+|radius |Bead radius is the measurement of the distance of the bead resin from the center to the surface. |cm
 
 
 ### Compounds Tab
@@ -137,27 +139,18 @@ The Compounds tab contains information about the compounds to be simulated. The 
 
 
 ### Compound List
-| Input | Description
-|--- |---
-|K |
-|1/n |
-|MW |
-|MolarVolume |
-|C0 |
-|C0_units |
-|kf |
-|Dp |
-|Ds |
-|Solubility |
-
-
-### Concentration Output
-
-
-## Dosage Calculator
-
-
-## Notes to the User
+| Input | Description | Units
+|--- |--- |---
+|K |Freundlich K |
+|1/n |Freundlich 1/n |
+|MW |Molecular Weight |
+|MolarVolume |Molar Volume |
+|C0 |Initial influent concentration |
+|C0_units |Initial influent concentration units |
+|kf |Film transfer diffusion coefficient |cm/s
+|Dp |Pore diffusion coefficient |cm2/s
+|Ds |Surface diffusion coefficient |cm2/s
+|Solubility |Amount of substance that will disolve in water |
 
 
 ## References
