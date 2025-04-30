@@ -768,17 +768,17 @@ server <- function(input, output, session) {
         
         df
     })
-    sub_data_processed <- reactive(data.frame(
+    sub_data_processed <- reactive({
         if (ncol(sub_data()) > 0) {
             df <- sub_data()
             df %>% mutate(across(!`dosage (mg/L)`, ~ .x / mass_conv[input$OCunits2]))
             df$`conc units` <- input$OCunits2
-        },
+            return(df)
+        } else {
+            return(data.frame())
+        }
+    })
 
-        check.names = FALSE,
-
-        df
-    ))
  
     # Prepare concentration by dosage plot
     HRT_obj <- reactive(data.frame(
