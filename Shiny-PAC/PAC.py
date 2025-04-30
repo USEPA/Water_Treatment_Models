@@ -71,7 +71,7 @@ conc_convert = {'ug/L': 1, 'ug': 1,
 # conc_convert
 
 class PAC_CFPSDM():
-    def __init__(self, contactor_df, pac_df, compounds_df, help_print=False, **kw):
+    def __init__(self, contactor_df, pac_df, compounds_df, nrv, help_print=False, **kw):
         contactor_df.loc['format', 'value'] = str(contactor_df.loc['format', 'value'])
         contactor_df.loc['length/diameter', 'value'] = float(contactor_df.loc['length/diameter', 'value'])
         contactor_df.loc['temperature', 'value'] = float(contactor_df.loc['temperature', 'value'])
@@ -107,7 +107,7 @@ class PAC_CFPSDM():
         pac_df.index = self.pac_index               ## resets the index column to all lower case
 
         ## initiate collocation
-        self.nc = kw.get('nr', 5)  #set number of radial points, or 7
+        self.nc = nrv  #set number of radial points
         self.mc = kw.get('nz', 8) #set number of axial points, or 12, not needed for PAC, but needed for calc_solver_matrix
         self.nz = self.mc * 1
         solver_data = calc_solver_matrix(self.nc, self.mc, 1)

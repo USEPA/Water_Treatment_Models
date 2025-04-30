@@ -699,7 +699,7 @@ server <- function(input, output, session) {
         rownames(pac_df) <- pac()[,1]
         compounds_df <- compounddat()[,-1]
         rownames(compounds_df) <- compounddat()[,1]
-        PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df)
+        PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, input$nrv)
 
         # Process concentration output
         df <- as.data.frame(PAC_instance$run_PAC_PSDM())
@@ -721,7 +721,7 @@ server <- function(input, output, session) {
         rownames(pac_df) <- pac()[,1]
         compounds_df <- compounddat()[,-1]
         rownames(compounds_df) <- compounddat()[,1]
-        PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df)
+        PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, input$nrv)
 
         # Calculate dosage intervals and set target
         vector <- numeric()
@@ -770,10 +770,14 @@ server <- function(input, output, session) {
     })
     sub_data_processed <- reactive(data.frame(
         if (ncol(sub_data()) > 0) {
-            sub_data() %>% mutate(across(!`dosage (mg/L)`, ~ .x / mass_conv[input$OCunits2]))
+            df <- sub_data()
+            df %>% mutate(across(!`dosage (mg/L)`, ~ .x / mass_conv[input$OCunits2]))
+            df$`conc units` <- input$OCunits2
         },
 
-        check.names = FALSE
+        check.names = FALSE,
+
+        df
     ))
  
     # Prepare concentration by dosage plot
