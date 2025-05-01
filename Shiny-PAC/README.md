@@ -92,7 +92,7 @@ NOTE: The following packages must be installed in the Python version being used;
 
 ![](DocumentPics/image12.png)
 
-6.	Switch to the Concentration Output tab by clicking on it (There should be a loading “spinner” to let you know it’s running). Your graph will appear. You can export the data as an xlsx file along with the conditions you input.
+6.	Switch to the Concentration Output tab by clicking on it (There should be a loading “spinner” to let you know it’s running). Your graph will appear. You can export the data as an xlsx file along with the conditions you input by clicking on the Save Data button. This will attempt to save relevant data for all plots.
 
 ![](DocumentPics/image13.png)
 
@@ -100,17 +100,21 @@ NOTE: The following packages must be installed in the Python version being used;
 
 ![](DocumentPics/image14.png)
 
-9. (Optional: Dosage Calculator) Switch to the Dosage Calculator tab by clicking on it. The user can perform calculations for different dosage levels. To do this, simply click the 'Calculate' button above the 'Save Data' button on the side bar panel (There should be a loading “spinner” to let you know it’s running). Click on the 'Concentration by Dosage' and 'Time for Target' tabs to view the respective graphs.
+9. (Optional: Dosage Calculator) Switch to the Dosage Calculator tab by clicking on it. The first plot displays concentration at a given dosage for 4 different hydraulic retention times in minutes (30, 60, 90, 120). The user can perform calculations for different dosage levels. 
 
 ![](DocumentPics/image15.png)
 
-10. In the 'Concentration by Dosage' tab only one compound can be viewed at a time. It can be selected by using the Compound drop down menu. The Dosage range can be selected by selecting a range with the slider. The Dosage Interval value can be selected with a similar slider. The output concentration units can be changed by using the Output Concentration Units drop down menu.
+10. In the 'Concentration by Dosage' tab only one compound can be viewed at a time. It can be selected by using the Compound drop down menu. The Dosage range can be selected by selecting a range with the slider. The Dosage Interval value can be selected with a similar slider.
 
 ![](DocumentPics/image16.png)
 
 11. In the 'HRT for Target' tab Target Concentration and Target Units can be selected by using the respective drop down menus.
 
 ![](DocumentPics/image17.png)
+
+12. To create both plots, simply click the 'Calculate' button above the 'Save Data' button on the side bar panel (There should be a loading “spinner” to let you know it’s running). Click on the 'Concentration by Dosage' and 'Time for Target' tabs to view each respective plot. The output concentration units for the Cocentration by Dosage plot can be changed by using the Output Concentration Units drop down menu. The Save Data button can be clicked to save all output data to an Excel file.
+
+![](DocumentPics/image18.png)
 
 
 ## Appendix
