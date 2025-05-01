@@ -758,15 +758,17 @@ server <- function(input, output, session) {
 
     # Apply conversions and rename columns
     pac_obj_processed <- reactive({
-        df <- data.frame(
-            time = pac_obj()$time * time_conv[input$timeunits],
-            conc = (pac_obj()$conc / 1000) / mass_conv[input$OCunits],
-            name = pac_obj()$name
-        )
-
-        colnames(df) <- c(paste0("time (", input$timeunits, ")"), paste0("conc (", input$OCunits, ")"), "name")
-        
-        df
+        if (ncol(pac_obj()) > 0) {
+            df <- data.frame(
+                time = pac_obj()$time * time_conv[input$timeunits],
+                conc = (pac_obj()$conc / 1000) / mass_conv[input$OCunits],
+                name = pac_obj()$name
+            )
+            colnames(df) <- c(paste0("time (", input$timeunits, ")"), paste0("conc (", input$OCunits, ")"), "name")
+            return(df)
+        } else {
+            return(data.frame())
+        }
     })
     sub_data_processed <- reactive({
         if (ncol(sub_data()) > 0) {
@@ -779,7 +781,6 @@ server <- function(input, output, session) {
         }
     })
 
- 
     # Prepare concentration by dosage plot
     HRT_obj <- reactive(data.frame(
         dosage = unname(sub_data_processed()["dosage (mg/L)"]),
