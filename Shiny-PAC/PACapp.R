@@ -740,7 +740,6 @@ server <- function(input, output, session) {
         df <- cbind(dosage = as.numeric(rownames(df)), df)
         df <- data.frame(lapply(df, unlist))
         names(df)[names(df) == "dosage"] <- "dosage (mg/L)"
-        df <- df %>% mutate(across(!`dosage (mg/L)`, ~ .x / mass_conv[input$OCunits2]))
         df <- df %>% rename_with(
             .fn = ~ str_replace(., "^(.*)\\.(\\d+)\\.0$", "HRT: \\2 min \\1"),
             .cols = !all_of("dosage (mg/L)")
@@ -773,7 +772,7 @@ server <- function(input, output, session) {
     sub_data_processed <- reactive({
         if (ncol(sub_data()) > 0) {
             df <- sub_data()
-            df %>% mutate(across(!`dosage (mg/L)`, ~ .x / mass_conv[input$OCunits2]))
+            df <- df %>% mutate(across(!`dosage (mg/L)`, ~ .x / mass_conv[input$OCunits2]))
             df$`conc units` <- input$OCunits2
             return(df)
         } else {
