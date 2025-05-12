@@ -697,7 +697,7 @@ server <- function(input, output, session) {
         rownames(contactor_df) <- contactor()[,1]
         pac_df <- pac()[,-1]
         rownames(pac_df) <- pac()[,1]
-        compounds_df <- compounddat()[,-1]
+        compounds_df <- compounddat()[,-1, drop = FALSE]
         rownames(compounds_df) <- compounddat()[,1]
         PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, input$nrv)
 
@@ -719,7 +719,7 @@ server <- function(input, output, session) {
         rownames(contactor_df) <- contactor()[,1]
         pac_df <- pac()[,-1]
         rownames(pac_df) <- pac()[,1]
-        compounds_df <- compounddat()[,-1]
+        compounds_df <- compounddat()[,-1, drop = FALSE]
         rownames(compounds_df) <- compounddat()[,1]
         PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, input$nrv)
 
