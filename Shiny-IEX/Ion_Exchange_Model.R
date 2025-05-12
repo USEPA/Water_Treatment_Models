@@ -747,6 +747,7 @@ process_files <- function (input, file) {
   })
   tryCatch({
     cin<-read_xlsx(file, sheet="Cin")
+    colnames(cin) <- gsub("\\btime\\b", "time", colnames(cin), ignore.case = TRUE) # Fix case sensitivity of time column name
     write.csv(cin, "temp_file/cinsheet.csv", row.names=FALSE)
   },
   error=function(err){
@@ -1883,7 +1884,7 @@ server <- function(input, output, session) {
       diameter3(unique(diameter2()))
       
       updateSelectInput(session, "FlowrateUnits", choices=flowrate3(), selected = c(filter(paramsheet(), name=='flrt')$units))
-      updateSelectInput(session, "DiameterUnits", choices=diameter3, selected = c(filter(paramsheet(), name=='diam')$units)())                                     
+      updateSelectInput(session, "DiameterUnits", choices=diameter3(), selected = c(filter(paramsheet(), name=='diam')$units))                                     
       
       updateRadioButtons(session, "veloselect", selected="Volumetric")
     }
@@ -1897,6 +1898,7 @@ server <- function(input, output, session) {
   #Take the data from the file that the user uploaded and overwrite the default frame
   capacity<-reactive({filter(paramsheet(), name=="Q")$value})
   eebed<-reactive({filter(paramsheet(), name=="EBED")$value})
+  eepor<-reactive({filter(paramsheet(), name=="EPOR")$value})
   length2<-reactive({filter(paramsheet(), name=="L")$value})
   beadradius<-reactive({filter(paramsheet(), name=="rb")$value})
   film<-reactive({filter(paramsheet(), name=="kL")$value})
@@ -1908,6 +1910,7 @@ server <- function(input, output, session) {
   observe({
     updateNumericInput(session, "Qv", value=format(capacity(), digits=4, scientific=FALSE))
     updateNumericInput(session, "EBEDv", value=format(eebed(), digit=4, scientific=FALSE))
+    updateNumericInput(session, "EPORv", value=format(eepor(), digit=4, scientific=FALSE))
     updateNumericInput(session, "Lv", value=length2())
     updateNumericInput(session, "rbv", value=prettyNum(beadradius(), digits=4, scientific=FALSE))
     updateNumericInput(session, "kLv", value=film())
@@ -2078,7 +2081,7 @@ server <- function(input, output, session) {
   #To break it up
   #------------------------------------------------------------------------------#   
   
-  cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric")),data="temp_file/cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
+  cindat<-dataEditServer("edit-2",read_args=list(colClasses=c("numeric"), check.names=FALSE),data="temp_file/cinsheet.csv") ## read_args should make all columns numeric, which seems to address the "initial read in as integer issues"
   dataOutputServer("output-2", data = cindat)
   
   #Convert the cin data time to hours if it is not already
