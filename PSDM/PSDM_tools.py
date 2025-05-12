@@ -478,7 +478,7 @@ def isotherm_fit(data, isotherm='freundlich', plot=True, save_plot=False, filena
         
         if plot:
             ax.fill_between(xdata_plot, y_plot-ci, y_plot+ci, 
-                            color = '#b9cfe7', edgecolor = '', 
+                            color = '#b9cfe7', edgecolor = 'None', 
                             label = '95% Confidence Interval' )
             ax.fill_between(xdata_plot, y_plot-pi, y_plot+pi, 
                             linestyle = '--', color = 'None')
