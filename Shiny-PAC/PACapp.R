@@ -83,7 +83,7 @@ kL_conv <- c("ft/s"=ft2cm, "m/s"=m2cm, "cm/s"=cm2cm, "in/s"=in2cm,
 ds_conv <- c("ft^2/s"=ft2ps2cm2ps, "m^2/s"=m2ps2cm2ps, "cm^2/s"=cm2cm,
              "in^2/s"=in2ps2cm2ps)
 
-mass_conv <- c("meq"=1000, "meq/L"=1000, "mg"=1000, "ug"=1, "ng"=1e-3, "mg/L"=1000, "ug/L"=1, "ng/L"=1e-3) ### changed
+mass_conv <- c("meq"=1000, "meq/L"=1000, "mg"=1000, "ug"=1, "ng"=1e-3, "mg/L"=1000, "ug/L"=1, "ng/L"=1e-3) #, "C/C0"=) ### changed # TODO: Add c_points_cc0 function from GACapp.R
 
 density_conv<-c("g/ml"=1)
 
@@ -447,7 +447,7 @@ ui <- fluidPage(
         tabPanel("Concentration Output",
             sidebarLayout(
                 sidebarPanel(
-                    selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L")),
+                    selectInput("OCunits", "Output Concentration Units", c("mg/L", "ug/L", "ng/L", "C/C0")),
                     selectInput("timeunits","Output Time Units",c("Minutes", "Hours")),
 
                     br(), br(), br(),
@@ -467,7 +467,7 @@ ui <- fluidPage(
                 sidebarPanel(
                     sliderInput("dosagerange", label = "Dosage Range", min = dosage_range[1], max = dosage_range[2], value = dosage_range, step = 5),
                     sliderInput("dosageinterval", "Dosage Intervals", 3, 7, 5),
-                    selectInput("OCunits2", "Output Concentration Units", c("mg/L", "ug/L")),
+                    selectInput("OCunits2", "Output Concentration Units", c("mg/L", "ug/L", "ng/L")),
 
                     br(),
 
