@@ -470,7 +470,7 @@ ui <- fluidPage(
                     br(),
 
                     shinyWidgets::autonumericInput(inputId = "target", label="Target Concentration", value = 4.0, currencySymbolPlacement = "p", decimalPlaces = 1, digitGroupSeparator = ",", decimalCharacter = "."),
-                    selectInput("targetunits", "Target Units", c("ng")),
+                    selectInput("targetunits", "Target Concentration Units", c("ng")),
 
                     actionButton("calculate_by_target", "Calculate", icon=icon("play")),
                     
