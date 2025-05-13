@@ -1,6 +1,5 @@
-## Commented out for running locally
-
-library(BiocVersion) ## needed for colorBlindness on remote
+# library(BiocManager) ## install.packages("BiocManager", repos = "https://cloud.r-project.org")
+# library(BiocVersion) ## needed for colorBlindness on remote
 library(readxl)
 library(shiny)
 library(shinythemes)

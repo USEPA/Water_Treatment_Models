@@ -5,7 +5,7 @@ library(readxl)
 library(shinyjs)
 library(DataEditR)
 library(tidyr)
-library(BiocVersion) ### needed for colorblindness
+# library(BiocVersion) ### needed for colorblindness ## install.packages("BiocManager", repos = "https://cloud.r-project.org")
 # renv::install("bioconductor-source/BiocVersion")## needed for colorBlindness on remote
 library(colorBlindness)
 library(writexl)

@@ -417,8 +417,8 @@ def isotherm_fit(data, isotherm='freundlich', plot=True, save_plot=False, filena
         y_plot = freundlich(xdata_plot, popt[0], popt[1])
         y_model = freundlich(xdata, popt[0], popt[1])
         
-        plot_title = (popt[0], intervals[0], popt[1], intervals[0])
-        title = 'Freundlich\nK: %.3e$\pm$%.3e - 1/n: %.3e$\pm$%.3e' %plot_title
+        # plot_title = (popt[0], intervals[0], popt[1], intervals[0])
+        title = f'Freundlich\nK: {popt[0]:.3e}$\pm${intervals[0]:.3e} - 1/n: {popt[1]:.3e}$\pm${intervals[0]:.3e}'
         
     elif isotherm.lower() == 'langmuir':
         print('Langmuir: qm * KL * Ce/(1 + KL*Ce)')
@@ -434,8 +434,9 @@ def isotherm_fit(data, isotherm='freundlich', plot=True, save_plot=False, filena
         y_plot = langmuir(xdata_plot, popt[0], popt[1])
         y_model = langmuir(xdata, popt[0], popt[1])
         
-        plot_title = (popt[0], intervals[0], popt[1], intervals[0])
-        title = 'Langmuir\nK$_{L}:$ %.3e$\pm$%.3e - q$_{m}$: %.3e$\pm$%.3e' %plot_title
+        # plot_title = (popt[0], intervals[0], popt[1], intervals[0])
+        title = f'Langmuir\nK$_L$: {popt[0]:.3e}$\pm${intervals[0]:.3e} - q$_m$: {popt[1]:.3e}$\pm${intervals[0]:.3e}'
+    
     elif isotherm.lower() == 'redlichpeterson':
         popt, pcov = curve_fit(RedlichPeterson, xdata, ydata, 
                                bounds=(0, [np.inf, np.inf, np.inf]),
@@ -449,8 +450,8 @@ def isotherm_fit(data, isotherm='freundlich', plot=True, save_plot=False, filena
         y_plot = RedlichPeterson(xdata_plot, popt[0], popt[1], popt[2])
         y_model = RedlichPeterson(xdata, popt[0], popt[1], popt[2])
         
-        plot_title = (popt[0], intervals[0], popt[1], intervals[0], popt[2], intervals[2])
-        title = 'Redlich Peterson\nA: %.2e$\pm$%.2e - B: %.2e$\pm$%.2e - M: %.2e$\pm$%.2e' %plot_title
+        # plot_title = (popt[0], intervals[0], popt[1], intervals[0], popt[2], intervals[2])
+        title = f'Redlich Peterson\nA: {popt[0]:.2e}$\pm${intervals[0]:.2e} - B: {popt[1]:.2e}$\pm${intervals[0]:.2e} - M: {popt[2]:.2e}$\pm${intervals[2]:.2e}'
 
     else:
         print('Warning: Isotherm Selection does not match available choices')
@@ -478,7 +479,8 @@ def isotherm_fit(data, isotherm='freundlich', plot=True, save_plot=False, filena
         
         if plot:
             ax.fill_between(xdata_plot, y_plot-ci, y_plot+ci, 
-                            color = '#b9cfe7', edgecolor = '', 
+                            color = '#b9cfe7', 
+                            edgecolor = 'None', 
                             label = '95% Confidence Interval' )
             ax.fill_between(xdata_plot, y_plot-pi, y_plot+pi, 
                             linestyle = '--', color = 'None')
