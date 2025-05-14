@@ -671,7 +671,7 @@ class PAC_CFPSDM():
         return out_df
 
 
-    def HRT_calculator_for_dosage(self, target_conc: float, dosage_trials=np.arange(5, 151, 20), influent_c0=np.arange(5, 26, 5), conc_units='same') -> dict:
+    def HRT_calculator_for_dosage(self, target_conc: float, target_units, dosage_trials=np.arange(5, 151, 20), influent_c0=np.arange(5, 26, 5), conc_units='same') -> dict:
         '''
         returns dictionary of dataframes with results of HRT for a given dosage
         '''
@@ -682,9 +682,13 @@ class PAC_CFPSDM():
 
         self.duration = 3000 * 60
 
+        target_conc_update = target_conc * conc_convert[target_units.lower()]
+        
         if conc_units.lower() == 'same':
-            conc_multiplier = self.convert_array
-            conc_units_update = self.compounds_df.loc['C0_units'].values ## This might not be great if the units aren't the same, might cause issues
+            ## sets conc_units to be the same as target_units
+            conc_multiplier = np.ones(self.ncomp) * conc_convert[target_units.lower()]
+            conc_units_update = [target_units.lower()] * self.ncomp ## make it the same size as the compounds_df shape
+            self.convert_array = np.array([conc_convert[i] for i in conc_units_update])
         else:
             ### assumes units
             # 'ng', 'ug', 'mg'
@@ -692,8 +696,6 @@ class PAC_CFPSDM():
             conc_units_update = [conc_units.lower()] * self.ncomp ## make it the same size as the compounds_df shape
             self.convert_array = np.array([conc_convert[i] for i in conc_units_update])
 
-        
-        target_conc_update = target_conc * conc_multiplier ### adjust target conc into appropriate unit
 
         out_dict = {self.compounds_df.columns[i]: pd.DataFrame(index=dosage_trials, columns=influent_c0) for i in range(self.ncomp)}
 
@@ -709,16 +711,14 @@ class PAC_CFPSDM():
 
                 
                 data = self.run_PAC_PSDM()
-
+   
                 for i in range(self.ncomp):
                     comp = data.columns[i]
                     sub_data = data[comp].values * self.convert_array[i]
-                    sub_data_filtered = sub_data[np.where(sub_data <= target_conc_update[i])]
-                    
-                    # plt.plot(data.index, data[comp].values * conc_multiplier[i], label=f'{c0} - {dosage}')
+                    sub_data_filtered = sub_data[np.where(sub_data <= target_conc_update)]
 
                     if len(sub_data_filtered) > 0:
-                        sol = np.interp(target_conc_update[i], sub_data.flatten()[::-1], data.index[::-1])
+                        sol = np.interp(target_conc_update, sub_data.flatten()[::-1], data.index[::-1])
 
                         out_dict[comp].loc[dosage, c0] = sol * 1.
                 
@@ -732,7 +732,7 @@ class PAC_CFPSDM():
         return(out_dict)
         
 
-    def _R_HRT_calculator_for_dosage(self, target_conc: float, dosage_trials=np.arange(5, 150 + 1, 20), conc_units='same') -> pd.DataFrame:
+    def _R_HRT_calculator_for_dosage(self, target_conc: float, target_units='ng', dosage_trials=np.arange(5, 150 + 1, 20), conc_units='same') -> pd.DataFrame:
         '''
         returns dataframe with results of HRT for a given dosage
         '''
@@ -743,9 +743,15 @@ class PAC_CFPSDM():
 
         self.duration = 3000 * 60
 
+        target_conc_update = target_conc * conc_convert[target_units.lower()]
+        print(target_conc_update)
+        
         if conc_units.lower() == 'same':
-            conc_multiplier = self.convert_array
-            conc_units_update = self.compounds_df.loc['C0_units'].values ## This might not be great if the units aren't the same, might cause issues
+            ## sets conc_units to be the same as target_units
+            pass
+            # conc_multiplier = np.ones(self.ncomp) * conc_convert[target_units.lower()]
+            conc_units_update = [target_units.lower()] * self.ncomp ## make it the same size as the compounds_df shape
+            # self.convert_array = np.array([conc_convert[i] for i in conc_units_update])
         else:
             ### assumes units
             # 'ng', 'ug', 'mg'
@@ -753,7 +759,7 @@ class PAC_CFPSDM():
             conc_units_update = [conc_units.lower()] * self.ncomp ## make it the same size as the compounds_df shape
             self.convert_array = np.array([conc_convert[i] for i in conc_units_update])
 
-        target_conc_update = target_conc * conc_multiplier ### adjust target conc into appropriate unit
+         ### adjust target conc into appropriate unit
 
         ### calculates 
         out_df = pd.DataFrame(columns=self.compounds_df.columns, index=dosage_trials)
@@ -773,16 +779,15 @@ class PAC_CFPSDM():
             for i in range(self.ncomp):
                 comp = data.columns[i]
                 sub_data = data[comp].values * self.convert_array[i]
-                sub_data_filtered = sub_data[np.where(sub_data <= target_conc_update[i])]
+                sub_data_filtered = sub_data[np.where(sub_data <= target_conc_update)]
                 
                 # plt.plot(data.index, data[comp].values * conc_multiplier[i], label=f'{c0} - {dosage}')
 
                 if len(sub_data_filtered) > 0:
-                    sol = np.interp(target_conc_update[i], sub_data.flatten()[::-1], data.index[::-1])
+                    sol = np.interp(target_conc_update, sub_data.flatten()[::-1], data.index[::-1])
 
                     out_df.loc[dosage, comp] = sol * 1.
                 
-        # plt.plot([0, self.duration/60], np.ones(2) * target_conc_update[0], lw=4, ls='--')
 
         ## reset compounds_df
         self.compounds_df = original_data.copy()
