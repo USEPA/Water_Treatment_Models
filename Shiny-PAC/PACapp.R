@@ -471,6 +471,7 @@ ui <- fluidPage(
 
                     shinyWidgets::autonumericInput(inputId = "target", label="Target Concentration", value = 4.0, currencySymbolPlacement = "p", decimalPlaces = 1, digitGroupSeparator = ",", decimalCharacter = "."),
                     selectInput("targetunits", "Target Concentration Units", c("ng")),
+                    selectInput("concunits", "Concentration Units", c("ng")),
 
                     actionButton("calculate_by_target", "Calculate", icon=icon("play")),
                     
@@ -745,7 +746,7 @@ server <- function(input, output, session) {
         sub_data(df)
 
         # Process HRT for target output
-        df2 <- as.data.frame(PAC_instance$`_R_HRT_calculator_for_dosage`(input$target, conc_units=input$targetunits))
+        df2 <- as.data.frame(PAC_instance$`_R_HRT_calculator_for_dosage`(input$target, target_units=input$targetunits, conc_units=input$concunits))
         df2$`dosage (mg/L)` <- as.numeric(rownames(df2))
         df2 <- pivot_longer(df2, cols = !`dosage (mg/L)`, names_to = "name", values_to = "HRT to below Target (Minutes)")
         df2$`HRT to below Target (Minutes)` <- as.numeric(unlist(df2$`HRT to below Target (Minutes)`))
