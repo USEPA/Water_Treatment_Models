@@ -1,0 +1,10 @@
+"name","value","units"
+"format","square",NA
+"length/diameter","10","m"
+"temperature","20","C"
+"height","5","m"
+"volume","500000","L"
+"flow","5","m3/s"
+"HRT","1000","min"
+"CRT","1000","min"
+"PAC Dosage","20","mg/L"

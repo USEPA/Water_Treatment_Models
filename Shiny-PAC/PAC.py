@@ -27,6 +27,8 @@ try:
 except:
     pass
 
+import json
+
 
 #### unit conversion helpers
 lpg = 3.785411784 # liter per gallon conversion
@@ -69,7 +71,33 @@ conc_convert = {'ug/L': 1, 'ug': 1,
 # conc_convert
 
 class PAC_CFPSDM():
-    def __init__(self, contactor_df, pac_df, compounds_df, help_print=False, **kw):
+    def __init__(self, contactor_df, pac_df, compounds_df, nrv, help_print=False, **kw):
+        contactor_df.loc['format', 'value'] = str(contactor_df.loc['format', 'value'])
+        contactor_df.loc['length/diameter', 'value'] = float(contactor_df.loc['length/diameter', 'value'])
+        contactor_df.loc['temperature', 'value'] = float(contactor_df.loc['temperature', 'value'])
+        contactor_df.loc['height', 'value'] = float(contactor_df.loc['height', 'value'])
+        contactor_df.loc['volume', 'value'] = int(float(contactor_df.loc['volume', 'value']))
+        contactor_df.loc['flow', 'value'] = int(contactor_df.loc['flow', 'value'])
+        contactor_df.loc['HRT', 'value'] = int(contactor_df.loc['HRT', 'value'])
+        contactor_df.loc['CRT', 'value'] = int(contactor_df.loc['CRT', 'value'])
+        contactor_df.loc['PAC Dosage', 'value'] = int(contactor_df.loc['PAC Dosage', 'value'])
+
+        pac_df.loc['density', 'value'] = float(pac_df.loc['density', 'value'])
+        pac_df.loc['porosity', 'value'] = float(pac_df.loc['porosity', 'value'])
+        pac_df.loc['radius', 'value'] = float(pac_df.loc['radius', 'value'])
+
+        for compound in compounds_df.columns.tolist():
+            compounds_df.loc['K', compound] = int(compounds_df.loc['K', compound])
+            compounds_df.loc['1/n', compound] = float(compounds_df.loc['1/n', compound])
+            compounds_df.loc['MW', compound] = float(compounds_df.loc['MW', compound])
+            compounds_df.loc['MolarVolume', compound] = float(compounds_df.loc['MolarVolume', compound])
+            compounds_df.loc['C0', compound] = int(compounds_df.loc['C0', compound])
+            compounds_df.loc['C0_units', compound] = str(compounds_df.loc['C0_units', compound])
+            compounds_df.loc['kf', compound] = float(compounds_df.loc['kf', compound])
+            compounds_df.loc['Dp', compound] = float(compounds_df.loc['Dp', compound])
+            compounds_df.loc['Ds', compound] = float(compounds_df.loc['Ds', compound])
+            compounds_df.loc['Solubility', compound] = float(compounds_df.loc['Solubility', compound])
+
         self.help_print = help_print
         self.errors = 0 ## count of errors
 
@@ -79,7 +107,7 @@ class PAC_CFPSDM():
         pac_df.index = self.pac_index               ## resets the index column to all lower case
 
         ## initiate collocation
-        self.nc = kw.get('nr', 5)  #set number of radial points, or 7
+        self.nc = nrv  #set number of radial points
         self.mc = kw.get('nz', 8) #set number of axial points, or 12, not needed for PAC, but needed for calc_solver_matrix
         self.nz = self.mc * 1
         solver_data = calc_solver_matrix(self.nc, self.mc, 1)
@@ -588,8 +616,12 @@ class PAC_CFPSDM():
         self.dosage = self.orig_dosage * 1 ## reset to original information
         self.duration = self.orig_duration * 1
 
+        # filename = "data_dict.json"
+        # with open(filename, 'w') as file:
+        #     json.dump(data_dict, file, indent=4)
 
         return data_dict
+        # return pd.DataFrame(data_dict) # Test -CDS
     
     def multi_dosage_analyzer(self, data_dict, target_HRT):
         '''
@@ -617,8 +649,13 @@ class PAC_CFPSDM():
 
                 out_dict[compound].loc[key] = concs_calced * 1
 
+        # filename = "out_dict.json"
+        # with open(filename, 'w') as file:
+        #     json.dump(out_dict, file, indent=4)
+
         return out_dict
-    
+        # return pd.DataFrame(out_dict) # Test -CDS
+
     def _run_multi_doseR(self, dosages, target_HRT):
         if type(target_HRT) == int or type(target_HRT) == float:
             target_HRT_array = np.array([target_HRT])
@@ -666,7 +703,6 @@ class PAC_CFPSDM():
         ### reset values
         self.dosage = self.orig_dosage * 1 ## reset to original information
         self.duration = self.orig_duration * 1
-
 
         return out_df
 
