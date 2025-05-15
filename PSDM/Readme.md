@@ -42,6 +42,8 @@ The package can also be uninstalled from the command line:
 python -m pip uninstall PSDM
 ```
 
+IF you would like to use the lead-lag capabilities within the PSDM module, you must also install the [IonExchangeModel](https://github.com/USEPA/Water_Treatment_Models/tree/master/IonExchangeModel) to get ixpy.
+
 # Status 
 All code in this repository is being provided in a "draft" state and has not been reviewed or cleared by US EPA. This status will be updated as models are reviewed.
 
