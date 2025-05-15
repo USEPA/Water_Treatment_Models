@@ -97,7 +97,7 @@ NOTE: The following packages must be installed in the Python version being used;
 
 5.	Click the Run Analysis button that’s at the bottom of the same side panel as the file import. A notification window will appear in the bottom right corner to either indicate a successful run or give an error message. 3 total chemicals with 2 concentration points takes about 10-30 seconds.
 
-5a. Rows "kf", "dp", and "ds" can be added to the "Compound List" and will manually override the mass transfer coefficients. If you set their value to 0 or omit them, they will be recalculated automatically.  
+5. a. Rows "kf", "dp", and "ds" can be added to the "Compound List" and will manually override the mass transfer coefficients. If you set their value to 0 or omit them, they will be recalculated automatically.  
 
 ![Run](DocumentPics/Slide5.PNG)
 
