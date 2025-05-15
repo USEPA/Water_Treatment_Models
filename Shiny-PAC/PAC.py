@@ -17,7 +17,11 @@ from scipy.integrate import solve_ivp
 from scipy.optimize import brentq, root
 
 import sys
-sys.path.append('../PSDM/')
+import os
+cwd = os.getcwd()
+split_cwd = cwd.split("\\")
+sys_path = "/".join(split_cwd[:-1]+["PSDM"])
+sys.path.append(sys_path)
 
 from PSDM_functions import calc_solver_matrix, viscosity, density
 
@@ -71,32 +75,27 @@ conc_convert = {'ug/L': 1, 'ug': 1,
 # conc_convert
 
 class PAC_CFPSDM():
-    def __init__(self, contactor_df, pac_df, compounds_df, nrv, help_print=False, **kw):
-        contactor_df.loc['format', 'value'] = str(contactor_df.loc['format', 'value'])
-        contactor_df.loc['length/diameter', 'value'] = float(contactor_df.loc['length/diameter', 'value'])
-        contactor_df.loc['temperature', 'value'] = float(contactor_df.loc['temperature', 'value'])
-        contactor_df.loc['height', 'value'] = float(contactor_df.loc['height', 'value'])
-        contactor_df.loc['volume', 'value'] = int(float(contactor_df.loc['volume', 'value']))
-        contactor_df.loc['flow', 'value'] = int(contactor_df.loc['flow', 'value'])
-        contactor_df.loc['HRT', 'value'] = int(contactor_df.loc['HRT', 'value'])
-        contactor_df.loc['CRT', 'value'] = int(contactor_df.loc['CRT', 'value'])
-        contactor_df.loc['PAC Dosage', 'value'] = int(contactor_df.loc['PAC Dosage', 'value'])
+    def __init__(self, contactor_df, pac_df, compounds_df, help_print=False, **kw):
 
-        pac_df.loc['density', 'value'] = float(pac_df.loc['density', 'value'])
-        pac_df.loc['porosity', 'value'] = float(pac_df.loc['porosity', 'value'])
-        pac_df.loc['radius', 'value'] = float(pac_df.loc['radius', 'value'])
+        ## force correct unit types, primarily used from R Shiny app
+        for idx in contactor_df.index:
+            if idx in ['format']:
+                contactor_df.loc[idx, 'value'] = str(contactor_df.loc[idx, 'value'])
+            else:
+                ## pretty much everything should tolerate being a float
+                contactor_df.loc[idx, 'value'] = float(contactor_df.loc[idx, 'value'])#.astype('float64')
 
-        for compound in compounds_df.columns.tolist():
-            compounds_df.loc['K', compound] = int(compounds_df.loc['K', compound])
-            compounds_df.loc['1/n', compound] = float(compounds_df.loc['1/n', compound])
-            compounds_df.loc['MW', compound] = float(compounds_df.loc['MW', compound])
-            compounds_df.loc['MolarVolume', compound] = float(compounds_df.loc['MolarVolume', compound])
-            compounds_df.loc['C0', compound] = int(compounds_df.loc['C0', compound])
-            compounds_df.loc['C0_units', compound] = str(compounds_df.loc['C0_units', compound])
-            compounds_df.loc['kf', compound] = float(compounds_df.loc['kf', compound])
-            compounds_df.loc['Dp', compound] = float(compounds_df.loc['Dp', compound])
-            compounds_df.loc['Ds', compound] = float(compounds_df.loc['Ds', compound])
-            compounds_df.loc['Solubility', compound] = float(compounds_df.loc['Solubility', compound])
+        for idx in pac_df.index:
+            ## everything should be a float
+            pac_df.loc[idx, 'value'] = float(pac_df.loc[idx, 'value'])
+
+        for idx in compounds_df.index:
+            if idx != 'C0_units':
+                ## C0_units should remain a string
+                compounds_df.loc[idx] = compounds_df.loc[idx].astype('float64')
+        ### end unit correction for R
+        
+        
 
         self.help_print = help_print
         self.errors = 0 ## count of errors
@@ -107,7 +106,7 @@ class PAC_CFPSDM():
         pac_df.index = self.pac_index               ## resets the index column to all lower case
 
         ## initiate collocation
-        self.nc = nrv  #set number of radial points
+        self.nc = kw.get('nr', 5)  #set number of radial points
         self.mc = kw.get('nz', 8) #set number of axial points, or 12, not needed for PAC, but needed for calc_solver_matrix
         self.nz = self.mc * 1
         solver_data = calc_solver_matrix(self.nc, self.mc, 1)
@@ -654,7 +653,6 @@ class PAC_CFPSDM():
         #     json.dump(out_dict, file, indent=4)
 
         return out_dict
-        # return pd.DataFrame(out_dict) # Test -CDS
 
     def _run_multi_doseR(self, dosages, target_HRT):
         if type(target_HRT) == int or type(target_HRT) == float:
@@ -663,7 +661,7 @@ class PAC_CFPSDM():
             target_HRT_array = np.array(target_HRT) ## makes this an array, assumes array already or list
 
         ## assumes dosages is an iterable
-        data_dict = {i: [] for i in dosages}
+        data_dict = {float(i): [] for i in dosages}
 
         ## create stored values
         self.orig_dosage = self.dosage * 1
@@ -676,8 +674,6 @@ class PAC_CFPSDM():
             self._update_values()
 
             data_dict[dose] = self.run_PAC_PSDM()
-
-        # print(data_dict)
 
         out_dict = {self.compounds_df.columns[i]: pd.DataFrame(index=data_dict.keys(), columns=target_HRT_array) for i in range(self.ncomp)}
 
@@ -694,17 +690,17 @@ class PAC_CFPSDM():
                 out_dict[compound].loc[key] = concs_calced * 1
 
         
-        out_df = pd.DataFrame(index=pd.MultiIndex.from_tuples((i, j) for i in y_df.columns for j in dosages), columns=target_HRT_array)
-        for i in y_df.columns:
-            for j in dosages:
-                for k in target_HRT_array:
-                    out_df.loc[(i, j), k] = out_dict[i].loc[j, k] * 1
+        # out_df = pd.DataFrame(index=pd.MultiIndex.from_tuples((i, j) for i in y_df.columns for j in dosages), columns=target_HRT_array)
+        # for i in y_df.columns:
+        #     for j in dosages:
+        #         for k in target_HRT_array:
+        #             out_df.loc[(i, j), k] = out_dict[i].loc[j, k] * 1
        
         ### reset values
         self.dosage = self.orig_dosage * 1 ## reset to original information
         self.duration = self.orig_duration * 1
 
-        return out_df
+        return out_dict
 
 
     def HRT_calculator_for_dosage(self, target_conc: float, target_units, dosage_trials=np.arange(5, 151, 20), influent_c0=np.arange(5, 26, 5), conc_units='same') -> dict:
@@ -780,7 +776,7 @@ class PAC_CFPSDM():
         self.duration = 3000 * 60
 
         target_conc_update = target_conc * conc_convert[target_units.lower()]
-        print(target_conc_update)
+        # print(target_conc_update)
         
         if conc_units.lower() == 'same':
             ## sets conc_units to be the same as target_units
@@ -833,3 +829,27 @@ class PAC_CFPSDM():
         return out_df
     
         
+def R_run_PAC(contactor_df, pac_df, compounds_df, nr):
+    ### move initial column to index for python version
+    contactor_df.index = contactor_df['name']
+    contactor_df = contactor_df[['value', 'units']]
+    
+    pac_df.index = pac_df['name']
+    pac_df = pac_df[['value', 'units']]
+
+    compounds_df.index = compounds_df[compounds_df.columns[0]]
+    compounds_df = compounds_df[compounds_df.columns[1:]]
+
+    for idx in compounds_df.index:
+        if idx == 'C0_units':
+            pass
+            # print(compounds_df.loc[idx])
+            # print('yup')
+    # print(compounds_df)
+   
+    pac_mod = PAC_CFPSDM(contactor_df, pac_df, compounds_df, nr=nr)
+    # print(pac_mod.run_PAC_PSDM())
+
+    return pac_mod.run_PAC_PSDM() * pac_mod.convert_array
+
+

@@ -689,19 +689,16 @@ server <- function(input, output, session) {
     pac_obj <- reactiveVal(data.frame())
     sub_data <- reactiveVal(data.frame())
     sub_data2 <- reactiveVal(data.frame())
+    
+    # pac_df <- reactiveVal(data.frame())
+    # compounds_df <- reactiveVal(data.frame())
+    # contactor_df <- reactiveVal(data.frame())
 
     observeEvent(input$run_button, {
         # Pass inputs to Python helper
-        contactor_df <- contactor()[,-1]
-        rownames(contactor_df) <- contactor()[,1]
-        pac_df <- pac()[,-1]
-        rownames(pac_df) <- pac()[,1]
-        compounds_df <- compounddat()[,-1, drop = FALSE]
-        rownames(compounds_df) <- compounddat()[,1]
-        PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, input$nrv)
 
         # Process concentration output
-        df <- as.data.frame(PAC_instance$run_PAC_PSDM())
+        df <- as.data.frame(R_run_PAC(contactor(), pac(), compounddat(), input$nrv))
         df$time <- as.numeric(rownames(df))
         df <- pivot_longer(df, cols = !time, names_to = "name", values_to = "conc")
         df$conc <- as.numeric(unlist(df$conc))
@@ -720,7 +717,7 @@ server <- function(input, output, session) {
         rownames(pac_df) <- pac()[,1]
         compounds_df <- compounddat()[,-1, drop = FALSE]
         rownames(compounds_df) <- compounddat()[,1]
-        PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, input$nrv)
+        PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, nr=input$nrv)
 
         # Calculate dosage intervals and set target
         vector <- numeric()
@@ -730,11 +727,15 @@ server <- function(input, output, session) {
             vector[index] <- i
             index <- index + 1 
         }
-        data_dict <- PAC_instance$run_multi_dosage(vector)
+        # data_dict <- PAC_instance$run_multi_dosage(vector)
         target_HRT <- c(30, 60, 90, 120)
 
         # Process concentration by dosage output
-        processed_dict <- PAC_instance$multi_dosage_analyzer(data_dict, target_HRT)
+        
+        processed_dict <- PAC_instance$`_run_multi_doseR`(vector, target_HRT)
+        # print(processed_dict)
+        # processed_dict <- PAC_instance$multi_dosage_analyzer(data_dict, target_HRT)
+        # print(processed_dict)
         df <- as.data.frame(processed_dict)
         df <- cbind(dosage = as.numeric(rownames(df)), df)
         df <- data.frame(lapply(df, unlist))
@@ -757,9 +758,10 @@ server <- function(input, output, session) {
     # Apply conversions and rename columns
     pac_obj_processed <- reactive({
         if (ncol(pac_obj()) > 0) {
+            ## TODO: insert c/c0 handling
             df <- data.frame(
                 time = pac_obj()$time * time_conv[input$timeunits],
-                conc = (pac_obj()$conc / 1000) / mass_conv[input$OCunits],
+                conc = (pac_obj()$conc) / mass_conv[input$OCunits],
                 name = pac_obj()$name
             )
             colnames(df) <- c(paste0("time (", input$timeunits, ")"), paste0("conc (", input$OCunits, ")"), "name")
