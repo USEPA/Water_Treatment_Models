@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 
 import sys
-sys.path.append('../PSDM/')
+sys.path.append('psdm/')
 
 import PSDM
 
