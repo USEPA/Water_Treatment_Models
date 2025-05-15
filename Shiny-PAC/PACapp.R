@@ -470,8 +470,8 @@ ui <- fluidPage(
                     br(),
 
                     shinyWidgets::autonumericInput(inputId = "target", label="Target Concentration", value = 4.0, currencySymbolPlacement = "p", decimalPlaces = 1, digitGroupSeparator = ",", decimalCharacter = "."),
-                    selectInput("targetunits", "Target Concentration Units", c("ng")),
-                    selectInput("concunits", "Concentration Units", c("ng")),
+                    selectInput("targetunits", "Target Concentration Units", c("ng", "ug")),
+                    selectInput("concunits", "Concentration Units", c("ng","ug")),
 
                     actionButton("calculate_by_target", "Calculate", icon=icon("play")),
                     
@@ -804,7 +804,7 @@ server <- function(input, output, session) {
                                        add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT90, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 90 min ", input$compound)) %>%
                                        add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT120, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 120 min ", input$compound))
     })
-    p3 <- reactive({plot_ly(sub_data2(), x = ~`dosage (mg/L)`, y = ~`HRT to below Target (Minutes)`, color = ~name, type = 'scatter', mode = 'lines+markers') %>% layout(title = "10.0 ng/L Target - Geosmin", showlegend = TRUE,
+    p3 <- reactive({plot_ly(sub_data2(), x = ~`dosage (mg/L)`, y = ~`HRT to below Target (Minutes)`, color = ~name, type = 'scatter', mode = 'lines+markers') %>% layout(title = paste0(input$target, " (", input$targetunits, "/L) Target"), showlegend = TRUE,
                                          legend = list(orientation = 'h', y=1), hovermode = 'x unified',
                                          xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
                                          yaxis = list(title="HRT to below Target (Minutes)", rangemode = "tozero"))
