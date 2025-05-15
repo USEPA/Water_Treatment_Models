@@ -177,6 +177,7 @@ class PSDMIX(HSDMIX):
         u[LIQUID, PRESAT, 1:] = Cin.sum() # column initially full of presat solution?
         u[RESIN:, PRESAT, :] = Y  # resin initially loaded with PRESAT
         if np.any(u_init): # start with a different distribution in the resin.
+            u[LIQUID, :, 1:] = u_init[LIQUID, :, 1:]
             u[RESIN:, :, :] = u_init[RESIN:, :, :]
              
         u0 = u.reshape(NEQ)  # initial concentration vector for solve_ivp call
