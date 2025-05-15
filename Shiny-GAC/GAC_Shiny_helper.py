@@ -16,6 +16,7 @@ def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz, water_type='O
     ## PREPARE chemical property data
     prop_columns = list(chem_data.columns) ### compounds
     #print(prop_columns)
+    mass_transfer_df = 'None'
     if python: ## testing python
         compounds = prop_columns[0:]
         chem_updated = chem_data.copy()
@@ -35,6 +36,18 @@ def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz, water_type='O
         chem_updated = pd.DataFrame(chem_data[compounds].values, #.astype(float),
                                     columns=compounds,
                                     index=chem_data[prop_columns[0]].values)
+        
+        mass_transfer_df = pd.DataFrame(0, index=['kf', 'dp', 'ds'], columns=compounds)
+
+        for idx in chem_updated.index:
+            try:
+                lower_idx = idx.lower()
+                for comp in compounds:
+                    if lower_idx in ['kf', 'dp', 'ds']:
+                        mass_transfer_df.loc[lower_idx, comp] = chem_updated.loc[idx, comp] * 1
+            except:
+                pass
+
 
         # ## PREPARE k_data information
         # ## assumes shape of the data is the same
@@ -65,7 +78,8 @@ def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz, water_type='O
                                nr=int(nr),
                                nz=int(nz),
                                water_type=water_type,
-                               chem_type=chem_type
+                               chem_type=chem_type,
+                               mass_transfer=mass_transfer_df
                                )
 
         column.model_uncertainty(capacity='None') ## uses model_uncertainty to handle running sim

@@ -1065,8 +1065,8 @@ server <- function(input, output, session) {
   #when a file is uploaded
   #------------------------------------------------------------------------------#  
   #data frame of chemicals and their properties
-  iondat <- dataEditServer("edit-1",  data = paste(file_direc, 'Properties.csv', sep = ''))
-  dataOutputServer("output-1", data = iondat)
+  properties <- dataEditServer("edit-1",  data = paste(file_direc, 'Properties.csv', sep = ''))
+  dataOutputServer("output-1", data = properties)
   
   #data frame of k data for each chemical
   kdat <- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep = ''))
