@@ -47,12 +47,12 @@ import multiprocessing as mp
 import time as ti #time as a variable is used in code, so ti is used
 
 #Read in all associated PSDM functions
-from PSDM_functions import min_per_day, lpg, spar_Jac, foul_params, kf_calc
-from PSDM_functions import find_minimum_df, tortuosity, calc_solver_matrix
-from PSDM_functions import density, viscosity, recalc_k, generate_grid
-from PSDM_functions import interp 
-from PSDM_functions import process_input_data, process_input_file
-from PSDM_functions import logistic, filter_compounds
+from .PSDM_functions import min_per_day, lpg, spar_Jac, foul_params, kf_calc
+from .PSDM_functions import find_minimum_df, tortuosity, calc_solver_matrix
+from .PSDM_functions import density, viscosity, recalc_k, generate_grid
+from .PSDM_functions import interp 
+from .PSDM_functions import process_input_data, process_input_file
+from .PSDM_functions import logistic, filter_compounds
 
 def run_MP_helper(test_column, k, invN, compound, k_mult):
     mp.freeze_support()

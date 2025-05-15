@@ -24,6 +24,27 @@ See also tools found at https://github.com/USEPA/Environmental-Technologies-Desi
 
 This repository is released under the [MIT License](../LICENSE.md).
 
+# Installation
+
+Provided the dependencies in [setup.py](setup.py) are satisfied, this package can be installed from the command line:
+```
+python -m pip install /path/to/PSDM
+```
+
+if you are in the Water_Treatment_Models/PSDM/ folder, then you can also use:
+```
+python -m pip install .
+```
+
+
+The package can also be uninstalled from the command line:
+```
+python -m pip uninstall PSDM
+```
+
+# Status 
+All code in this repository is being provided in a "draft" state and has not been reviewed or cleared by US EPA. This status will be updated as models are reviewed.
+
 EPA Disclaimer
 ==============
 The United States Environmental Protection Agency (EPA) GitHub project code is provided on an "as is" basis and the user assumes responsibility for its use. EPA has relinquished control of the information and no longer has responsibility to protect the integrity , confidentiality, or availability of the information. Any reference to specific commercial products, processes, or services by service mark, trademark, manufacturer, or otherwise, does not constitute or imply their endorsement, recomendation or favoring by EPA. The EPA seal and logo shall not be used in any manner to imply endorsement of any commercial product or activity by EPA or the United States Government.

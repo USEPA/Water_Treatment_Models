@@ -6,8 +6,10 @@ Created on Wed Feb 20 13:18:37 2019
 """
 
 
-import PSDM_tools
+from PSDM import PSDM_tools
 import pandas as pd
+import warnings
+warnings.simplefilter("ignore")
 
 #Example data, user can save this data to Excel file for structure, or provide 
 # data from Excel file for real use

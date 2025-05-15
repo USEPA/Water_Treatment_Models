@@ -29,3 +29,5 @@ PSDM/output.xlsx
 PAC/test_code.py
 PAC/__pycache__/*
 Shiny-GAC/.Rhistory
+
+PSDM/PSDM_models.egg-info/*

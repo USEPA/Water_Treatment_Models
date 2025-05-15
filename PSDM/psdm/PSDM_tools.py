@@ -45,7 +45,7 @@ from scipy.interpolate import interp1d
 import multiprocessing as mp
 
 import PSDM
-from PSDM_functions import find_minimum_df
+from .PSDM_functions import find_minimum_df
 import time as ti
 
 def specific_throughput(column_specs, filter_pfas, k_data, c0, ct,

@@ -20,7 +20,7 @@ plt.close('all') # can be commented out, this just closes any previously generat
 
 #Comment next line in to CHANGE TO WHERE THE PSDM IS STORED ON YOUR MACHINE
 # os.chdir('../')
-import PSDM
+import PSDM.PSDM as PSDM
 os.chdir(srt_dir)
 
 # =============================================================================

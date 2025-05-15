@@ -31,8 +31,6 @@ try:
 except:
     pass
 
-import json
-
 
 #### unit conversion helpers
 lpg = 3.785411784 # liter per gallon conversion
@@ -429,7 +427,6 @@ class PAC_CFPSDM():
             n = nterms
             Bi = kf * rb / Ds / Kd
             LAM = 1 / (1 + (Vw / Vx / Kd)) 
-        #    print(LAM)
             
             q = find_pn(n, LAM, Bi)
             q = np.array(q)
@@ -615,10 +612,6 @@ class PAC_CFPSDM():
         self.dosage = self.orig_dosage * 1 ## reset to original information
         self.duration = self.orig_duration * 1
 
-        # filename = "data_dict.json"
-        # with open(filename, 'w') as file:
-        #     json.dump(data_dict, file, indent=4)
-
         return data_dict
         # return pd.DataFrame(data_dict) # Test -CDS
     
@@ -647,10 +640,6 @@ class PAC_CFPSDM():
                 concs_calced = np.interp(target_HRT_array, conv_t, y_df[compound]) * self.convert_array[i]
 
                 out_dict[compound].loc[key] = concs_calced * 1
-
-        # filename = "out_dict.json"
-        # with open(filename, 'w') as file:
-        #     json.dump(out_dict, file, indent=4)
 
         return out_dict
 
@@ -761,7 +750,7 @@ class PAC_CFPSDM():
         self.duration = original_duration * 1
         self.convert_array = original_conv_array * 1
 
-        return(out_dict)
+        return out_dict
         
 
     def _R_HRT_calculator_for_dosage(self, target_conc: float, target_units='ng', dosage_trials=np.arange(5, 150 + 1, 20), conc_units='same') -> pd.DataFrame:

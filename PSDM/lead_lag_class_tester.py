@@ -6,7 +6,7 @@ Created on Wed Dec 14 15:45:43 2022
 """
 
 # import lead_lag_class
-from lead_lag_class import LLobj
+from PSDM.lead_lag_class import LLobj
 
 import sys
 psdm_loc = 'path_to_PSDM' ## example 'C:/Users/JBurkhar/OneDrive/Desktop/PSDM'
@@ -26,7 +26,7 @@ plt.close('all') # can be commented out, this just closes any previously generat
 
 #Comment next line in to CHANGE TO WHERE THE PSDM IS STORED ON YOUR MACHINE
 # os.chdir('../')
-import PSDM
+import PSDM.PSDM as PSDM
 os.chdir(srt_dir)
 
 ## predefine compounds included with the input files

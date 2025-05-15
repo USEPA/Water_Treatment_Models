@@ -27,8 +27,8 @@ from scipy.interpolate import interp1d
 # import matplotlib.pyplot as plt
 # plt.close('all') # can be commented out, this just closes any previously generated graphics
 
-import PSDM
-from PSDM_functions import lpg, min_per_day #, gm_per_lb
+import PSDM.PSDM as PSDM
+from .PSDM_functions import lpg, min_per_day #, gm_per_lb
 from ixpy import hsdmix
 
 

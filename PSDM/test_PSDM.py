@@ -9,7 +9,7 @@ Created on Thu Apr 11 15:40:42 2019
 
 import numpy as np
 import pandas as pd
-import PSDM
+import PSDM.PSDM as PSDM
 import matplotlib.pyplot as plt
 plt.close()
 from scipy import interpolate
