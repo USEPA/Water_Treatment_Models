@@ -670,9 +670,23 @@ server <- function(input, output, session) {
         df$time <- as.numeric(rownames(df))
         df <- pivot_longer(df, cols = !time, names_to = "name", values_to = "conc")
         df$conc <- as.numeric(unlist(df$conc))
+        
+        ## precalculate C/C0
+        convert_array <- vector(mode="numeric", length=dim(df)[2]-1)
+        units_map <- compounddat()[compounddat()[1] == "C0_units"]
+        c0_map <- compounddat()[compounddat()[1] == "C0"]
+        for (idx in 1:(dim(df)[2]-1)) {
+          convert_array[idx] <- mass_conv[units_map[idx+1]] * as.numeric(c0_map[idx+1])
+        }
+        alt_conc_int <- mapply('/', df$conc, convert_array)
+        df$cc0 <- as.numeric(unlist(alt_conc_int))
+        
         df <- df[order(factor(df$name, levels = colnames(compounddat()))), ]
+        
         pac_obj(df)
-
+        
+ 
+        
         showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message")
         updateTabsetPanel(session, "inTabset", selected = "Concentration Output")
     })
@@ -727,11 +741,21 @@ server <- function(input, output, session) {
     pac_obj_processed <- reactive({
         if (ncol(pac_obj()) > 0) {
             ## TODO: insert c/c0 handling
-            df <- data.frame(
+          
+            if (input$OCunits != "C/C0") {
+              df <- data.frame(
+                  time = pac_obj()$time * time_conv[input$timeunits],
+                  conc = (pac_obj()$conc) / mass_conv[input$OCunits],
+                  name = pac_obj()$name
+              )
+            } else {
+              
+              df <- data.frame(
                 time = pac_obj()$time * time_conv[input$timeunits],
-                conc = (pac_obj()$conc) / mass_conv[input$OCunits],
+                conc = pac_obj()$cc0,
                 name = pac_obj()$name
-            )
+              )
+            }
             colnames(df) <- c(paste0("time (", input$timeunits, ")"), paste0("conc (", input$OCunits, ")"), "name")
             return(df)
         } else {
