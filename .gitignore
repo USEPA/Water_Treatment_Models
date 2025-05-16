@@ -1,6 +1,8 @@
 # Byte-compiled files
 __pycache__/
 *.py[cod]
+*.dcf
+
 PSDM/PSDM_Trichloroethylene-F400.xlsx
 PSDM/best_fits-PSDM.xlsx
 PSDM/Trichloroethylene_F400_example3.png
@@ -11,23 +13,25 @@ PSDM/Example_TCE_F400_example2.xlsx
 PSDM/Example_TCE_F400_example1a.xlsx
 PSDM/Example_TCE_F400_example1.xlsx
 PSDM/.ipynb_checkpoints/Simple_Example-checkpoint.ipynb
-IonExchangeModel/ion_exchange_models.egg-info/*
-IonExchangeModel/build/*
-
 PSDM/Toluene-Tetrachloroethylene-Trichloroethylene_multi.png
 PSDM/Trichloroethylene-Tetrachloroethylene-Toluene_multi.png
 PSDM/*.png
 PSDM/Simple_Example_short.ipynb
+PSDM/output.xlsx
+PSDM/PSDM_models.egg-info/*
+
+IonExchangeModel/ion_exchange_models.egg-info/*
+IonExchangeModel/build/*
+
 Shiny-IEX/.RData
 Shiny-IEX/.Rhistory
+Shiny-IEX/temp_file/*.csv
+
 Shiny-GAC/.Rhistory
 Shiny-GAC/.RData
-/Shiny-GAC/temp_file/*.csv
-/Shiny-IEX/temp_file/*.csv
-*.dcf
-PSDM/output.xlsx
-PAC/test_code.py
-PAC/__pycache__/*
-Shiny-GAC/.Rhistory
+Shiny-GAC/temp_file/*.csv
 
-PSDM/PSDM_models.egg-info/*
+Shiny-PAC/test_code.py
+Shiny-PAC/__pycache__/*
+
+
