@@ -20,9 +20,7 @@ with open("README.md", "rb") as f:
 setup(
     name = "PSDM-models",
     packages = ["PSDM",],
-    # entry_points = {
-    #     "console_scripts": ['ixpy = ixpy.__main__:main']
-    #     },
+
     version = "0.1.0",
     description = "Pore and Surface Diffusion Models",
     long_description = long_descr,
@@ -43,6 +41,5 @@ setup(
         "openpyxl",
         "xlsxwriter",
         f"ixpy @ ..\\..\\Water_Treatment_Models\\IonExchangeModel\\"   
-        ## {os.getcwd()}\\
     ],
     )
