@@ -5,11 +5,14 @@ library(readxl)
 library(shinyjs)
 library(DataEditR)
 library(tidyr)
-# library(BiocVersion) ### needed for colorblindness ## install.packages("BiocManager", repos = "https://cloud.r-project.org")
-# renv::install("bioconductor-source/BiocVersion")## needed for colorBlindness on remote
-library(colorBlindness)
 library(writexl)
 library(shinyalert)
+
+SteppedSequential5Steps <- c("#990F0F", "#B22C2C", "#CC5151", "#E57E7E", "#FFB2B2", 
+                             "#99540F", "#B26F2C", "#CC8E51", "#E5B17E", "#FFD8B2", 
+                             "#6B990F", "#85B22C", "#A3CC51", "#C3E57E", "#E5FFB2", 
+                             "#0F6B99", "#2C85B2", "#51A3CC", "#7EC3E5", "#B2E5FF", 
+                             "#260F99", "#422CB2", "#6551CC", "#8F7EE5", "#BFB2FF") ## from colorBlindness
 
 
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
