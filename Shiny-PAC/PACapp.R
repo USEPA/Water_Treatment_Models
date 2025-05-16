@@ -759,20 +759,20 @@ server <- function(input, output, session) {
     ))
 
     # Format plots
-    p1 <- reactive({plot_ly(pac_obj_processed(), x = ~get(colnames(pac_obj_processed())[1]), y = ~get(colnames(pac_obj_processed())[2]), color = ~name, type = 'scatter', mode = 'lines') %>% layout(title = "Concentration over Time", showlegend = TRUE,
+    p1 <- reactive({plot_ly(pac_obj_processed(), x = ~get(colnames(pac_obj_processed())[1]), y = ~get(colnames(pac_obj_processed())[2]), color = ~name, type = 'scatter', mode = 'lines', colors=SteppedSequential5Steps) %>% layout(title = "Concentration over Time", showlegend = TRUE,
                                                  legend = list(orientation = 'h', x=0.5, y=1), hovermode = 'x unified',
                                                  xaxis = list(title=paste0("Time (", input$timeunits, ")"), gridcolor = 'ffff'),
                                                  yaxis = list(title=paste0("Concentration (", input$OCunits, ")"), rangemode = "tozero"))
     })
-    p2 <- reactive({plot_ly(HRT_obj(), x = ~dosage, y = ~HRT30, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 30 min ", input$compound)) %>% layout(title = input$compound, showlegend = TRUE,
+    p2 <- reactive({plot_ly(HRT_obj(), x = ~dosage, y = ~HRT30, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 30 min ", input$compound), color=SteppedSequential5Steps[1]) %>% layout(title = input$compound, showlegend = TRUE,
                                        legend = list(orientation = 'h', y=1), hovermode = 'x unified',
                                        xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
                                        yaxis = list(title=paste0("Concentration (", input$OCunits2, ")"), rangemode = "tozero")) %>%
-                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT60, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 60 min ", input$compound)) %>%
-                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT90, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 90 min ", input$compound)) %>%
-                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT120, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 120 min ", input$compound))
+                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT60, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 60 min ", input$compound), color=SteppedSequential5Steps[2]) %>%
+                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT90, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 90 min ", input$compound), color=SteppedSequential5Steps[3]) %>%
+                                       add_trace(data = HRT_obj(), x = ~dosage, y = ~HRT120, type = 'scatter', mode = 'lines+markers', name = paste0("HRT: 120 min ", input$compound), color=SteppedSequential5Steps[4])
     })
-    p3 <- reactive({plot_ly(sub_data2(), x = ~`dosage (mg/L)`, y = ~`HRT to below Target (Minutes)`, color = ~name, type = 'scatter', mode = 'lines+markers') %>% layout(title = paste0(input$target, " (", input$targetunits, "/L) Target"), showlegend = TRUE,
+    p3 <- reactive({plot_ly(sub_data2(), x = ~`dosage (mg/L)`, y = ~`HRT to below Target (Minutes)`, color = ~name, type = 'scatter', mode = 'lines+markers', colors=SteppedSequential5Steps) %>% layout(title = paste0(input$target, " (", input$targetunits, "/L) Target"), showlegend = TRUE,
                                          legend = list(orientation = 'h', y=1), hovermode = 'x unified',
                                          xaxis = list(title="Dosage (mg/L)", gridcolor = 'ffff'),
                                          yaxis = list(title="HRT to below Target (Minutes)", rangemode = "tozero"))
