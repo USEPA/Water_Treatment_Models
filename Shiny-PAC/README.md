@@ -123,15 +123,15 @@ NOTE: The following packages must be installed in the Python version being used;
 
 | Input | Description | Default Units
 |--- |--- |---
-|format | |N/A
-|length/diameter | |m
-|temperature | |C
-|height | |m
-|volume | |L
+|format | Shape of the contactor |N/A
+|length/diameter | Length or diameter of contactor (relates to shape) |m
+|height | Height of contactor |m
+|volume | Volume of contactor |L
+|temperature | Temperature of water to be modeled |C
 |flow |The average flow rate through the column. PSDM only considers and average or steady-state condition, not variable flow. |m3/s
 |HRT |Hydraulic retention time. |min
 |CRT |Cell residence time. |min
-|PAC Dosage | |mg/L
+|PAC Dosage | Dosage of powdered activated carbon to be added |mg/L
 |density |Mass per unit volume of bead particle. |gm/ml
 |porosity | The bead porosity is the measure of the bead volume occupied by a solvent, usually water. The factor is between 0 and 1, where 0 represents a bead absent of a solvent and 1 is a bead where all the available space is filled with a solvent. A well packed bead will typically have and EPOR of 0.2. |N/A
 |radius |Bead radius is the measurement of the distance of the bead resin from the center to the surface. |cm
@@ -145,16 +145,16 @@ The Compounds tab contains information about the compounds to be simulated. The 
 ### Compound List
 | Input | Description | Units
 |--- |--- |---
-|K |Freundlich K |
-|1/n |Freundlich 1/n |
-|MW |Molecular Weight |
-|MolarVolume |Molar Volume |
-|C0 |Initial influent concentration |
-|C0_units |Initial influent concentration units |
+|K |Freundlich K | (ug/g)(L/ug)^(1/n)
+|1/n |Freundlich 1/n | unitless
+|MW |Molecular Weight | g/g-mole
+|MolarVolume |Molar Volume | L/g-mole
+|C0 |Initial influent concentration | (spec. in C0_units)
+|C0_units |Initial influent concentration units (ug, ng, mg) |
 |kf |Film transfer diffusion coefficient |cm/s
 |Dp |Pore diffusion coefficient |cm2/s
 |Ds |Surface diffusion coefficient |cm2/s
-|Solubility |Amount of substance that will disolve in water |
+|Solubility |Amount of substance that will disolve in water | mg/L
 
 
 ## References
@@ -162,5 +162,5 @@ The Compounds tab contains information about the compounds to be simulated. The 
 
 ## Development Team
 Jonathan Burkhardt
-
 Cole Sandlin
+Levi Haupert
