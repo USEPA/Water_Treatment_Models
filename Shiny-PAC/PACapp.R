@@ -5,10 +5,14 @@ library(readxl)
 library(shinyjs)
 library(DataEditR)
 library(tidyverse)
-library(colorBlindness)
 library(writexl)
 library(shinyalert)
 
+SteppedSequential5Steps <- c("#990F0F", "#B22C2C", "#CC5151", "#E57E7E", "#FFB2B2", 
+                             "#99540F", "#B26F2C", "#CC8E51", "#E5B17E", "#FFD8B2", 
+                             "#6B990F", "#85B22C", "#A3CC51", "#C3E57E", "#E5FFB2", 
+                             "#0F6B99", "#2C85B2", "#51A3CC", "#7EC3E5", "#B2E5FF", 
+                             "#260F99", "#422CB2", "#6551CC", "#8F7EE5", "#BFB2FF") ## from colorBlindness
 #~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*#
 #------------------------------------------------------------------------------#
 #unit conversions
@@ -564,11 +568,7 @@ server <- function(input, output, session) {
         toggleState("volunits", condition = input$volselect != "Dimensions")
     })
 
-    # format <- reactive({filter(contactor(), name == "format")$value})
-    # lengthdiameter <- reactive({filter(contactor(), name == "length/diameter")$value})
     temperature <- reactive({filter(contactor(), name == "temperature")$value})
-    # height <- reactive({filter(contactor(), name == 'height')$value})
-    # volume <- reactive({filter(contactor(), name == 'volume')$value})
     flow <- reactive({filter(contactor(), name == 'flow')$value})
     HRT <- reactive({filter(contactor(), name == 'HRT')$value})
     CRT <- reactive({filter(contactor(), name == 'CRT')$value})
@@ -580,36 +580,14 @@ server <- function(input, output, session) {
 
     nrv <- reactive(7)
     
-    # formatvec <- reactive({
-    #     formatv <- c(filter(contactor(), name == 'format')$value, formatvector)
 
-    #     return(unique(formatv))
-    # })
-
-    # ldvec <- reactive({
-    #     ldv <- c(filter(contactor(), name == 'length/diameter')$units, ldvector)
-
-    #     return(unique(ldv))
-    # })
-    
     tempvec <- reactive({
         tempv <- c(filter(contactor(), name == 'temperature')$units, tempvector)
 
         return(unique(tempv))
     })
     
-    # heightvec <- reactive({
-    #     heightv <- c(filter(contactor(), name == 'height')$units, heightvector)
 
-    #     return(unique(heightv))
-    # })
-
-    # volvec <- reactive({
-    #     volv <- c(filter(contactor(), name == 'volume')$units, volvector)
-
-    #     return(unique(volv))
-    # })
-    
     flowvec <- reactive({
         flowv <- c(filter(contactor(), name == 'flow')$units, flowvector)
 
@@ -655,25 +633,17 @@ server <- function(input, output, session) {
             #Updating default values with the values that were uploaded#
     #------------------------------------------------------------------------------#    
     observe({
-        # updateNumericInput(session, "ld", value = format(lengthdiameter(), digits = 4, scientific = FALSE))
+
         updateNumericInput(session, "temp", value = temperature())
-        # updateNumericInput(session, "height", value = format(height(), digits = 4, scientific = FALSE))
-        # updateNumericInput(session, "vol", value = format(volume(), digits = 4, scientific = FALSE))
         updateNumericInput(session, "flow", value = format(flow(), digits = 4, scientific = FALSE))
         updateNumericInput(session, "den", value = dens())
         updateNumericInput(session, "por", value = porosity())
         updateNumericInput(session, "rad", value = format(radius(), digits = 4, scientific = FALSE))
         updateNumericInput(session, "nrv", value = nrv())
-
         updateSliderInput(session, "hrt", value = HRT())
         updateSliderInput(session, "crt", value = CRT())
         updateSliderInput(session, "dosage", value = dosage())
-        
-        # updateSelectInput(session, "format", choices = formatvec())
-        # updateSelectInput(session, "ldunits", choices = ldvec())
         updateSelectInput(session, "tempunits", choices = tempvec())
-        # updateSelectInput(session, "heightunits", choices = heightvec())
-        # updateSelectInput(session, "volunits", choices = volvec())
         updateSelectInput(session, "flowunits", choices = flowvec())
         updateSelectInput(session, "denunits", choices = denvec())
         updateSelectInput(session, "radunits", choices = radvec())
@@ -690,9 +660,7 @@ server <- function(input, output, session) {
     sub_data <- reactiveVal(data.frame())
     sub_data2 <- reactiveVal(data.frame())
     
-    # pac_df <- reactiveVal(data.frame())
-    # compounds_df <- reactiveVal(data.frame())
-    # contactor_df <- reactiveVal(data.frame())
+    alt_conc <- reactiveVal(data.frame())
 
     observeEvent(input$run_button, {
         # Pass inputs to Python helper
