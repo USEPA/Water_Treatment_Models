@@ -6,6 +6,7 @@ Tools in this repository:
 2. Ion Exchange Model (IonExchangeModel Folder)
 3. Graphical User Interface for Granular Activated Carbon Modeling (Shiny-GAC Folder)
 4. Graphical User Interface for Ion Exchange Modeling (Shiny-IEX Folder) 
+5. Graphical User Interface for Powdered Activated Carbon Modeling (Shiny-PAC Folder)
 
 
 Both tools #1 and #2 are programmed in Python. GUI for Ion Exchange Model was developed in R and requires RStudio or R/Shiny installed. Additional resources and information associated with either can be found in their respective folders. These tools focus on predicting water treatment unit operation effectiveness, specifically how well treatment technologies (Granular Activated Carbon and Ion Exchange Resins) will work for removing contaminants.
