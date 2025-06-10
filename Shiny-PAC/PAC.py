@@ -20,7 +20,7 @@ import sys
 import os
 cwd = os.getcwd()
 split_cwd = cwd.split("\\")
-sys_path = "/".join(split_cwd[:-1]+["PSDM"])
+sys_path = "/".join(split_cwd[:-1]+["PSDM/psdm"])
 sys.path.append(sys_path)
 
 from PSDM_functions import calc_solver_matrix, viscosity, density
