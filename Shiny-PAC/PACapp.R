@@ -680,8 +680,6 @@ server <- function(input, output, session) {
         )
         
       
-        
-        print(input$dosage)
         df <- as.data.frame(R_run_PAC(contactor_session, pac_session, compounddat(), input$nrv))
         df$time <- as.numeric(rownames(df))
         df <- pivot_longer(df, cols = !time, names_to = "name", values_to = "conc")
