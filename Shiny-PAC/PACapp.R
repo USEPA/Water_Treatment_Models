@@ -324,7 +324,7 @@ ui <- fluidPage(
                                     digitGroupSeparator = ",",
                                     decimalCharacter = "."
                                 )),
-                                column(3, selectInput("ldunits", "Length/diameter Units", c("m", "cm", "ft", "in")))
+                                column(3, selectInput("ldunits", "Length/Diameter Units", c("m", "cm", "ft", "in")))
                             ),
                         
                             fluidRow(
