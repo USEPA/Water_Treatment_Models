@@ -388,7 +388,7 @@ ui <- fluidPage(
                             fluidRow(
                                 column(3,),
                                 column(3,
-                                    sliderInput("dosage", "PAC Dosage", 0, 20, 0),
+                                    sliderInput("dosage", "PAC Dosage", 0, 150, 0),
                                 ),
                                 column(3, selectInput("dosageunits","Dosage Units",c("mg/L")))
                             ),
