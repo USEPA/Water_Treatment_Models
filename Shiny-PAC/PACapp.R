@@ -536,8 +536,8 @@ server <- function(input, output, session) {
     output$selectedfile <- renderTable(fileuploadedname)
 
     file_direc <- paste(getwd(), '/temp_file/', sep = '')
-    contactor<-reactiveVal(read.csv(paste(file_direc, "Contactor.csv", sep = '')))
-    pac<-reactiveVal(read.csv(paste(file_direc, "PAC.csv", sep = '')))
+    contactor <- reactiveVal(read.csv(paste(file_direc, "Contactor.csv", sep = '')))
+    pac <- reactiveVal(read.csv(paste(file_direc, "PAC.csv", sep = '')))
 
     test_df <- data.frame(C = c('format', 'length/diameter', 'height', 'volume'))
     flags <- reactive({test_df$C %in% contactor()$name})
@@ -666,7 +666,23 @@ server <- function(input, output, session) {
         # Pass inputs to Python helper
 
         # Process concentration output
-        df <- as.data.frame(R_run_PAC(contactor(), pac(), compounddat(), input$nrv))
+      
+        contactor_session <- data.frame(
+          name = c('format', 'length/diameter', 'temperature', 'height', 'volume', 'flow', 'HRT', 'CRT', 'PAC Dosage'),
+          value = c(input$format, input$ld, input$temp, input$height, input$vol, input$flow, input$hrt, input$crt, input$dosage),
+          units = c(NaN , input$ldunits, input$tempunits, input$heightunits, input$volunits, input$flowunits, input$HRTunits, input$CRTunits, input$dosageunits)
+        )
+
+        pac_session <- data.frame(
+          name = c('density', 'porosity', 'radius'),
+          value = c(input$den, input$por, input$rad),
+          units = c(input$denunits, NaN, input$radunits)
+        )
+        
+      
+        
+        print(input$dosage)
+        df <- as.data.frame(R_run_PAC(contactor_session, pac_session, compounddat(), input$nrv))
         df$time <- as.numeric(rownames(df))
         df <- pivot_longer(df, cols = !time, names_to = "name", values_to = "conc")
         df$conc <- as.numeric(unlist(df$conc))
