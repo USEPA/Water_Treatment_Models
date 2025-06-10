@@ -324,7 +324,7 @@ ui <- fluidPage(
                                     digitGroupSeparator = ",",
                                     decimalCharacter = "."
                                 )),
-                                column(3, selectInput("ldunits", "Length/diameter Units", c("m")))
+                                column(3, selectInput("ldunits", "Length/diameter Units", c("m", "cm", "ft", "in")))
                             ),
                         
                             fluidRow(
@@ -338,7 +338,7 @@ ui <- fluidPage(
                                     digitGroupSeparator = ",",
                                     decimalCharacter = "."
                                 )),
-                                column(3, selectInput("heightunits", "Height Units", c("m")))
+                                column(3, selectInput("heightunits", "Height Units", c("m", "cm", "ft", "in")))
                             ),
                         
                             fluidRow(
@@ -352,7 +352,7 @@ ui <- fluidPage(
                                     digitGroupSeparator = ",",
                                     decimalCharacter = "."
                                 )),
-                                column(3, selectInput("volunits", "Volume Units", c("L")))
+                                column(3, selectInput("volunits", "Volume Units", c("L", "mL", "gal")))
                             ),
 
                             fluidRow(
@@ -366,7 +366,7 @@ ui <- fluidPage(
                                     digitGroupSeparator = ",",
                                     decimalCharacter = "."
                                 )),
-                                column(3, selectInput("flowunits", "Flow Units", c("m3/s")))
+                                column(3, selectInput("flowunits", "Flow Units", c("m3/s", "gpm", "MGD", "Lpm", "mL/min")))
                             ),
 
                             fluidRow(
