@@ -706,11 +706,25 @@ server <- function(input, output, session) {
     })
 
     observeEvent(input$calculate_by_target, {
+      
         # Pass inputs to Python helper
-        contactor_df <- contactor()[,-1]
-        rownames(contactor_df) <- contactor()[,1]
-        pac_df <- pac()[,-1]
-        rownames(pac_df) <- pac()[,1]
+        contactor_session <- data.frame(
+          name = c('format', 'length/diameter', 'temperature', 'height', 'volume', 'flow', 'HRT', 'CRT', 'PAC Dosage'),
+          value = c(input$format, input$ld, input$temp, input$height, input$vol, input$flow, input$hrt, input$crt, input$dosage),
+          units = c(NaN , input$ldunits, input$tempunits, input$heightunits, input$volunits, input$flowunits, input$HRTunits, input$CRTunits, input$dosageunits)
+        )
+        
+        pac_session <- data.frame(
+          name = c('density', 'porosity', 'radius'),
+          value = c(input$den, input$por, input$rad),
+          units = c(input$denunits, NaN, input$radunits)
+        )
+        
+        contactor_df <- contactor_session[,-1]
+        rownames(contactor_df) <- contactor_session[,1]
+        pac_df <- pac_session[,-1]
+        rownames(pac_df) <- pac_session[,1]
+        
         compounds_df <- compounddat()[,-1, drop = FALSE]
         rownames(compounds_df) <- compounddat()[,1]
         PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, nr=input$nrv)
