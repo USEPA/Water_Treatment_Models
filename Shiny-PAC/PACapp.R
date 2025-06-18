@@ -536,27 +536,29 @@ server <- function(input, output, session) {
     output$selectedfile <- renderTable(fileuploadedname)
 
     file_direc <- paste(getwd(), '/temp_file/', sep = '')
-    contactor <- reactiveVal(read.csv(paste(file_direc, "Contactor.csv", sep = '')))
-    pac <- reactiveVal(read.csv(paste(file_direc, "PAC.csv", sep = '')))
+    # contactor <- reactiveVal(read.csv(paste(file_direc, "Contactor.csv", sep = '')))
+    # pac <- reactiveVal(read.csv(paste(file_direc, "PAC.csv", sep = '')))
+    contactor <- read.csv(paste(file_direc, "Contactor.csv", sep = ''))
+    pac <- read.csv(paste(file_direc, "PAC.csv", sep = ''))
 
-    test_df <- data.frame(C = c('format', 'length/diameter', 'height', 'volume'))
-    flags <- reactive({test_df$C %in% contactor()$name})
-
-    observe({
-        # if (flags()[1] & flags()[2] & flags()[3]) {
-        if (flags()[1]) {
-            updateSelectInput(session, "format", choices = unique(c(filter(contactor(), name == 'format')$value, formatvector)))
-            updateNumericInput(session, "ld", value = filter(contactor(), name == 'length/diameter')$value)
-            updateSelectInput(session, "ldunits", choices = unique(c(filter(contactor(), name == 'length/diameter')$units, ldvector)))
-            updateNumericInput(session, "height", value = filter(contactor(), name == 'height')$value)
-            updateSelectInput(session, "heightunits", choices = unique(c(filter(contactor(), name == 'height')$units, heightvector)))
-            updateRadioButtons(session, "volselect", selected = "Dimensions")
-        } else if (flags()[4]) {                         
-            updateNumericInput(session, "vol", value = filter(contactor(), name == 'volume')$value)
-            updateSelectInput(session, "vol", choices = unique(c(filter(contactor(), name == 'volume')$units, volvector)))
-            updateRadioButtons(session, "volselect", selected = "Volume")
-        }
-    })
+    # test_df <- data.frame(C = c('format', 'length/diameter', 'height', 'volume'))
+    # flags <- reactive({test_df$C %in% contactor$name})
+    # 
+    # observe({
+    #     # if (flags()[1] & flags()[2] & flags()[3]) {
+    #     if (flags()[1]) {
+    #         updateSelectInput(session, "format", choices = unique(c(filter(contactor, name == 'format')$value, formatvector)))
+    #         updateNumericInput(session, "ld", value = filter(contactor, name == 'length/diameter')$value)
+    #         updateSelectInput(session, "ldunits", choices = unique(c(filter(contactor, name == 'length/diameter')$units, ldvector)))
+    #         updateNumericInput(session, "height", value = filter(contactor, name == 'height')$value)
+    #         updateSelectInput(session, "heightunits", choices = unique(c(filter(contactor, name == 'height')$units, heightvector)))
+    #         updateRadioButtons(session, "volselect", selected = "Dimensions")
+    #     } else if (flags()[4]) {                         
+    #         updateNumericInput(session, "vol", value = filter(contactor, name == 'volume')$value)
+    #         updateSelectInput(session, "volunits", choices = unique(c(filter(contactor, name == 'volume')$units, volvector)))
+    #         updateRadioButtons(session, "volselect", selected = "Volume")
+    #     }
+    # })
 
     observe({
         toggleState("format", condition = input$volselect != "Volume")
@@ -568,66 +570,63 @@ server <- function(input, output, session) {
         toggleState("volunits", condition = input$volselect != "Dimensions")
     })
 
-    temperature <- reactive({filter(contactor(), name == "temperature")$value})
-    flow <- reactive({filter(contactor(), name == 'flow')$value})
-    HRT <- reactive({filter(contactor(), name == 'HRT')$value})
-    CRT <- reactive({filter(contactor(), name == 'CRT')$value})
-    dosage <- reactive({filter(contactor(), name == 'PAC Dosage')$value})
+    temperature <- reactive({filter(contactor, name == "temperature")$value})
+    flow <- reactive({filter(contactor, name == 'flow')$value})
+    HRT <- reactive({filter(contactor, name == 'HRT')$value})
+    CRT <- reactive({filter(contactor, name == 'CRT')$value})
+    dosage <- reactive({filter(contactor, name == 'PAC Dosage')$value})
 
-    dens <- reactive({filter(pac(), name == 'density')$value})
-    porosity <- reactive({filter(pac(), name == 'porosity')$value})
-    radius <- reactive({filter(pac(), name == 'radius')$value})
+    dens <- reactive({filter(pac, name == 'density')$value})
+    porosity <- reactive({filter(pac, name == 'porosity')$value})
+    radius <- reactive({filter(pac, name == 'radius')$value})
 
     nrv <- reactive(7)
     
 
     tempvec <- reactive({
-        tempv <- c(filter(contactor(), name == 'temperature')$units, tempvector)
+        tempv <- c(filter(contactor, name == 'temperature')$units, tempvector)
 
         return(unique(tempv))
     })
     
 
     flowvec <- reactive({
-        flowv <- c(filter(contactor(), name == 'flow')$units, flowvector)
+        flowv <- c(filter(contactor, name == 'flow')$units, flowvector)
 
         return(unique(flowv))
     })
     
     denvec <- reactive({
-        denv <- c(filter(pac(), name == 'density')$units, denvector)
+        denv <- c(filter(pac, name == 'density')$units, denvector)
 
         return(unique(denv))
     })
     
     radvec <- reactive({
-        radv <- c(filter(pac(), name == 'radius')$units, radvector)
+        radv <- c(filter(pac, name == 'radius')$units, radvector)
 
         return(unique(radv))
     })
 
     HRTvec <- reactive({
-        HRTv <- c(filter(contactor(), name == 'HRT')$units, HRTvector)
+        HRTv <- c(filter(contactor, name == 'HRT')$units, HRTvector)
 
         return(unique(HRTv))
     })
 
     CRTvec <- reactive({
-        CRTv <- c(filter(contactor(), name == 'CRT')$units, CRTvector)
+        CRTv <- c(filter(contactor, name == 'CRT')$units, CRTvector)
 
         return(unique(CRTv))
     })
 
     dosagevec <- reactive({
-        dosagev <- c(filter(contactor(), name == 'PAC Dosage')$units, dosagevector)
+        dosagev <- c(filter(contactor, name == 'PAC Dosage')$units, dosagevector)
 
         return(unique(dosagev))
     })
 
-    compoundvec <- reactive({
-        compounds <- compounddat()[,-1]
-        compoundv <- colnames(compounds)
-    })
+    
   
     #------------------------------------------------------------------------------#
             #Updating default values with the values that were uploaded#
@@ -650,11 +649,16 @@ server <- function(input, output, session) {
         updateSelectInput(session, "HRTunits", choices = HRTvec())
         updateSelectInput(session, "CRTunits", choices = CRTvec())
         updateSelectInput(session, "dosageunits", choices = dosagevec())
-        updateSelectInput(session, "compound", choices = compoundvec())
+        # updateSelectInput(session, "compound", choices = compoundvec())
     })
 
     compounddat <- dataEditServer("edit-1",  data = paste(file_direc, 'Compounds.csv', sep = ''))
     dataOutputServer("output-1", data = compounddat)
+    
+    compoundvec <- reactive({
+      compounds <- compounddat()[,-1]
+      compoundv <- colnames(compounds)
+    })
 
     pac_obj <- reactiveVal(data.frame())
     sub_data <- reactiveVal(data.frame())
@@ -678,8 +682,7 @@ server <- function(input, output, session) {
           value = c(input$den, input$por, input$rad),
           units = c(input$denunits, NaN, input$radunits)
         )
-        
-      
+
         df <- as.data.frame(R_run_PAC(contactor_session, pac_session, compounddat(), input$nrv))
         df$time <- as.numeric(rownames(df))
         df <- pivot_longer(df, cols = !time, names_to = "name", values_to = "conc")
@@ -698,8 +701,6 @@ server <- function(input, output, session) {
         df <- df[order(factor(df$name, levels = colnames(compounddat()))), ]
         
         pac_obj(df)
-        
- 
         
         showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message")
         updateTabsetPanel(session, "inTabset", selected = "Concentration Output")
@@ -842,8 +843,8 @@ server <- function(input, output, session) {
             paste("data-", Sys.Date(), ".xlsx", sep="")
             },
             content=function(file) {
-                sheets <- list("Contactor" = contactor(),
-                            "PAC Characteristics" = pac(),
+                sheets <- list("Contactor" = contactor,
+                            "PAC Characteristics" = pac,
                             "Compounds" = compounddat(),
                             "Concentration Output" = pac_obj_processed(),
                             "Concentration by Dosage" = sub_data_processed(),
