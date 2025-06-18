@@ -105,7 +105,7 @@ cfoulingvector <- c("halogenated alkenes", "halogenated alkanes", "halogenated a
 
 notificationDuration <- 10 # Number of seconds to display the notification
 
-reticulate::source_python("GAC_Shiny_helper.py")
+reticulate::source_python("./GAC_Shiny_helper.py")
 
 #------------------------------------------------------------------------------#
                               #read_in_files
