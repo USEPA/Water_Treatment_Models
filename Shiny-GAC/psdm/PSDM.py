@@ -1403,7 +1403,10 @@ class PSDM():
             
             ## save input values for later use
             self.mass_transfer_data.loc['kf'] = kf_v
-            self.mass_transfer_data.loc['dp'] = dp_v / tortu ## now adjust for tortuosity ## Diyuan Wang
+            if water_type == 'Organic Free':
+                self.mass_transfer_data.loc['dp'] = dp_v / tortu ## now adjust for tortuosity ## Diyuan Wang
+            else:
+                self.mass_transfer_data.loc['dp'] = dp_v * 1
             self.mass_transfer_data.loc['ds'] = ds_v
             
             d = (ds_v/(dp_v/tortu))[self.compounds] ## now adjust for tortuosity ## Diyuan Wang
