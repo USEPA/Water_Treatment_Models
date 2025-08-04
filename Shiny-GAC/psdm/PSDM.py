@@ -1364,7 +1364,7 @@ class PSDM():
         ## calculate everything first, replace as needed
         kf_v = kf_calc(multi_p, self.re, sc, ebed, corr='Chern and Chien')
         
-        dp_v = (difl/(tortu))       #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
+        dp_v = difl * 1   ## dp_v is just difl here, to avoid double counting tortuosity  ## Diyuan Wang     #*column_prop.loc['epor'] #porosity not used in AdDesignS appendix, removed to match
         
         self.mass_transfer_data = self.mass_transfer.copy()
         
@@ -1403,10 +1403,10 @@ class PSDM():
             
             ## save input values for later use
             self.mass_transfer_data.loc['kf'] = kf_v
-            self.mass_transfer_data.loc['dp'] = dp_v
+            self.mass_transfer_data.loc['dp'] = dp_v / tortu ## now adjust for tortuosity ## Diyuan Wang
             self.mass_transfer_data.loc['ds'] = ds_v
             
-            d = (ds_v/dp_v)[self.compounds]
+            d = (ds_v/(dp_v/tortu))[self.compounds] ## now adjust for tortuosity ## Diyuan Wang
             
             qe = molar_k * cb0**xn_v
             qte = qe.sum()
