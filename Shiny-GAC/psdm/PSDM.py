@@ -1394,23 +1394,22 @@ class PSDM():
                     kf_v[cdx] = self.mass_transfer[cdx]['kf']
                 if self.mass_transfer[cdx]['dp'] > 0.:
                     dp_v[cdx] = self.mass_transfer[cdx]['dp']
+                else:
+                    dp_v[cdx] /= tortu ## now adjust for tortuosity ## Diyuan Wang
                 if self.mass_transfer[cdx]['ds'] > 0.:
                     ds_v[cdx] = self.mass_transfer[cdx]['ds']
                     ### should this be before or after the fouling? 
             
             if water_type != 'Organic Free':
-                ds_v /= 1e10  #original code =1e-30, but this caused instability
+                ds_v /= 1e15  #original code =1e-30, but this caused instability
             
             ## save input values for later use
-            self.mass_transfer_data.loc['kf'] = kf_v
-            if water_type == 'Organic Free':
-                self.mass_transfer_data.loc['dp'] = dp_v / tortu ## now adjust for tortuosity ## Diyuan Wang
-            else:
-                self.mass_transfer_data.loc['dp'] = dp_v * 1
-            self.mass_transfer_data.loc['ds'] = ds_v
+            self.mass_transfer_data.loc['kf'] = kf_v * 1
+            self.mass_transfer_data.loc['dp'] = dp_v * 1
+            self.mass_transfer_data.loc['ds'] = ds_v * 1
             
-            d = (ds_v/(dp_v/tortu))[self.compounds] ## now adjust for tortuosity ## Diyuan Wang
-            
+            d = (ds_v/dp_v)[self.compounds]
+
             qe = molar_k * cb0**xn_v
             qte = qe.sum()
                        
@@ -1426,7 +1425,7 @@ class PSDM():
             
             eds = (ds_v*dgs*tau/(rad**2))[self.compounds]
             eds[eds < 1e-130] = 1e-130 #set lower limit of eds
-            edp = (dp_v*dgp*tau/(rad**2))[self.compounds]
+            edp = (dp_v*tortu*dgp*tau/(rad**2))[self.compounds] ## added tortu here to correct double count error, JBB
                         
             # from orthog(n)
             beds = (eds + d*edp) * edd
