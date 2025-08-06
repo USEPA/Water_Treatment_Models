@@ -471,7 +471,7 @@ effdat_prep <- function(eff_pivoted) {
 #------------------------------------------------------------------------------#  
 columnspecs_prep <- function(prunits, LengthUnits, wunits, FlowrateUnits, DiameterUnits, prv, EPORv, psdfrv, pdv, adv, Lv, wv, Fv, Dv, tortuv, conc_units, tunits2) {
   data.frame(
-    name = c('CarbondID', 'radius', 'porosity', 'psdfr', 'particleDensity', 'apparentDensity', 'length', 'weight', 'flowrate', 'diameter', 'tortuosity', 'influentID', 'effluentID', 'units', 'time'),
+    name = c('carbonID', 'radius', 'porosity', 'psdfr', 'particleDensity', 'apparentDensity', 'length', 'weight', 'flowrate', 'diameter', 'tortuosity', 'influentID', 'effluentID', 'units', 'time'),
     values = c('F400', prv, EPORv, psdfrv, pdv, adv, Lv, wv, Fv, Dv, tortuv, 'influent', 'effluent', conc_units, tunits2),
     units = c(NA, prunits, NA, NA, 'g/ml', 'g/ml', LengthUnits, wunits, FlowrateUnits, DiameterUnits, NA, NA, NA, NA, NA)
   )
@@ -1121,6 +1121,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$run_button, {
     if (error_handling() != 1) {
+      #### SAVE STATE
       tryCatch({
         showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
         out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
@@ -1149,6 +1150,7 @@ server <- function(input, output, session) {
   output$FitK <- renderTable(kdataframe)
   
   observeEvent(input$fitting, {
+    #### SAVE STATE
     if (nrow(out()) > 2) {
       showNotification("This might take several minutes.", duration = notificationDuration, closeButton = TRUE, type = "message")
       showNotification("Fitting data.", duration = notificationDuration, closeButton = TRUE, type = "message")
@@ -1175,6 +1177,8 @@ server <- function(input, output, session) {
   
   #Rerunning the analysis with fitted kdata
   observeEvent(input$Use, {
+    ### NEED TO WRITE ALL CURRENT INFO OUT
+    #### SAVE STATE
     write.csv(kdat(), paste(file_direc, 'Kdata2.csv', sep = ''), row.names = FALSE)
     write.csv(kdat_fitted(), paste(file_direc, 'Kdata.csv', sep = ''), row.names = FALSE)
     kdat<- dataEditServer("edit-2", data = paste(file_direc, 'Kdata.csv', sep = ''))
