@@ -863,6 +863,8 @@ class PSDM():
                     for xn in xn_range:
                         self.test_range = np.array([k*k_mult[xn]])
                         self.xn_range = np.array([xn])
+                        self.k_data.loc['K'][compound] = k * k_mult[xn]
+                        self.k_data.loc['1/n'][compound] = xn * 1
                         
                         comp, k_v, xn_v, ssqs, md = self.run_psdm_kfit(compound)
                         data_store.append([k, xn_v, ssqs.values[0][0]])
