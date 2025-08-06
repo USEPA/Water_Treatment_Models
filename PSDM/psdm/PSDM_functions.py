@@ -98,7 +98,7 @@ def process_input_file(filename, data_sheet='data',\
     for dim in dims.keys():
         val = dims[dim]
         unit = (c_data['units'][val]).lower() # converts everything to lowercase
-        tmp_value = c_data['value'][val]
+        tmp_value = float(c_data['value'][val])
         if unit == 'cm':
             column_data.loc[dim] = tmp_value * 1.
         elif unit == 'mm':
@@ -114,14 +114,14 @@ def process_input_file(filename, data_sheet='data',\
     for rho in rhos.keys():
         val = rhos[rho]
         unit = (c_data['units'][val]).lower()
-        tmp_value = c_data['value'][val] 
+        tmp_value = float(c_data['value'][val]) 
         if unit == 'g/ml' or unit == 'g/cm3':
             column_data.loc[rho] = tmp_value * 1.
         elif unit == 'lb/ft3':
             column_data.loc[rho] = tmp_value / 62.427973725314 #magic #
     #flowrate = ml/min
     unit = (c_data['units']['flowrate']).lower()
-    flrt = c_data['value']['flowrate']
+    flrt = float(c_data['value']['flowrate'])
     if unit == 'ml/min' or unit == 'cm3/min':
         column_data.loc['flrt'] = flrt * 1.
     elif unit == 'lpm' or unit == 'l/min':
@@ -136,7 +136,7 @@ def process_input_file(filename, data_sheet='data',\
         column_data.loc['flrt'] = flrt * cm_per_ft**3
     # carbon mass = grams
     unit = (c_data['units']['weight']).lower()
-    wt = c_data['value']['weight']
+    wt = float(c_data['value']['weight'])
     if unit == 'g' or unit == 'gm':
         column_data.loc['wt'] = wt * 1.
     elif unit == 'lb':
@@ -148,9 +148,9 @@ def process_input_file(filename, data_sheet='data',\
     elif unit == 'mton' or unit == 'metricton':
         column_data.loc['wt'] = wt * 1e3 * 1e3 #1000 kg per metric ton
     #unitless
-    column_data.loc['tortu'] = c_data['value']['tortuosity'] * 1.
-    column_data.loc['epor'] = c_data['value']['porosity'] * 1.
-    column_data.loc['psdfr'] = c_data['value']['psdfr'] * 1.
+    column_data.loc['tortu'] = float(c_data['value']['tortuosity']) * 1.
+    column_data.loc['epor'] = float(c_data['value']['porosity']) * 1.
+    column_data.loc['psdfr'] = float(c_data['value']['psdfr']) * 1.
     column_data.loc['influentID'] = c_data['value']['influentID']
     column_data.loc['effluentID'] = c_data['value']['effluentID']
     #add more units handling # some redundancy from __init__ in psdm
