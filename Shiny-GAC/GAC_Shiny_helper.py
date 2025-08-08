@@ -118,6 +118,17 @@ def run_PSDM_fitter(columndata, chem_data, kdata, infdat, effdat, nr, nz, water_
         chem_updated = pd.DataFrame(chem_data[compounds].values, 
                                     columns=compounds,
                                     index=chem_data[prop_columns[0]].values)
+        
+        mass_transfer_df = pd.DataFrame(0, index=['kf', 'dp', 'ds'], columns=compounds)
+
+        for idx in chem_updated.index:
+            try:
+                lower_idx = idx.lower()
+                for comp in compounds:
+                    if lower_idx in ['kf', 'dp', 'ds']:
+                        mass_transfer_df.loc[lower_idx, comp] = chem_updated.loc[idx, comp] * 1
+            except:
+                pass
 
 
     midx = [(i, j) for i in [column_info['influentID'], column_info['effluentID']] for j in compounds]
@@ -143,6 +154,8 @@ def run_PSDM_fitter(columndata, chem_data, kdata, infdat, effdat, nr, nz, water_
                                nz=int(nz),
                                water_type=water_type,
                                chem_type=chem_type,
+                               mass_transfer=mass_transfer_df,
+                               artificial_point=True,
                                )
 
         try:

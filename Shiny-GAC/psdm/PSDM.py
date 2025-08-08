@@ -286,11 +286,13 @@ class PSDM():
         self.k_by_xn_factor = {} ## relationship between K and 1/n for a calculated q, should be dictionary of interpolating functions
         self.foul_mult_estimates = {comp: 1 for comp in self.compounds}  # creates list with 1x factor stored ## used to store estimate of fouling impact
         
+        self.ap = kw.get('artificial_point', False)
+
         if len(k_data) == 0:
             self.k_data = pd.DataFrame(index=['K','1/n', 'q', 'brk','AveC'], \
                                         columns=self.compounds)
             for comp in self.compounds:
-                k, q, classifier, brk, aveC, k_func, foul_mult_est = self.__calculate_capacity(comp)
+                k, q, classifier, brk, aveC, k_func, foul_mult_est = self.__calculate_capacity(comp, artificial_point=self.ap)
                 if np.isnan(foul_mult_est):
                     foul_mult_est = 1.25 ## reasonable estimate for fouling if .__calculate_capacity returns nan
                 self.k_data[comp] = np.array([k, self.xn, q, brk, aveC])
@@ -306,7 +308,7 @@ class PSDM():
                 impacted = tmp_assume['compound'].values
                 for comp in self.compounds:
                     if comp in impacted:
-                        k, q, classifier, brk, aveC, k_func, foul_mult_est = self.__calculate_capacity(comp)
+                        k, q, classifier, brk, aveC, k_func, foul_mult_est = self.__calculate_capacity(comp, artificial_point=self.ap)
                         self.k_data[comp] = np.array([k, self.xn, q, brk, aveC])
                         
                         self.k_by_xn_factor[comp] = k_func
@@ -403,7 +405,7 @@ class PSDM():
                                             fill_value='extrapolate')
             return data_store
         
-    def __calculate_capacity(self, compound):
+    def __calculate_capacity(self, compound, artificial_point=False):
         ## retunrs k, q_meas, breakthrough_code, breakthrough_time, aveC, k_function, foul_mult_est
         k = 0.
         q_meas = 0.
@@ -420,11 +422,11 @@ class PSDM():
         k_function = interp1d(xn_f_range, np.ones(len(xn_f_range))) ## creates empty function so something will be returned, need to update
         
         ### get influent and effluent data
-        infl = self.data_df[self.influent, compound]
+        infl = self.data_df[self.influent, compound].copy()
         infl[infl == 0] = 1e-3  ### prevents divide by zero error
         aveC = infl.mean()              #calculates average influent concentration
 
-        effl = self.data_df[self.carbon, compound]
+        effl = self.data_df[self.carbon, compound].copy()
 
         ## create interpolating functions for influent and effluent
         f_inf = interp1d(infl.index, infl.values, fill_value='extrapolate') ## need to update
@@ -488,17 +490,37 @@ class PSDM():
             if not brk_found:
                 ## Try fitting to a simplified logistic function first
                 c_bound_low = np.min([0.99 * aveC, effl.values[0]])
-                c_bound_high = np.max([aveC, effl.values[0]])
+                c_bound_high = np.max([1 * aveC, effl.values[0]])
                 try:
                     params, pcov = curve_fit(logistic, effl.index, effl.values, 
-                                             p0=(aveC, 5, 0.1),
-                                             bounds=((c_bound_low, 0, 0),
-                                                     (c_bound_high, 1e3, 1)),
-                                             maxfev=10000
-                                             )
-                    
+                                            p0=(aveC, 5, 0.1),
+                                            bounds=((c_bound_low, 0, 0),
+                                                    (c_bound_high, 1e3, 1)),
+                                            maxfev=10000
+                                            )
+
                     breakthrough_time = np.round((params[1] + np.log(99)) / params[2], 0) ## rounds to nearest day, for 99% breakthrough relative to C0/AveC
                     
+                    ## add artificial point 
+                    if artificial_point and len(self.compounds) == 1:
+                        ## only can add artificial point if single compound is present
+                        ## to avoid unintended issues with multiple endpoints
+
+                        def find_time(perc, c0, a, b):
+                            return -(np.log(1/perc - 1) - a)/b, perc * c0
+                        
+                        perc = 0.9 ### put a point at 90% projected breakthrough
+                        if effl.values[-1]/infl.values[0] < 0.5: ## only do this if C/C0 of final point is below 50%
+                            
+                            time_to_perc, c_perc = find_time(perc, *params)
+                            time_rounded = float(np.round(time_to_perc, 3))
+
+                            self.data_df.loc[time_rounded, (self.influent, compound)] = aveC * 1
+
+                            self.data_df.loc[time_rounded, (self.carbon, compound)] = c_perc * 1
+                            
+                            
+
                     if breakthrough_time >= self.duration: ## rejects solution if breakthrough time doesn't exceed data duration (should have been caught)
                         brk_found = True
                         
@@ -519,6 +541,9 @@ class PSDM():
                     if breakthrough_code == 'logistic' and breakthrough_time > 2000:
                             ## prevents an extremely large breakthrough time, caps at data available duration
                             breakthrough_time = self.duration * 1
+
+                    
+
                             
                 except Exception as e:
                     print('Logistic search failed: ', e)
