@@ -603,7 +603,7 @@ tags$style(HTML("
 #------------------------------------------------------------------------------#                      
       sidebarLayout(
         sidebarPanel(
-          fileInput("file1", "Choose .xlsx File", accept = ".xlsx"),
+          fileInput("file1", "Choose .xlsx File", accept = c(".xlsx", ".xlsm")),
           tableOutput("selectedfile"),
 
           br(),

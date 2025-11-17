@@ -34,4 +34,4 @@ Shiny-GAC/temp_file/*.csv
 Shiny-PAC/test_code.py
 Shiny-PAC/__pycache__/*
 
-
+*_test.ipynb
