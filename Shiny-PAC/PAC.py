@@ -23,7 +23,7 @@ split_cwd = cwd.split("\\")
 sys_path = "/".join(split_cwd[:-1]+["PSDM/psdm"])
 sys.path.append(sys_path)
 
-from PSDM_functions import calc_solver_matrix, viscosity, density
+from PSDM_functions import viscosity, density   #, calc_solver_matrix
 
 try:
     import mkl
@@ -72,6 +72,315 @@ conc_convert = {'ug/L': 1, 'ug': 1,
 
 # conc_convert
 
+
+
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Jun 30 10:54:37 2020
+
+Calculate collocation operators and quadrature weights.
+
+Reference:
+Michelsen, M. L., & Villadsen, J. (1972). A convenient computational procedure 
+for collocation constants. The Chemical Engineering Journal, 4(1), 64-68.
+
+Further references:
+Finlayson, B. A. (1980). Nonlinear analysis in chemical engineering.
+    
+Villadsen, J., & Michelsen, M. L. (1978). Solution of differential equation 
+models by polynomial approximation(Book). Englewood Cliffs, N. J., 
+Prentice-Hall, Inc., 1978. 460 p.
+
+Villadsen, J. V., & Stewart, W. E. (1967). Solution of boundary-value problems 
+by orthogonal collocation. Chemical Engineering Science, 22(11), 1483-1501.
+
+@author: LHaupert
+"""
+
+import numpy as np
+from scipy.special import roots_sh_jacobi, roots_sh_legendre
+from numpy.linalg import inv
+
+
+def Qinv_weights_symm(n_pts, a):
+    """
+    Radau quadrature weights for symmetric problems using matrix inversion
+    n_pts = total number of collocation points
+    a = 1 sheet
+    a = 2 cylinder
+    a = 3 sphere    
+    Returns 
+    W = Radau quadrature weights
+    """
+ 
+    n_pts_m = n_pts - 1 # number of interior collocation points
+    
+    rootsr = np.zeros([n_pts])
+    rootsr[-1] = 1.   # right bounary root
+    
+    p = 1.5 + (a-1)/2
+    q = p - 1
+    rootsr[:-1] = np.sqrt(roots_sh_jacobi(n_pts_m, p, q)[0])
+    
+    Qmat = np.zeros([n_pts, n_pts])
+
+    for i in range(n_pts):
+        for j in range(n_pts):
+            Qmat[i, j] = rootsr[i]**(2*j)
+    
+    Qinv = inv(Qmat)
+    
+    # Calculate quadrature weights by matrix inversion
+    # (See Finlayson's Eq. 4-207)
+    ii = np.arange(n_pts) + 1
+    f = 1./(2*(ii) -2 + a)
+    W = np.dot(f, Qinv)    # quadrature weighting vector
+    
+    return W
+
+
+def build_colloc(n_pts):
+    """
+    Determine nonsymmetric collocation operators using matrix inversion
+    """
+    
+    n_pts_m = n_pts - 2 # number of interior collocation points
+    
+    roots = np.zeros([n_pts])
+    roots[0] = 0    # left boundary root
+    roots[-1] = 1   # right bounary root
+    roots[1:-1] = roots_sh_legendre(n_pts_m)[0] # interior points
+    
+    Qmat = np.zeros([n_pts, n_pts])
+    Cmat = np.zeros([n_pts, n_pts])
+    Dmat = np.zeros([n_pts, n_pts])
+    
+    for i in range(n_pts):
+        for j in range(n_pts):
+            Qmat[i, j] = roots[i]**j
+    
+        for j in range(1, n_pts):
+            Cmat[i, j] = (j)*roots[i]**[j-1]
+            
+        for j in range(2, n_pts):
+            Dmat[i, j] = (j)*(j-1)*roots[i]**[j-2]
+    
+    Qinv = inv(Qmat)
+    Amat = np.dot(Cmat, Qinv)   # first derivative operator
+    Bmat = np.dot(Dmat, Qinv)   # second derivative operator
+    
+    return (roots, Amat, Bmat)
+
+
+def recur(pj, H):
+    """
+    Eq. 17
+    H = (u - u_j)
+    pj = p1_j, p2_j, p3_j
+    
+    returns p_j+1 (p_next)
+    """
+    
+    p1_next = H * pj[0]
+    p2_next = H * pj[1] + 2 * pj[0]
+    p3_next = H * pj[2] + 3 * pj[1]
+    
+    return np.array([p1_next, p2_next, p3_next])
+
+
+def calc_px_column(root_i, roots):
+    """
+    Given a root of interest (root_i), and the list of roots, 
+    return polynomial derivatives p1, p2, p3 at root_i using eq. 17
+    """
+    
+    idxs = (roots - root_i).nonzero()  # exclude root_i
+    
+    # initial derivative values for recurrence
+    p1 = 1.0
+    p2 = 0.0
+    p3 = 0.0
+    
+    pn = np.array([p1, p2, p3])
+    
+    for jj in idxs[0]:  # do recurrence, root by root, skipping root_i
+
+        H = root_i - roots[jj]
+        pn = recur(pn, H)
+   
+    return pn  # return column for px_mat
+
+
+def recur_colloc(n_pts):
+    """
+    For non-symmetric problems produce:
+        roots: Root locations
+        Amat: First derivative operator
+        Bmat: Second derivative 
+        
+    TODO: Refactor with mv_colloc_symm to avoid code duplication
+    """
+
+    n_pts_m = n_pts - 2 # number of interior collocation points
+    roots = np.zeros([n_pts])
+    roots[0] = 0    # left boundary root
+    roots[-1] = 1   # right bounary root
+    roots[1:-1] = roots_sh_legendre(n_pts_m)[0] # interior roots
+    
+    # define 3 by n_pts matrix of polynomial derivatives at collocation points
+    # row index (k) is the k + 1 derivative
+    px_mat = np.zeros((3, n_pts))
+    
+    for ii in range(n_pts):
+        px_mat[:, ii] = calc_px_column(roots[ii], roots)
+    
+    # Calculate derivative operators (A and B)
+    Amat = np.zeros((n_pts, n_pts))
+    Bmat = np.zeros((n_pts, n_pts))
+    
+    for ii in range(n_pts):
+        for jj in range(n_pts):
+            if ii == jj:  # Eq. 12
+                Amat[ii, jj] = (1/2) * px_mat[1, ii] / px_mat[0, ii]
+                Bmat[ii, jj] = (1/3) * px_mat[2, ii] / px_mat[0, ii]
+            else: # Eqs. 13, 14
+                G = roots[ii] - roots[jj]
+                Amat[ii, jj] = (1/G) * px_mat[0, ii] / px_mat[0, jj]
+                Bmat[ii, jj] = (1/G) * (px_mat[1, ii] / px_mat[0, jj] - 2 * Amat[ii, jj])
+                
+    return(roots, Amat, Bmat)
+
+
+def recur_colloc_symm(n_pts, a):
+    """
+    For symmetric collocation problems, produce:
+        rootsx = polynomial root locations
+        Ax = 1st derivative operator
+        Lx = 1-D Laplacian
+        W = quadrature weights
+    Reference: Michelsen and Villadsen 1971 
+    sheet: a=1
+    cylinder: a=2
+    sphere: a=3
+    """
+
+    n_pts_m = n_pts - 1 # number of interior collocation points
+    rootsu = np.zeros([n_pts])
+
+    rootsu[-1] = 1   # right bounary 
+    # Define optimal Jacobi polynomial for interior points
+    p = 1.5 + (a-1)/2
+    q = p - 1
+    rootsu[:-1] = roots_sh_jacobi(n_pts_m, p, q)[0]  # roots in u domain
+    rootsx = np.sqrt(rootsu) # roots in x domain
+    
+    
+    # define 3 by n_pts matrix of polynomial derivatives at collocation points
+    # row index (k) is the k + 1 derivative
+    px_mat = np.zeros((3, n_pts))
+    
+    for ii in range(n_pts):
+        px_mat[:, ii] = calc_px_column(rootsu[ii], rootsu)
+    
+    # Calculate derivative operators (A and B) in u domain
+    Amat = np.zeros((n_pts, n_pts))
+    Bmat = np.zeros((n_pts, n_pts))
+    
+    for ii in range(n_pts):
+        for jj in range(n_pts):
+            if ii == jj:  # Eq. 12
+                Amat[ii, jj] = (1/2) * px_mat[1, ii] / px_mat[0, ii]
+                Bmat[ii, jj] = (1/3) * px_mat[2, ii] / px_mat[0, ii]
+            else: # Eqs. 13, 14
+                G = rootsu[ii] - rootsu[jj]
+                Amat[ii, jj] = (1/G) * px_mat[0, ii] / px_mat[0, jj]
+                Bmat[ii, jj] = (1/G) * (px_mat[1, ii] / px_mat[0, jj] - 2 * Amat[ii, jj])
+                
+    Ax = np.zeros((n_pts, n_pts)) # First derivative operator in x domain
+    Bx = np.zeros((n_pts, n_pts)) # 1-D Laplacian operator in x domain
+    for ii in range(n_pts):
+        for jj in range(n_pts):
+            # Following Eq. 33
+            Ax[ii, jj] = 2 * rootsx[ii] * Amat[ii, jj]
+            Bx[ii, jj] = 2 * a * Amat[ii, jj] + rootsu[ii] * 4 * Bmat[ii, jj]
+            
+    W = np.zeros(n_pts)
+    for ii in range(n_pts):
+        # Eq. 23 - 25 but omitting root at zero for nodal polynomial.
+        wp_sum = (1 / (rootsu[:]*px_mat[0, :]**2)).sum()
+        W[ii] = (1 / (rootsu[ii] * px_mat[0, ii]**2)) / wp_sum / (a)
+    
+    return(rootsx, Ax, Bx, W)
+        
+
+if __name__ == "__main__":
+    
+    # Check that Qinv method and recurrence (Re) method agree
+    # for non-symmetric cases
+    
+    for n in range(3, 15):
+        rootsQi, AmatQi, BmatQi = build_colloc(n)
+        rootsRe, AmatRe, BmatRe = recur_colloc(n)
+        
+        assert np.allclose(rootsQi, rootsRe)
+        assert np.allclose(AmatQi, AmatRe)
+        assert np.allclose(BmatQi, BmatRe)
+    
+    
+    # Compare symmetric cases against M&V's tables
+    
+    n_pts = 3
+    
+    W_sheet = np.array([0.554858, 0.378475, 0.0666667])
+    W_cylin = np.array([0.18820, 0.25624, 0.05555])
+    W_spher = np.array([0.09491, 0.19081, 0.04762])
+    
+    W_list = [W_sheet, W_cylin, W_spher]
+    
+    
+    A_sheet = np.array([[-1.752962, 2.507614, -0.754652],
+                        [-1.370599, -0.653547, 2.024146],
+                        [1.791503, -8.791503, 7.0]])
+
+    A_cylin = np.array([[-2.53958, 3.82562, -1.28603],
+                        [-1.37768, -1.24519, 2.62287],
+                        [1.71548, -9.71548, 8.0]])
+
+    A_spher = np.array([[-3.19933, 5.01517, -1.81584],
+                        [-1.40870, -1.80674,3.21544],
+                        [1.69677, -10.69677, 9.0]])
+    
+    A_list = [A_sheet, A_cylin, A_spher]
+    
+    
+    B_sheet = np.array([[-4.73987, 5.67713, -0.93725],
+                        [8.32288, -23.26013, 14.93725],
+                        [19.07189, -47.07190, 28.0]])
+
+    B_cylin = np.array([[-9.90238, 12.29966, -2.39728],
+                        [9.03367, -32.76429, 23.73061],
+                        [22.7575, -65.42415, 42.66667]])                       
+
+    B_spher = np.array([[-15.66996, 20.03488, -4.36492],
+                        [9.96512, -44.33004, 34.36492],
+                        [26.93285, -86.93229, 60.0]])
+    
+    B_list = [B_sheet, B_cylin, B_spher]
+                       
+    for s in range(3):
+        a = s+1
+        _, A, B, W = recur_colloc_symm(n_pts, a)
+        assert np.allclose(W, W_list[s], rtol=1e-4)
+        assert np.allclose(A, A_list[s], rtol=1e-4)
+        assert np.allclose(B, B_list[s], rtol=1e-4)
+
+    for a in [1, 2, 3]:
+        for NR in range(2, 17):
+            _, _, _, W = recur_colloc_symm(NR, a)
+            W_true = Qinv_weights_symm(NR, a)
+            assert np.allclose(W, W_true)    
+
+
 class PAC_CFPSDM():
     def __init__(self, contactor_df, pac_df, compounds_df, help_print=False, **kw):
 
@@ -104,16 +413,18 @@ class PAC_CFPSDM():
         pac_df.index = self.pac_index               ## resets the index column to all lower case
 
         ## initiate collocation
-        self.nc = kw.get('nr', 5)  #set number of radial points
-        self.mc = kw.get('nz', 8) #set number of axial points, or 12, not needed for PAC, but needed for calc_solver_matrix
-        self.nz = self.mc * 1
-        solver_data = calc_solver_matrix(self.nc, self.mc, 1)
-        self.wr = solver_data['wr']
-        self.az = solver_data['az']
-        self.br = solver_data['br']
-        if self.mc != solver_data['mc']:
-            ''' corrects for OCFE change to nz'''
-            self.mc = solver_data['mc']
+        self.nc = kw.get('nr', 15)  #set number of radial points
+        # self.mc = kw.get('nz', 8) #set number of axial points, or 12, not needed for PAC, but needed for calc_solver_matrix
+        # self.nz = self.mc * 1
+        # solver_data = calc_solver_matrix(self.nc, self.mc, 1)
+        _, _, self.br, self.wr = recur_colloc_symm(self.nc, 3) ## 3 for sphere
+
+        # self.wr = solver_data['wr']
+        # self.az = solver_data['az']
+        # self.br = solver_data['br']
+        # if self.mc != solver_data['mc']:
+        #     ''' corrects for OCFE change to nz'''
+        #     self.mc = solver_data['mc']
         self.nd = self.nc - 1
 
         #set up temperature dependant values
@@ -284,8 +595,8 @@ class PAC_CFPSDM():
             print(f'{self.format} - Length {self.length:.2f} cm, Width {self.width:.2f} cm -- Height: {self.height:.2f} cm')
             print(f'Volume: {self.volume:,.2f} mL')
             print(f'Flowrate: {self.flow:,.2f} mL/min')
-            print(f'Hydraulic Residence Time (HRT): {self.hrt:.2f} min')
-            print(f'Carbon Residence Time (HRT): {self.crt:.2f} min')
+            print(f'Hydraulic Residence Time (HRT): {self.hrt/time_convert['min']:.2f} min')
+            print(f'Carbon Residence Time (HRT): {self.crt/time_convert['min']:.2f} min')
             print(f'PAC Dosage: {self.dosage:.2f} mg/L')
 
             # print(self.compounds_df)
@@ -531,7 +842,7 @@ class PAC_CFPSDM():
         B = self.br
         ra = self.pac_radius
         W = self.wr
-        a_s = 3 / ra
+        a_s = 3.0 / ra
 
         self.flag = 'PSDM'
         def diffun(t, y0):

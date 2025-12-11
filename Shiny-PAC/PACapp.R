@@ -727,6 +727,7 @@ server <- function(input, output, session) {
         rownames(pac_df) <- pac_session[,1]
         
         compounds_df <- compounddat()[,-1, drop = FALSE]
+        updateSelectInput(session, "compound", choices=colnames(compounds_df), selected=colnames(compounds_df)[1]) ### update the available list
         rownames(compounds_df) <- compounddat()[,1]
         PAC_instance <- PAC_CFPSDM(contactor_df, pac_df, compounds_df, nr=input$nrv)
 
@@ -764,6 +765,7 @@ server <- function(input, output, session) {
         df2$`HRT to below Target (Minutes)` <- as.numeric(unlist(df2$`HRT to below Target (Minutes)`))
         df2 <- df2[order(factor(df2$name, levels = colnames(compounddat()))), ]
         sub_data2(df2)
+        
     })
 
     # Apply conversions and rename columns
