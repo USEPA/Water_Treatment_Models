@@ -1970,6 +1970,18 @@ server <- function(input, output, session) {
     toggleState("DiameterUnits", condition = input$veloselect != "Linear") # Diameter units are grayed out if diameter is not being used
   })
   
+  ### correct for linear if volumetric is provided
+  observe({
+    if(input$veloselect == "Volumetric"){
+
+      Vv <- input$Fv * volumetric_conv[input$FlowrateUnits]/(pi/4 * ((input$Dv * length_conv[input$DiameterUnits])**2))
+
+      updateNumericInput(session=session, "Vv", value=as.numeric(Vv)) #format(Vv, digits=4)
+      updateSelectInput(session=session, inputId="VelocityUnits", selected="cm/s")
+
+    }
+  })
+  
   velocityvar<-reactiveVal()
   
   #------------------------------------------------------------------------------#
