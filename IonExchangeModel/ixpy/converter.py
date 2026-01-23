@@ -9,7 +9,7 @@ def conv_iex_u(u, t, ions):
     # converts from standard model output structure, returns time indexed DataFrame, 
     # converted to input units in concentration by column
 
-    ix_df = pd.DataFrame(index=np.round(t/s_per_day, 2), ## rounding prevents indexing error in loop
+    ix_df = pd.DataFrame(index=np.round(t/s_per_day, 5), ## rounding prevents indexing error in loop
                          columns=ions.index)
 
     num_compounds = len(ions.index)
@@ -24,7 +24,7 @@ def conv_iex_u(u, t, ions):
         elif ions.loc[comp_name]['units'] == 'mg':
             factor = ions.loc[comp_name]['mw'] * 1 ## meq -> mg/L
         else: 
-            factor = 1000 / (ions.loc[comp_name]['mw'] * ions.loc[comp_name]['valence']) 
+            factor = 1000 / (ions.loc[comp_name]['mw'] / ions.loc[comp_name]['valence']) 
         ### what about mgC, mgN units??? 
         ## TODO: >>
         

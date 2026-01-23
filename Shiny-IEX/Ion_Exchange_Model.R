@@ -974,7 +974,7 @@ model_prep <- function (input, iondata, concdata, nt_report) {
       input$rbv*length_conv[input$rbunits], NA, NA,
       input$nrv,
       input$nzv, 1),
-      units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, input$timeunits)
+      units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, input$timeunits2)
     ) 
   } else if (input$model=="Macroporous (PSDM)") {
     paramdataframe <- data.frame(
@@ -987,7 +987,7 @@ model_prep <- function (input, iondata, concdata, nt_report) {
       input$rbv*length_conv[input$rbunits], NA, NA,
       input$nrv,
       input$nzv, 1),
-      units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, NA, input$timeunits)
+      units=c("meq/L", NA, "cm", "cm/s", "cm", NA, NA, NA, NA, NA, input$timeunits2)
     )
   }
   
