@@ -1231,7 +1231,7 @@ server <- function(input, output, session) {
     # calculating kBV
     if (input$timeunits == "Bed Volumes (x1000)") {
       bv_conv <- get_bv_in_sec(input)
-      print(bv_conv)
+      # print(bv_conv)
       outputchemicals$hours <- computed_data()$hours / (bv_conv / (day2sec/min2sec)) / 1e3
       outputeffluent$hours <- effdat_plot()$hours / (bv_conv / (day2sec/min2sec)) / 1e3
       outputinfluent$hours <- influent_plot()$hours  / (bv_conv / (day2sec/min2sec)) / 1e3  
