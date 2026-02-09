@@ -413,7 +413,7 @@ class PAC_CFPSDM():
         pac_df.index = self.pac_index               ## resets the index column to all lower case
 
         ## initiate collocation
-        self.nc = kw.get('nr', 15)  #set number of radial points
+        self.nc = kw.get('nr', 8)  #set number of radial points
         # self.mc = kw.get('nz', 8) #set number of axial points, or 12, not needed for PAC, but needed for calc_solver_matrix
         # self.nz = self.mc * 1
         # solver_data = calc_solver_matrix(self.nc, self.mc, 1)
@@ -605,7 +605,12 @@ class PAC_CFPSDM():
             print(f'{self.errors} error(s) was/were found in the input, please review')
 
     def _update_values(self):
-        self.epsilon = 1 - self.dosage/(self.dw * 1e6)
+        # self.epsilon = 1 - self.dosage/(self.dw * 1e6)
+        # print(self.volume, self.dosage, self.epsilon )
+        self.epsilon = self.volume / (self.volume + self.dosage/1e3/self.density)
+        # self.epsilon = 1 / (1 + self.dosage/1e3/self.density/1e3)
+        # print(self.dosage/1e3/self.density)
+        # print(self.epsilon)
 
         self.compounds_df.loc['qe'] = self.compounds_df.loc['K'] * (self.compounds_df.loc['C0'] * self.convert_array)**self.compounds_df.loc['1/n'] ## should be in ug/g
 

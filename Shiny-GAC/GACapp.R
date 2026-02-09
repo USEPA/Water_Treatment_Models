@@ -369,7 +369,7 @@ get_bv_in_sec <- function(input) {
     Vv = input$Fv * volumetric_conv[input$FlowrateUnits] / (pi / 4 * ((input$Dv * length_conv[input$DiameterUnits]) ** 2))
   }
   
-  ## divide converted length by velocity to get BV in seconds
+  ## divide converted length by velocity to get BV in minutes
   return(input$Lv * length_conv[input$LengthUnits] / Vv)
 }
 
@@ -1231,9 +1231,10 @@ server <- function(input, output, session) {
     # calculating kBV
     if (input$timeunits == "Bed Volumes (x1000)") {
       bv_conv <- get_bv_in_sec(input)
-      outputchemicals$hours <- computed_data()$hours / (bv_conv / hour2sec) / 1e3
-      outputeffluent$hours <- effdat_plot()$hours / (bv_conv / hour2sec) / 1e3
-      outputinfluent$hours <- influent_plot()$hours  / (bv_conv / hour2sec) / 1e3  
+      print(bv_conv)
+      outputchemicals$hours <- computed_data()$hours / (bv_conv / (day2sec/min2sec)) / 1e3
+      outputeffluent$hours <- effdat_plot()$hours / (bv_conv / (day2sec/min2sec)) / 1e3
+      outputinfluent$hours <- influent_plot()$hours  / (bv_conv / (day2sec/min2sec)) / 1e3  
     } else {
       outputchemicals$hours <- computed_data()$hours * (time_conv[input$timeunits])
       outputeffluent$hours <- effdat_plot()$hours * (time_conv[input$timeunits])
