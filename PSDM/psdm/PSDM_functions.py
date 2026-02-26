@@ -242,11 +242,11 @@ def process_input_file(filename, data_sheet='data',\
     if len(diff_infl) > 0:
         for comp in compounds:
             for i in diff_infl:
-                rawdata_df[influent][comp][i] = infl_dict[comp](i)
+                rawdata_df.loc[i, (influent, comp)] = infl_dict[comp](i)
     if len(diff_effl) > 0:
         for comp in compounds:
             for i in diff_effl:
-                rawdata_df[effluent][comp][i] = effl_dict[comp](i)
+                rawdata_df.loc[i, (effluent, comp)] = effl_dict[comp](i)
     
     #resort index to makes sure things are in order
     rawdata_df = rawdata_df.sort_index()
