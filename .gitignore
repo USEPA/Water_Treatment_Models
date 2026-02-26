@@ -19,6 +19,8 @@ PSDM/*.png
 PSDM/Simple_Example_short.ipynb
 PSDM/output.xlsx
 PSDM/PSDM_models.egg-info/*
+PSDM/build/*
+
 
 IonExchangeModel/ion_exchange_models.egg-info/*
 IonExchangeModel/build/*
