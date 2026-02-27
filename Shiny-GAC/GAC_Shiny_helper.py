@@ -30,7 +30,7 @@ def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz, water_type='O
     else:
         for idx in floats_list: # changing numeric values to floats
             try:
-                column_info.loc[idx] = np.float64(column_info.loc[idx]) #pd.to_numeric(column_info.loc[i], errors='coerce')
+                column_info.loc[idx] = np.float64(column_info.loc[idx]) 
             except Exception as e:
                 return column_info[idx], idx, column_info, e
         
@@ -39,7 +39,7 @@ def run_PSDM(columndata, chem_data, kdata, infdat, effdat, nr, nz, water_type='O
                                     columns=compounds,
                                     index=chem_data[prop_columns[0]].values)
         
-        mass_transfer_df = pd.DataFrame(0.0, index=['kf', 'dp', 'ds'], columns=compounds)#.astype('object')
+        mass_transfer_df = pd.DataFrame(0.0, index=['kf', 'dp', 'ds'], columns=compounds)
         
         for idx in chem_updated.index:
             try:
