@@ -579,9 +579,9 @@ def calc_solver_matrix(nr, nz, ne):
             for j in range(n_pts):
                 Qmat[i, j] = roots[i]**j
             for j in range(1, n_pts):
-                Cmat[i, j] = (j) * roots[i]**[j-1]
+                Cmat[i, j] = (j) * roots[i]**(j-1)
             for j in range(2, n_pts):
-                Dmat[i, j] = (j)*(j-1) * roots[i]**[j-2]
+                Dmat[i, j] = (j)*(j-1) * roots[i]**(j-2)
         
         Qinv = np.linalg.inv(Qmat)
         Amat = np.dot(Cmat, Qinv)
