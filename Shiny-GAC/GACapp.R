@@ -1124,7 +1124,8 @@ server <- function(input, output, session) {
       #### SAVE STATE
       tryCatch({
         showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
-        out(run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling))
+        results <- run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling) |> reticulate::py_to_r()
+        out(results)
         updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
       },
       error=function(err){
