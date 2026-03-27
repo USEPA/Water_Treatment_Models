@@ -36,7 +36,7 @@ setup(
     install_requires = [
         "matplotlib",
         "numpy",
-        "pandas<3",
+        "pandas",
         "scipy",
         "openpyxl",
         "xlsxwriter",
