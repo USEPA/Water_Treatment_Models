@@ -484,7 +484,7 @@ class HSDMIX:
             # Calculate flux terms LMH
             J = np.zeros((NION, nz))
             for iii in range(NION):
-                J[iii, :] = - self.ions['kL'][iii] * (C[iii,:] - Ceq[iii,:]) # mass flux
+                J[iii, :] = - self.ions.iloc[iii]['kL'] * (C[iii,:] - Ceq[iii,:]) # mass flux
 
             # explicitly doing implicit chloride LMH
             J[0, :] = -J[1:, :].sum(axis=0)
@@ -507,7 +507,7 @@ class HSDMIX:
             # dq_dT =  Ds * t_half / rb**2 * Br_q   
 
             for iii in range(NION):
-                Ds_iii = self.ions['Ds'][iii]
+                Ds_iii = self.ions.iloc[iii]['Ds']
                 dq_dT[:, iii, :] =  Ds_iii * t_half / rb**2 * Br_q[:, iii, :]   
 
             # # explicitly doing implicit chloride LMH

@@ -33,7 +33,7 @@ def lowercaseData(data):
         Parameters: pandas dataframe;
     '''
     
-    lower_df = data.applymap(lowerEntries)
+    lower_df = data.map(lowerEntries)
     return lower_df
 
 def lowercaseIndex(data):

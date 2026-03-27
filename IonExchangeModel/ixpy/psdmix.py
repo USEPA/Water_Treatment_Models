@@ -290,7 +290,7 @@ class PSDMIX(HSDMIX):
             # Calculate flux terms
             J = np.zeros((NION, nz))
             for iii in range(NION):
-                J[iii, :] = - self.ions['kL'][iii] * (C[iii,:] - Ceq[iii,:]) # mass flux 
+                J[iii, :] = - self.ions.iloc[iii]['kL'] * (C[iii,:] - Ceq[iii,:]) # mass flux 
                 
             # explicitly doing implicit chloride
             J[0, :] = -J[1:, :].sum(axis=0)
@@ -319,8 +319,8 @@ class PSDMIX(HSDMIX):
 
             
             for iii in range(NION):
-                Dp_iii = self.ions['Dp'][iii]
-                Ds_iii = self.ions['Ds'][iii]
+                Dp_iii = self.ions.iloc[iii]['Dp']
+                Ds_iii = self.ions.iloc[iii]['Ds']
                 dY_dT[:, iii, :] =  t_half * (EPOR * (Dp_iii - Ds_iii) * Br_Cpore[:, iii, :] + Ds_iii * Br_Y[:, iii, :]) / rb**2
 
             # # explicitly doing implicit chloride
