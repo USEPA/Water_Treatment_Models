@@ -511,7 +511,7 @@ class HSDMIX:
                 dq_dT[:, iii, :] =  Ds_iii * t_half / rb**2 * Br_q[:, iii, :]   
 
             # # explicitly doing implicit chloride LMH
-            dq_dT[:, 0, :] = -dq_dT[:, 1:, :].sum(axis=1) # XXX: Why doesn't work?
+            # dq_dT[:, 0, :] = -dq_dT[:, 1:, :].sum(axis=1) # XXX: Why doesn't work?
             # print(dq_dT[-2, :, -1].sum()) # Why isn't that zero?
 
             # intermediate term for dq_dT at bead surface      HSDMIX   
