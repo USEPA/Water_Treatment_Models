@@ -324,8 +324,7 @@ class PSDMIX(HSDMIX):
                 dY_dT[:, iii, :] =  t_half * (EPOR * (Dp_iii - Ds_iii) * Br_Cpore[:, iii, :] + Ds_iii * Br_Y[:, iii, :]) / rb**2
 
             # # explicitly doing implicit chloride
-            # dq_dT[:, 0, :] = -dq_dT[:, 1:, :].sum(axis=1) # XXX: Why doesn't work?
-            # print(dq_dT[-2, :, -1].sum()) # Why isn't that zero?
+            dY_dT[:, 0, :] = -dY_dT[:, 1:, :].sum(axis=1) # presaturant diffusion (implicit)
 
             # intermediate term for dq_dT at bead surface        
             dY_dT_swap = np.swapaxes(dY_dT[:SURF, :, :], 0, 1)
