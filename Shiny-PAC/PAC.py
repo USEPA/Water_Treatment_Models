@@ -118,8 +118,8 @@ def Qinv_weights_symm(n_pts, a):
     rootsr = np.zeros([n_pts])
     rootsr[-1] = 1.   # right bounary root
     
-    p = 1.5 + (a-1)/2
-    q = p - 1
+    p = 1.5 + (a-1.)/2.
+    q = p - 1.
     rootsr[:-1] = np.sqrt(roots_sh_jacobi(n_pts_m, p, q)[0])
     
     Qmat = np.zeros([n_pts, n_pts])
@@ -133,7 +133,7 @@ def Qinv_weights_symm(n_pts, a):
     # Calculate quadrature weights by matrix inversion
     # (See Finlayson's Eq. 4-207)
     ii = np.arange(n_pts) + 1
-    f = 1./(2*(ii) -2 + a)
+    f = 1./(2.*(ii) - 2. + a)
     W = np.dot(f, Qinv)    # quadrature weighting vector
     
     return W
@@ -160,15 +160,15 @@ def build_colloc(n_pts):
             Qmat[i, j] = roots[i]**j
     
         for j in range(1, n_pts):
-            Cmat[i, j] = (j)*roots[i]**(j-1)
+            Cmat[i, j] = (j) * roots[i]**(j-1)
             
         for j in range(2, n_pts):
-            Dmat[i, j] = (j)*(j-1)*roots[i]**(j-2)
+            Dmat[i, j] = (j) * (j - 1) * roots[i]**(j-2)
     
     Qinv = inv(Qmat)
     Amat = np.dot(Cmat, Qinv)   # first derivative operator
     Bmat = np.dot(Dmat, Qinv)   # second derivative operator
-    
+
     return (roots, Amat, Bmat)
 
 
@@ -241,12 +241,12 @@ def recur_colloc(n_pts):
     for ii in range(n_pts):
         for jj in range(n_pts):
             if ii == jj:  # Eq. 12
-                Amat[ii, jj] = (1/2) * px_mat[1, ii] / px_mat[0, ii]
-                Bmat[ii, jj] = (1/3) * px_mat[2, ii] / px_mat[0, ii]
+                Amat[ii, jj] = (1./2.) * px_mat[1, ii] / px_mat[0, ii]
+                Bmat[ii, jj] = (1./3.) * px_mat[2, ii] / px_mat[0, ii]
             else: # Eqs. 13, 14
                 G = roots[ii] - roots[jj]
-                Amat[ii, jj] = (1/G) * px_mat[0, ii] / px_mat[0, jj]
-                Bmat[ii, jj] = (1/G) * (px_mat[1, ii] / px_mat[0, jj] - 2 * Amat[ii, jj])
+                Amat[ii, jj] = (1./G) * px_mat[0, ii] / px_mat[0, jj]
+                Bmat[ii, jj] = (1./G) * (px_mat[1, ii] / px_mat[0, jj] - 2 * Amat[ii, jj])
                 
     return(roots, Amat, Bmat)
 
@@ -289,12 +289,12 @@ def recur_colloc_symm(n_pts, a):
     for ii in range(n_pts):
         for jj in range(n_pts):
             if ii == jj:  # Eq. 12
-                Amat[ii, jj] = (1/2) * px_mat[1, ii] / px_mat[0, ii]
-                Bmat[ii, jj] = (1/3) * px_mat[2, ii] / px_mat[0, ii]
+                Amat[ii, jj] = (1./2.) * px_mat[1, ii] / px_mat[0, ii]
+                Bmat[ii, jj] = (1./3.) * px_mat[2, ii] / px_mat[0, ii]
             else: # Eqs. 13, 14
                 G = rootsu[ii] - rootsu[jj]
-                Amat[ii, jj] = (1/G) * px_mat[0, ii] / px_mat[0, jj]
-                Bmat[ii, jj] = (1/G) * (px_mat[1, ii] / px_mat[0, jj] - 2 * Amat[ii, jj])
+                Amat[ii, jj] = (1./G) * px_mat[0, ii] / px_mat[0, jj]
+                Bmat[ii, jj] = (1./G) * (px_mat[1, ii] / px_mat[0, jj] - 2 * Amat[ii, jj])
                 
     Ax = np.zeros((n_pts, n_pts)) # First derivative operator in x domain
     Bx = np.zeros((n_pts, n_pts)) # 1-D Laplacian operator in x domain
@@ -307,7 +307,7 @@ def recur_colloc_symm(n_pts, a):
     W = np.zeros(n_pts)
     for ii in range(n_pts):
         # Eq. 23 - 25 but omitting root at zero for nodal polynomial.
-        wp_sum = (1 / (rootsu[:]*px_mat[0, :]**2)).sum()
+        wp_sum = (1 / (rootsu[:] * px_mat[0, :]**2)).sum()
         W[ii] = (1 / (rootsu[ii] * px_mat[0, ii]**2)) / wp_sum / (a)
     
     return(rootsx, Ax, Bx, W)
@@ -384,25 +384,31 @@ if __name__ == "__main__":
 class PAC_CFPSDM():
     def __init__(self, contactor_df, pac_df, compounds_df, help_print=False, **kw):
 
+        contactor_df = contactor_df.astype('object')
+        pac_df = pac_df.astype('object')
+        compounds_df = compounds_df.astype('object')
+
         ## force correct unit types, primarily used from R Shiny app
         for idx in contactor_df.index:
             if idx in ['format']:
                 contactor_df.loc[idx, 'value'] = str(contactor_df.loc[idx, 'value'])
             else:
                 ## pretty much everything should tolerate being a float
-                contactor_df.loc[idx, 'value'] = float(contactor_df.loc[idx, 'value'])#.astype('float64')
+                contactor_df.loc[idx, 'value'] = pd.to_numeric(contactor_df.loc[idx, 'value'])
 
         for idx in pac_df.index:
             ## everything should be a float
-            pac_df.loc[idx, 'value'] = float(pac_df.loc[idx, 'value'])
+            pac_df.loc[idx, 'value'] = pd.to_numeric(pac_df.loc[idx, 'value'])#.astype('float64')
 
         for idx in compounds_df.index:
             if idx != 'C0_units':
                 ## C0_units should remain a string
-                compounds_df.loc[idx] = compounds_df.loc[idx].astype('float64')
+                compounds_df.loc[idx] = pd.to_numeric(compounds_df.loc[idx])#.astype('float64')
         ### end unit correction for R
-        
-        
+
+        # print(contactor_df)
+        # print(pac_df)
+        # print(compounds_df)
 
         self.help_print = help_print
         self.errors = 0 ## count of errors
@@ -414,27 +420,19 @@ class PAC_CFPSDM():
 
         ## initiate collocation
         self.nc = kw.get('nr', 8)  #set number of radial points
-        # self.mc = kw.get('nz', 8) #set number of axial points, or 12, not needed for PAC, but needed for calc_solver_matrix
-        # self.nz = self.mc * 1
-        # solver_data = calc_solver_matrix(self.nc, self.mc, 1)
+
         _, _, self.br, self.wr = recur_colloc_symm(self.nc, 3) ## 3 for sphere
 
-        # self.wr = solver_data['wr']
-        # self.az = solver_data['az']
-        # self.br = solver_data['br']
-        # if self.mc != solver_data['mc']:
-        #     ''' corrects for OCFE change to nz'''
-        #     self.mc = solver_data['mc']
         self.nd = self.nc - 1
 
         #set up temperature dependant values
         if 'temperature' in self.contactor_index:
             self.temp = contactor_df.loc['temperature', 'value'] 
         else:
-            self.temp = 20 ### assumes 20 degC if no temperature is provided
+            self.temp = 20.0 ### assumes 20 degC if no temperature is provided
         self.vw = viscosity(self.temp)      ### gm/cm-s
         self.dw = density(self.temp)        ### gm/cm**3
-                
+
         self.time_type = kw.get('time_type', 'min')
         self.t_mult = time_convert[self.time_type]
 
@@ -442,7 +440,7 @@ class PAC_CFPSDM():
         ### PAC information #######################################################################################
         if 'density' in pac_df.index:
             ## expected gm/mL
-            self.density = pac_df.loc['density','value'] ### may need to add unit conversion
+            self.density = np.float64(pac_df.loc['density','value']) ### may need to add unit conversion
         else:
             self.density = np.nan
             self.errors += 1
@@ -450,7 +448,7 @@ class PAC_CFPSDM():
 
         if 'porosity' in pac_df.index:
             ## unitless
-            self.porosity = pac_df.loc['porosity', 'value']
+            self.porosity = np.float64(pac_df.loc['porosity', 'value'])
         else:
             self.porosity = np.nan
             self.errors += 1
@@ -458,7 +456,7 @@ class PAC_CFPSDM():
 
         if 'radius' in pac_df.index:
             ## converted to cm
-            self.pac_radius = pac_df.loc['radius', 'value'] * length_convert[pac_df.loc['radius','units'].lower()]
+            self.pac_radius = np.float64(pac_df.loc['radius', 'value']) * length_convert[pac_df.loc['radius','units'].lower()]
         else:
             self.pac_radius = np.nan
             self.errors += 1
@@ -468,7 +466,7 @@ class PAC_CFPSDM():
         ## column sizing and characteristics ############################################################################
         if 'length/diameter' in self.contactor_index:
             ## converted to cm
-            self.length = contactor_df.loc['length/diameter', 'value'] * length_convert[contactor_df.loc['length/diameter', 'units'].lower()]
+            self.length = np.float64(contactor_df.loc['length/diameter', 'value']) * length_convert[contactor_df.loc['length/diameter', 'units'].lower()]
         else:
             print('Please provide "length/diameter" in contactor_df')
             self.errors += 1
@@ -490,7 +488,7 @@ class PAC_CFPSDM():
                 print('Warning: No "aspect ratio" was provided, assuming 1')
 
         if 'height' in self.contactor_index:
-            self.height = contactor_df.loc['height', 'value'] * length_convert[contactor_df.loc['height', 'units'].lower()]
+            self.height = np.float64(contactor_df.loc['height', 'value']) * length_convert[contactor_df.loc['height', 'units'].lower()]
         else:
             print('Please provide "height" in contactor_df')
             self.height = np.nan
@@ -507,7 +505,7 @@ class PAC_CFPSDM():
 
             if test:
                 ## Only worries about volume if other values aren't provided, otherwise lets it get calculated.
-                self.volume = contactor_df.loc['volume', 'value'] * volume_convert[contactor_df.loc['volume', 'units'].lower()]
+                self.volume = np.float64(contactor_df.loc['volume', 'value']) * volume_convert[contactor_df.loc['volume', 'units'].lower()]
 
                 ## use a specified volume to calculate other terms
                 if np.isnan(self.height):
@@ -530,7 +528,7 @@ class PAC_CFPSDM():
 
         self.flow = np.nan
         if 'flow' in self.contactor_index:
-            self.flow = contactor_df.loc['flow', 'value'] * flow_convert[contactor_df.loc['flow', 'units'].lower()]
+            self.flow = np.float64(contactor_df.loc['flow', 'value']) * flow_convert[contactor_df.loc['flow', 'units'].lower()]
         else:
             self.error += 1
             print('Please provide "flow" in contactor_df')
@@ -543,14 +541,14 @@ class PAC_CFPSDM():
                 self.volume = self.length * self.width * self.height
 
         if 'hrt' in self.contactor_index:
-            self.hrt = contactor_df.loc['hrt', 'value'] * time_convert[contactor_df.loc['hrt', 'units'].lower()]
+            self.hrt = np.float64(contactor_df.loc['hrt', 'value']) * time_convert[contactor_df.loc['hrt', 'units'].lower()]
         else:
             self.errors += 1
             self.hrt = np.nan
             print('Please provide "HRT" for hydraulic residence time in contactor_df')
 
         if 'crt' in self.contactor_index:
-            self.crt = contactor_df.loc['crt', 'value'] * time_convert[contactor_df.loc['crt', 'units'].lower()]
+            self.crt = np.float64(contactor_df.loc['crt', 'value']) * time_convert[contactor_df.loc['crt', 'units'].lower()]
         else:
             self.errors += 1
             self.crt = np.nan
@@ -561,7 +559,7 @@ class PAC_CFPSDM():
         self.time_incr = time_convert['sec']
 
         if 'pac dosage' in self.contactor_index:
-            self.dosage = contactor_df.loc['pac dosage', 'value']  ## need to convert? or assume mg/L always
+            self.dosage = np.float64(contactor_df.loc['pac dosage', 'value'])  ## need to convert? or assume mg/L always
         else:
             self.errors += 1
             self.dosage = np.nan
@@ -579,12 +577,10 @@ class PAC_CFPSDM():
         ### check on correlations for kf, Ds, Dp   ### TODO!!
 
         self._update_values()  ### using a function, so I can set up an easier iterator on self.dosage, like the GUI has.
-        
 
         self.ncomp = len(self.compounds_df.columns)
         self.effluent_locator = [(self.nc+1)*(i+1)-1 for i in range(self.ncomp)]
         ### address variable influent?? Maybe next step.
-
 
         ### End matter ############################################################################
         
@@ -605,9 +601,9 @@ class PAC_CFPSDM():
             print(f'{self.errors} error(s) was/were found in the input, please review')
 
     def _update_values(self):
-        # self.epsilon = 1 - self.dosage/(self.dw * 1e6)
+        self.epsilon = 1 - self.dosage/(self.dw * 1e6)
         # print(self.volume, self.dosage, self.epsilon )
-        self.epsilon = self.volume / (self.volume + self.dosage/1e3/self.density)
+        # self.epsilon = self.volume / (self.volume + self.dosage/1e3/self.density)
         # self.epsilon = 1 / (1 + self.dosage/1e3/self.density/1e3)
         # print(self.dosage/1e3/self.density)
         # print(self.epsilon)
@@ -821,40 +817,39 @@ class PAC_CFPSDM():
 
         self.y = np.zeros((self.nc+1, self.ncomp))
         self.yprime = np.zeros((self.nc + 1, self.ncomp))
-        self.y[-1] = 1 ### set liquid balance
+        self.y[-1] = 1.0 ### set liquid balance
 
         self.cPore = np.zeros((self.nc, self.ncomp))
 
         ## create some convenience arrays
-        xn_array = self.compounds_df.loc['1/n'].values.astype('float64')
-        ye_array = self.compounds_df.loc['Ye'].values.astype('float64')
-        x_array = self.compounds_df.loc['X'].values.astype('float64')
-        z_array = self.compounds_df.loc['Z'].values.astype('float64')
-        bi_array = self.compounds_df.loc['Bi'].values.astype('float64')
-        cin_array = self.compounds_df.loc['C0'].values.astype('float64') * self.convert_array ## convert to ug/L
-        st_array = self.compounds_df.loc['St'].values.astype('float64')
+        # xn_array = self.compounds_df.loc['1/n'].values.astype('float64')
+        # ye_array = self.compounds_df.loc['Ye'].values.astype('float64')
+        # x_array = self.compounds_df.loc['X'].values.astype('float64')
+        # z_array = self.compounds_df.loc['Z'].values.astype('float64')
+        # bi_array = self.compounds_df.loc['Bi'].values.astype('float64')
+        # cin_array = self.compounds_df.loc['C0'].values.astype('float64') * self.convert_array ## convert to ug/L
+        # st_array = self.compounds_df.loc['St'].values.astype('float64')
 
-        helper_array = np.ones((self.nc, self.ncomp))
+        # helper_array = np.ones((self.nc, self.ncomp))
 
-        RHO = self.density * 1000 
+        RHO = np.float64(self.density) * 1000.0 
         Kf = self.compounds_df.loc['K'].values.astype('float64')
-        n = 1 / self.compounds_df.loc['1/n'].values.astype('float64')
+        n = 1.0 / self.compounds_df.loc['1/n'].values.astype('float64')
         kL = self.compounds_df.loc['kf'].values.astype('float64')
-        E = self.epsilon
-        Ep = self.porosity
+        E = np.float64(self.epsilon)
+        Ep = np.float64(self.porosity)
         Dp = self.compounds_df.loc['Dp'].values.astype('float64')
         Ds = self.compounds_df.loc['Ds'].values.astype('float64')
-        B = self.br
-        ra = self.pac_radius
-        W = self.wr
-        a_s = 3.0 / ra
+        B = np.float64(self.br)
+        ra = np.float64(self.pac_radius)
+        W = np.float64(self.wr)
+        a_s = 3.0 / np.float64(ra)
 
         self.flag = 'PSDM'
         def diffun(t, y0):
             # print(f'{t/self.duration:.3f} %')
-            y = y0.copy().reshape((self.nc + 1, self.ncomp))
+            y = y0.copy().reshape((self.nc + 1, self.ncomp)).astype('float64')
             yprime = np.zeros((self.nc + 1, self.ncomp))            
-
 
             C = y[-1]
             Y = y[:-1]
@@ -864,7 +859,7 @@ class PAC_CFPSDM():
             q = Y / RHO / Kf
             q[q < 0.0] = 0.0 # avoid taking a negative number to the n power
             Cp = q ** n 
-            
+
             # SURFACE FLUX TERM
             J = - kL * (C - Cp[-1])    
             
@@ -878,30 +873,26 @@ class PAC_CFPSDM():
             dY_dt_w = W[:-1].dot(dY_dt[:-1])
             
             # Boundary condition at bead surface
-            dY_dt[-1] = -(J/ra + dY_dt_w) / W[-1]    
+            dY_dt[-1] = -(J / ra + dY_dt_w) / W[-1]    
         
             # output derivatives
-            # du_dt = np.zeros(y.shape)
-            # du_dt[-1] = dC_dt
-            # du_dt[:-1] = dY_dt
+            du_dt = np.append(dY_dt, dC_dt.reshape((1, self.ncomp)), axis=0).astype('float64')
 
-            du_dt = np.append(dY_dt, dC_dt.reshape((1, self.ncomp)), axis=0)
-
-            yprime = du_dt
+            yprime = du_dt * 1.0
 
             return yprime.flatten()
-
 
         self.y = solve_ivp(diffun, 
                       (0, self.duration),
                       self.y.flatten(),
                       solver='BDF',
+                    #   max_step = self.duration/100.0,
                       )
         
         times = self.y.t / time_convert['min'] ### converts times to minutes
 
         effluent = np.multiply(self.compounds_df.loc['C0'].values.astype('float64'), self.y.y.reshape(self.nc+1, self.ncomp, len(times))[-1].T)
-        out_df = pd.DataFrame(effluent, columns=self.compounds_df.columns, index=times)
+        out_df = pd.DataFrame(effluent, columns=self.compounds_df.columns, index=times).astype('float64')
 
         return out_df
     
