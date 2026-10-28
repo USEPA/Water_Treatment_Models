@@ -1125,6 +1125,11 @@ server <- function(input, output, session) {
       tryCatch({
         showNotification("Starting model run.", duration = notificationDuration, closeButton = TRUE, type = "message") # Notifies the user that the model is being run
         results <- run_PSDM(column_data_converted(), chem_data(), kdat(), infdat(), effdat(), nrv(), nzv(), input$WFouling, input$CFouling) |> reticulate::py_to_r()
+        # run_PSDM returns the Python exception instead of raising it
+        if (!is.data.frame(results)) {
+          shinyalert("Error", paste("The model failed:", as.character(results), "- check Properties (e.g. kf/Dp) and Kdata values."), type = "error")
+          return()
+        }
         out(results)
         updateTabsetPanel(session, "inTabset", selected = "Output") # Switches to Output tab when run button is pressed
       },
@@ -1208,7 +1213,7 @@ server <- function(input, output, session) {
                                 #cc0 conversions#
   #------------------------------------------------------------------------------# 
   computed_data_cc0 <- reactiveVal(data.frame(time = c(NA), name = c(NA), conc = c(NA)))
-  cc0data_ngl <- eventReactive(input$run_button, {cc0_conv_ngl(infdat(), out())})
+  cc0data_ngl <- eventReactive(out(), {cc0_conv_ngl(infdat(), out())}, ignoreInit = TRUE)
   observe({computed_data_cc0(process_output(cc0data_ngl()))})
   
   effluent_data_cc0 <- reactiveVal(data.frame(time = c(NA), name = c(NA), conc = c(NA)))
