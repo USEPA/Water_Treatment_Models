@@ -76,7 +76,7 @@ class PSDM():
             'rhop'  = apparent density (gm/ml)
             'rad'   = particle radius (cm) 
             'tortu' = tortuosity
-            'psdfr' = pore to surface diffusion ratio
+            'spdfr' = surface to pore diffusion flux ratio
             'influentID' = influent identifier (text)
             'effluentID' = effluent identifier (text)
             'units' = may have units also specified
@@ -197,7 +197,9 @@ class PSDM():
         self.rhof = column_data['rhof']
         self.rad = column_data['rad']
         self.tortu = column_data['tortu']
-        self.psdfr = column_data['psdfr']
+
+        psdfr_str = 'psdfr' if 'spdfr' not in column_data.index else 'spdfr'
+        self.psdfr = column_data[psdfr_str]
         self.epor = column_data['epor']
         self.influent = column_data['influentID']
         if column_data.name == None:
@@ -1428,7 +1430,7 @@ class PSDM():
                     ### should this be before or after the fouling? 
             
             if water_type != 'Organic Free':
-                ds_v /= 1e10  #original code =1e-30, but this caused instability
+                ds_v *= 1e-30  #original code =1e-30, but this caused instability
             
             ## save input values for later use
             self.mass_transfer_data.loc['kf'] = kf_v

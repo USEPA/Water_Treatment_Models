@@ -136,7 +136,7 @@ The parameters tab is used to describe the physical constraints of the resin cha
 |Carbon ID                     |             |N/A    |
 |radius                        |Bead radius is the measurement of the distance of the bead resin from the center to the surface. | cm, m, mm, in, ft |
 |Bead Porosity | The bead porosity is the measure of the bead volume occupied by a solvent, usually water. The factor is between 0 and 1, where 0 represents a bead absent of a solvent and 1 is a bead where all the available space is filled with a solvent. A well packed bead will typically have and EPOR of 0.2. | N/A|
-|psdfr                          |            |N/A    |
+|SPDFR                          | Surface to Pore Diffusion Flux Ratio           |N/A    |
 |particle density               | Mass per unit volume of bead particle. | g/ml |
 |apparent density               | Mass per unit volume of bead particle measured within a medium. | g/ml|
 |length                         |The depth of the media in packed column. Some vessels may only be filled partially, so this number may be shorter than the height of the contractor.| m, cm, mm, in, ft|

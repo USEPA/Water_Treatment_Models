@@ -47,12 +47,12 @@ import multiprocessing as mp
 import time as ti #time as a variable is used in code, so ti is used
 
 #Read in all associated PSDM functions
-from PSDM_functions import min_per_day, lpg, spar_Jac, foul_params, kf_calc
-from PSDM_functions import find_minimum_df, tortuosity, calc_solver_matrix
-from PSDM_functions import density, viscosity, recalc_k, generate_grid
-from PSDM_functions import interp 
-from PSDM_functions import process_input_data, process_input_file
-from PSDM_functions import logistic, filter_compounds
+from .PSDM_functions import min_per_day, lpg, spar_Jac, foul_params, kf_calc
+from .PSDM_functions import find_minimum_df, tortuosity, calc_solver_matrix
+from .PSDM_functions import density, viscosity, recalc_k, generate_grid
+from .PSDM_functions import interp 
+from .PSDM_functions import process_input_data, process_input_file
+from .PSDM_functions import logistic, filter_compounds
 
 def run_MP_helper(test_column, k, invN, compound, k_mult):
     mp.freeze_support()
@@ -76,7 +76,7 @@ class PSDM():
             'rhop'  = apparent density (gm/ml)
             'rad'   = particle radius (cm) 
             'tortu' = tortuosity
-            'psdfr' = pore to surface diffusion ratio
+            'spdfr' = surface to pore diffusion flux ratio
             'influentID' = influent identifier (text)
             'effluentID' = effluent identifier (text)
             'units' = may have units also specified
@@ -197,7 +197,9 @@ class PSDM():
         self.rhof = column_data['rhof']
         self.rad = column_data['rad']
         self.tortu = column_data['tortu']
-        self.psdfr = column_data['psdfr']
+
+        psdfr_str = 'psdfr' if 'spdfr' not in column_data.index else 'spdfr'
+        self.psdfr = column_data[psdfr_str]
         self.epor = column_data['epor']
         self.influent = column_data['influentID']
         if column_data.name == None:
@@ -862,7 +864,7 @@ class PSDM():
                         xn_rng_tmp[0] = np.floor(xn_rng_tmp[0] / des_xn) 
                         xn_rng_tmp[1] = np.ceil(xn_rng_tmp[1] / des_xn)
                         
-                        grid_num_xn = int(xn_rng_tmp.ptp() + 1)
+                        grid_num_xn = int(np.ptp(xn_rng_tmp) + 1)
                         xn_range1 = xn_rng_tmp * des_xn
                         if xn_range1[1] > orig_xn_range[-1]:
                             #corrects for overrun of xn_range
@@ -872,7 +874,7 @@ class PSDM():
                         
                         k_rng_tmp[0] = np.floor(k_rng_tmp[0] / des_k)
                         k_rng_tmp[1] = np.ceil(k_rng_tmp[1] / des_k)
-                        grid_num_k = int(k_rng_tmp.ptp() + 1)
+                        grid_num_k = int(np.ptp(k_rng_tmp) + 1)
                         k_range1 = k_rng_tmp * des_k
 
                     xn_range, k_range = generate_grid(grid_num_xn,
@@ -888,6 +890,8 @@ class PSDM():
                     for xn in xn_range:
                         self.test_range = np.array([k*k_mult[xn]])
                         self.xn_range = np.array([xn])
+                        self.k_data.loc['K'][compound] = k * k_mult[xn]
+                        self.k_data.loc['1/n'][compound] = xn * 1
                         
                         comp, k_v, xn_v, ssqs, md = self.run_psdm_kfit(compound)
                         data_store.append([k, xn_v, ssqs.values[0][0]])
@@ -1426,15 +1430,15 @@ class PSDM():
                     ### should this be before or after the fouling? 
             
             if water_type != 'Organic Free':
-                ds_v /= 1e15  #original code =1e-30, but this caused instability
+                ds_v *= 1e-30  #original code =1e-30, but this caused instability
             
             ## save input values for later use
-            self.mass_transfer_data.loc['kf'] = kf_v * 1
+            self.mass_transfer_data.loc['kf'] = kf_v
             self.mass_transfer_data.loc['dp'] = dp_v * 1
-            self.mass_transfer_data.loc['ds'] = ds_v * 1
+            self.mass_transfer_data.loc['ds'] = ds_v
             
-            d = (ds_v/dp_v)[self.compounds]
-
+            d = (ds_v/dp_v)[self.compounds] 
+            
             qe = molar_k * cb0**xn_v
             qte = qe.sum()
                        

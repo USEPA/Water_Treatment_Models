@@ -83,7 +83,7 @@ def process_input_file(filename, data_sheet='data',\
     
     
     column_dict = {'rad': 0, 'flrt': 0, 'epor': 0,\
-                   'psdfr': 5, 'rhop': 0, 'rhof': 0, 'L': 0, \
+                   'spdfr': 5, 'rhop': 0, 'rhof': 0, 'L': 0, \
                    'wt': 0, 'diam': 0, 'tortu':1, 'influentID':'influent',\
                    'effluentID': 'effluent', 'units':'ng', 'time':'days',\
                    'mass_mul': 1., 't_mult': 1., 'flow_mult': 1., \
@@ -150,7 +150,13 @@ def process_input_file(filename, data_sheet='data',\
     #unitless
     column_data.loc['tortu'] = float(c_data['value']['tortuosity']) * 1.
     column_data.loc['epor'] = float(c_data['value']['porosity']) * 1.
-    column_data.loc['psdfr'] = float(c_data['value']['psdfr']) * 1.
+    
+    if 'psdfr' in c_data['value']:
+        column_data.loc['spdfr'] = float(c_data['value']['psdfr']) * 1.
+    elif 'spdfr' in c_data['value']:
+        column_data.loc['spdfr'] = float(c_data['value']['spdfr']) * 1.
+
+
     column_data.loc['influentID'] = c_data['value']['influentID']
     column_data.loc['effluentID'] = c_data['value']['effluentID']
     #add more units handling # some redundancy from __init__ in psdm

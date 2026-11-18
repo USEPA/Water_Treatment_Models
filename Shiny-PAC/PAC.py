@@ -57,9 +57,9 @@ volume_convert = {'ml': 1, 'cm3': 1,
                   'm3': length_convert['m']**3}
 
 flow_convert = {'ml/min': 1/time_convert['min'], 'ml/s': 1,
-                'gpm': lpg * 1e3/time_convert['min'], 'gal/min': lpg * 1e3/time_convert['min'],
+                'gpm': volume_convert['gal']/time_convert['min'], 'gal/min': volume_convert['gal']/time_convert['min'],
                 'lpm': 1e3/time_convert['min'], 'l/min': 1e3/time_convert['min'],
-                'mgd': 1e6 * lpg * 1e3 / time_convert['day'],
+                'mgd': 1e6 * volume_convert['gal'] / time_convert['day'], ## millions of gallons per day
                 'ft3/s': length_convert['ft']**3/time_convert['s'], 
                 'cfs': length_convert['ft']**3/time_convert['s'],
                 'm3/s': length_convert['m']**3/time_convert['s']

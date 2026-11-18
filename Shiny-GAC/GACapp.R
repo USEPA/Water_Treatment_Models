@@ -708,7 +708,7 @@ tags$style(HTML("
                 column(3,),
                 column(3, shinyWidgets::autonumericInput(
                   inputId = "psdfrv",
-                  label="PSDFR",
+                  label="SPDFR",
                   value = 5,
                   currencySymbolPlacement = "p",
                   decimalPlaces = 3,
