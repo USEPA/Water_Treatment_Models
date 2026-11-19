@@ -211,6 +211,11 @@ column_data <- function(input) {
     t_mult = 60. ## minutes/hour
   }
   
+  psdfr_correct <- input$psdfrv
+  if (psdfr_correct < 1e-30) {
+    psdfr_correct = 1e-30
+  }
+  
   columndataframe <- data.frame(
     name = c('carbonID',
              'rad', ## media radius (cm)
@@ -333,10 +338,14 @@ influent_organizer <- function(influent) {
 #to manipulate and plot
 #------------------------------------------------------------------------------#
 process_output <- function(dat, input) {
-  if (!is.null(dat) ) { #&& nrow(dat) > 1
-    dat2 <- dat %>% pivot_longer(!time, names_to = "name", values_to = "conc")
-    colnames(dat2) <- c("hours", "name", "conc")
-    totaldat <- dat2
+  if (!is.null(dat)) { 
+    if (nrow(dat) > 1) {
+      dat2 <- dat %>% pivot_longer(!time, names_to = "name", values_to = "conc")
+      colnames(dat2) <- c("hours", "name", "conc")
+      totaldat <- dat2
+    } else {
+      totaldat <- dat
+    }
   } else {
     totaldat <- dat
   }
@@ -402,18 +411,18 @@ create_plotly<-function(frame1, frame2, frame3) {
 #that chemical to put the chemical into units of c/c0
 #------------------------------------------------------------------------------#  
 cc0_conv_ngl <- function(concdata, dataoutput) {
-  # req(dataoutput)
-  if (!is.null(dataoutput) ) { #&& nrow(dataoutput) > 1
-    df <- concdata
-    output <- dataoutput[, colnames(dataoutput)[colnames(dataoutput) != 'time']]
-    output_time <- dataoutput['time']
-    c0_values <- df[1, 2:ncol(df)]
-    output_in_cc0_dat <- mapply('/', output, c0_values)
-    output_in_cc0 <- cbind(output_time, output_in_cc0_dat)
-    colnames(output_in_cc0) <- colnames(concdata)
-  } else {
-    output_in_cc0 <- data.frame(time = c(NA), ame = c(NA), conc = c(NA))
-  }
+  output_in_cc0 <- data.frame(time = c(NA), ame = c(NA), conc = c(NA))
+  if (!is.null(dataoutput)) { 
+    if (nrow(dataoutput) > 1) {
+      df <- concdata
+      output <- dataoutput[, colnames(dataoutput)[colnames(dataoutput) != 'time']]
+      output_time <- dataoutput['time']
+      c0_values <- df[1, 2:ncol(df)]
+      output_in_cc0_dat <- mapply('/', output, c0_values)
+      output_in_cc0 <- cbind(output_time, output_in_cc0_dat)
+      colnames(output_in_cc0) <- colnames(concdata)
+    }
+  } 
   
   return(output_in_cc0)
 }  
@@ -709,15 +718,24 @@ ui <- fluidPage(
                                      
                                      fluidRow(
                                        column(3,),
-                                       column(3, numericInput(
-                                         inputId = "psdfrv",
-                                         label="SPDFR",
-                                         value = 5,
-                                         # currencySymbolPlacement = "p",
-                                         # decimalPlaces = 3,
-                                         # digitGroupSeparator = ",",
-                                         # decimalCharacter = "."
-                                       ))),
+                                       column(3,tags$head(
+                                         tags$style(HTML("
+                                            #psdfrv {
+                                              text-align: right;
+                                            }
+                                          "))), #shinyWidgets::autonumericInput(
+                                         numericInput(
+                                           inputId = "psdfrv",
+                                           label="SPDFR",
+                                           value = 5,
+                                           min = 1e-30,
+                                           max = 1e10,
+                                           step = 1e-3
+                                           # currencySymbolPlacement = "p",
+                                           # decimalPlaces = 3,
+                                           # digitGroupSeparator = ",",
+                                           # decimalCharacter = "."
+                                         ))),
                                      
                                      hr(),
                                      
@@ -1214,8 +1232,10 @@ server <- function(input, output, session) {
   #cc0 conversions#
   #------------------------------------------------------------------------------# 
   computed_data_cc0 <- reactiveVal(data.frame(time = c(NA), name = c(NA), conc = c(NA)))
-  cc0data_ngl <- eventReactive(input$run_button, {cc0_conv_ngl(infdat(), out())})
-  observe({computed_data_cc0(process_output(cc0data_ngl()))})
+  cc0data_ngl <- eventReactive(input$run_button, {req(out())
+    cc0_conv_ngl(infdat(), out())})
+  observe({req(cc0data_ngl)
+    computed_data_cc0(process_output(cc0data_ngl()))})
   
   effluent_data_cc0 <- reactiveVal(data.frame(time = c(NA), name = c(NA), conc = c(NA)))
   effluentcc0data <- reactive({c_points_cc0(infdat(), effdat())})
