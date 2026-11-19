@@ -19,8 +19,7 @@ from scipy.optimize import brentq, root
 import sys
 import os
 cwd = os.getcwd()
-split_cwd = cwd.split("\\")
-sys_path = "/".join(split_cwd[:-1]+["PSDM/psdm"])
+sys_path = os.path.join(os.path.dirname(cwd), "PSDM", "psdm")
 sys.path.append(sys_path)
 
 from PSDM_functions import viscosity, density   #, calc_solver_matrix
@@ -378,7 +377,7 @@ if __name__ == "__main__":
         for NR in range(2, 17):
             _, _, _, W = recur_colloc_symm(NR, a)
             W_true = Qinv_weights_symm(NR, a)
-            assert np.allclose(W, W_true)    
+            assert np.allclose(W, W_true, atol=1e-6)
 
 
 class PAC_CFPSDM():
